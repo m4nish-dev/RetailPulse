@@ -3,11 +3,10 @@
 **Legend:** `[ ]` pending · `[~]` in progress · `[x]` done · `[!]` blocked
 
 **Last updated:** 2026-11-12
-**Current phase:** ✅ Phases 1–4 COMPLETE → ready for Phase 5 (EDA)
-**Overall progress:** Phase 2 PASSED (17/17 spreadsheet KPIs). Phase 3 PASSED
-(34/34 checks, 0 rows deleted). Phase 4 PASSED — MySQL 8.4.13, 569,776 rows
-imported, 34 queries executed, 7 views verified, **61/61 validation checks**.
-1 manual chart still deferred.
+**Current phase:** ✅ Phases 1–5 COMPLETE → ready for Phase 6 (Power BI)
+**Overall progress:** Phases 2–5 all PASSED. MySQL 8.4 database live (61/61
+checks). Phase 5 EDA complete: 15 charts, 29/29 cells clean, **15/15 metrics
+agree with MySQL**. 1 manual chart still deferred.
 
 ---
 
@@ -114,16 +113,20 @@ imported, 34 queries executed, 7 views verified, **61/61 validation checks**.
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 5.1 | Sales trend analysis | [ ] | |
-| 5.2 | Customer behaviour analysis | [ ] | |
-| 5.3 | Product analysis | [ ] | |
-| 5.4 | Seller analysis | [ ] | |
-| 5.5 | Delivery analysis | [ ] | |
-| 5.6 | Review analysis | [ ] | |
-| 5.7 | RFM segmentation + methodology writeup | [ ] | |
-| 5.8 | Cohort & retention analysis | [ ] | |
-| 5.9 | Delay vs rating relationship | [ ] | |
-| 5.10 | Phase 5 review gate | [ ] | |
+| 5.1 | Sales trend analysis | [x] | A1, A2 — growth is volume not basket; 2018 is a plateau |
+| 5.2 | Customer behaviour analysis | [x] | B1 — 93% of top-1% spenders bought exactly once |
+| 5.3 | Product analysis | [x] | C1, C2 — 18 categories reach 80%; 22 of 24 growing |
+| 5.4 | Seller analysis | [x] | D1, D2 — largest seller only 1.70%; intervention list produced |
+| 5.5 | Delivery analysis | [x] | E1, E2 — padding 26.9d→7.5d; state spread 2.8× |
+| 5.6 | Review analysis | [x] | F1, F2, F3 — 1–7 days late costs 1.02 stars |
+| 5.7 | RFM segmentation + methodology writeup | [x] | B2 — Champions 2.4% of revenue; Potential Loyalists 33.9% |
+| 5.8 | Cohort & retention analysis | [x] | B3 — every cohort cell under 1.5% |
+| 5.9 | Delay vs rating relationship | [x] | F1 — the project's headline finding |
+| 5.10 | Phase 5 review gate | [x] | **PASSED** — notebook clean, 15/15 vs MySQL |
+| 5.11 | `notebooks/03_exploratory_data_analysis.ipynb` | [x] | 56 cells, 29 code, executes end to end |
+| 5.12 | Save 15 charts to `reports/eda_charts/` | [x] | Each answers a business question; 4 inspected visually, 2 layout defects fixed |
+| 5.13 | Validate EDA against MySQL | [x] | 15 metrics, all agree within 0.01 |
+| 5.14 | `reports/eda_report.md` | [x] | 10 findings, limitations, corrections recorded |
 
 ---
 
@@ -131,7 +134,7 @@ imported, 34 queries executed, 7 views verified, **61/61 validation checks**.
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 6.1 | Install Power BI Desktop | [ ] | Windows-only — see environment guide |
+| 6.1 | Install Power BI Desktop | [ ] | **NEXT PHASE BLOCKER.** macOS cannot run it — needs a Windows VM. See documentation/environment_setup.md |
 | 6.2 | Load data, build model + date table | [ ] | |
 | 6.3 | Power Query transformations | [ ] | |
 | 6.4 | DAX measures | [ ] | |
@@ -266,5 +269,6 @@ None.
 | MT-01 monthly revenue chart | 2 | 🔲 Manual, deferred by your request. Blocks nothing |
 | MySQL root has no password | 4 | Deliberate — fresh Homebrew default. `mysql_secure_installation` is your call |
 | Views take 2–3s | 4 | Fine here; Power BI should Import, not DirectQuery |
+| Power BI needs Windows | 6 | **Hard blocker for the next phase.** Decide VM route before starting |
 | Cleaned data not in version control | 3 | 90 MB derived artifact; regenerates in ~2 min |
 | 2016-11 absent from the dataset entirely | 3 | New finding. Reinforces the 2017-01 window start |

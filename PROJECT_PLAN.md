@@ -225,9 +225,16 @@ have silently corrupted data (2 lost review rows, 11 rows diverging on NULLs).
 - [ ] Cohort and retention analysis
 - [ ] Correlation between delivery delay and review score
 
-**Deliverable:** `notebooks/03_exploratory_analysis.ipynb`,
-`notebooks/04_rfm_segmentation.ipynb`, `notebooks/05_cohort_retention.ipynb`,
-with findings written in plain English next to each chart.
+**Deliverables:** ✅ `notebooks/03_exploratory_data_analysis.ipynb` (56 cells,
+executes clean) · ✅ 15 charts in `reports/eda_charts/` · ✅ `reports/eda_report.md`
+
+RFM and cohort analysis are sections B2/B3 of the single notebook rather than
+separate files — splitting them would have duplicated the shared customer-grain
+setup for no benefit.
+
+**Result: PASSED.** 29/29 cells, 0 errors, **15/15 metrics agree with MySQL**.
+Headline finding: an order 1–7 days late loses 1.02 stars and quadruples
+1-star reviews; 8–15 days late collapses it to 1.73 stars with 68.5% one-star.
 
 ---
 

@@ -7,10 +7,11 @@ orders. Raw CSV files are cleaned in Python, modelled in MySQL, analysed with
 SQL and pandas, and delivered as a six-page interactive Power BI dashboard
 with evidence-backed business recommendations.
 
-> **Status:** 🚧 In development — **Phases 1–4 of 9 complete.**
+> **Status:** 🚧 In development — **Phases 1–5 of 9 complete.**
 > Dataset profiled · spreadsheet validation passed (17/17 KPIs) · data cleaned
 > (34/34 checks, 0 rows deleted) · MySQL 8.4 database built and validated
-> (61/61 checks, 34 queries, 7 views). Next: Phase 5, exploratory analysis.
+> (61/61 checks, 34 queries, 7 views) · EDA complete (15 charts, 15/15 metrics
+> agree with MySQL). Next: Phase 6, Power BI.
 > This README is expanded into its final portfolio form in Phase 8.
 
 ---
@@ -111,13 +112,16 @@ RetailPulse/
 │   └── cleaned/      # Analysis-ready tables
 ├── notebooks/
 │   ├── 01_data_exploration.ipynb   # ✅ Phase 1 profiling (49 cells)
-│   └── 02_data_cleaning.ipynb      # ✅ Phase 3 cleaning (42 cells, 34/34 checks)
+│   ├── 02_data_cleaning.ipynb      # ✅ Phase 3 cleaning (42 cells, 34/34 checks)
+│   └── 03_exploratory_data_analysis.ipynb  # ✅ Phase 5 EDA (56 cells, 15 charts)
 ├── sql/              # ✅ 8 files: schema, import, 34 queries, 7 views, validation
 ├── scripts/          # Reusable Python utilities
 ├── excel/            # Phase 2 exploration workbooks
 ├── powerbi/          # RetailPulse.pbix and theme JSON
 ├── reports/
-│   ├── business_insights.md
+│   ├── eda_charts/                 # ✅ 15 analysis charts
+│   ├── eda_report.md
+│   ├── sql_analysis_report.md
 │   └── dashboard_screenshots/
 ├── documentation/    # Data dictionary, KPI definitions, methodology
 ├── requirements.txt
@@ -184,9 +188,15 @@ facts the analysis must respect:
   in **7.7**. Actual speed improved 39% while the promise tightened 62%.
 - **74% of delivery time is last-mile carriage** (9.31 of 12.56 days). Payment
   approval takes 0.41 days — the bottleneck is logistics, not process.
-- **Champions hold only 2.3% of revenue.** RFM finds just 957 of them. The
-  22,072 "Potential Loyalists" carry **34%** — first-to-second purchase
+- **Champions hold only 2.4% of revenue.** RFM finds just 979 of them. The
+  21,989 "Potential Loyalists" carry **34%** — first-to-second purchase
   conversion matters far more than a loyalty programme.
+- **The best customers are not loyal.** The top 10% of spenders hold 41% of
+  revenue, yet **93% of the top 1% placed exactly one order**. They are
+  strangers who made a single expensive purchase, not customers to reward.
+- **Growth stopped.** Mean month-over-month revenue growth fell from **+22.7%
+  across 2017 to +2.5% across 2018**, with AOV flat throughout — all growth
+  came from acquisition, none from basket size.
 
 ## Business recommendations
 
