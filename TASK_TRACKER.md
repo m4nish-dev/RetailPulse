@@ -3,11 +3,12 @@
 **Legend:** `[ ]` pending · `[~]` in progress · `[x]` done · `[!]` blocked
 
 **Last updated:** 2026-11-12
-**Current phase:** ✅ Phases 1–5 + 7 COMPLETE → Phase 6 (Power BI) blocked on Windows; Phase 8 next
-**Overall progress:** Phases 1–5 and 7 all PASSED. MySQL 8.4 live (61/61
-checks), EDA complete (15 charts, 15/15 vs MySQL), **14 business insights
-written with all 38 numeric claims re-verified against MySQL**. Phase 6 is
-blocked on a Windows environment. 1 manual chart still deferred.
+**Current phase:** ✅ Phases 1–5 + 7 COMPLETE · 🚧 Phase 6 PREPARED but BLOCKED (needs Windows) → Phase 8 next
+**Overall progress:** Phases 1–5 and 7 PASSED. Phase 6 assets built and
+validated as far as macOS allows (**37/37 DAX measures logic-verified**,
+theme validated, model + 6-page spec written) but **no .pbix exists — Power
+BI Desktop requires Windows**. Insight 14's open question is now resolved.
+1 manual chart still deferred.
 
 ---
 
@@ -135,20 +136,25 @@ blocked on a Windows environment. 1 manual chart still deferred.
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 6.1 | Install Power BI Desktop | [ ] | **NEXT PHASE BLOCKER.** macOS cannot run it — needs a Windows VM. See documentation/environment_setup.md |
-| 6.2 | Load data, build model + date table | [ ] | |
-| 6.3 | Power Query transformations | [ ] | |
-| 6.4 | DAX measures | [ ] | |
-| 6.5 | Page 1 Executive Overview | [ ] | |
-| 6.6 | Page 2 Customer Intelligence | [ ] | |
-| 6.7 | Page 3 Product Analytics | [ ] | |
-| 6.8 | Page 4 Seller Performance | [ ] | |
-| 6.9 | Page 5 Order & Delivery Operations | [ ] | |
-| 6.10 | Page 6 Customer Satisfaction | [ ] | |
-| 6.11 | Slicers, drill-through, tooltips | [ ] | |
-| 6.12 | Apply charcoal / white / orange theme | [ ] | |
-| 6.13 | Capture screenshots | [ ] | |
-| 6.14 | Phase 6 review gate | [ ] | |
+| 6.1 | Install Power BI Desktop | [!] | **BLOCKED.** Environment checked 2026-11-13: no Power BI, Parallels, VMware, UTM, VirtualBox, CrossOver, wine, Docker or QEMU. macOS cannot run Power BI Desktop |
+| 6.1a | Export validated views for Power BI | [x] | `scripts/export_powerbi_data.py` — 11 CSVs + generated dim_date, 335,797 rows |
+| 6.1b | Build + validate Power BI theme | [x] | `powerbi/RetailPulse_Theme.json` — valid JSON, palette passes CVD checks on dark surface |
+| 6.1c | Write + verify 37 DAX measures | [x] | `powerbi/dax_measures.md`; **37/37 logic verified** via `scripts/validate_dax_logic.py`. Caught 1 fabricated expected value |
+| 6.1d | Specify data model | [x] | `powerbi/data_model.md` — 3 relationships, cardinality, Import rationale, 3 aggregate tables deliberately unrelated |
+| 6.1e | Specify all 6 dashboard pages | [x] | `powerbi/dashboard_specification.md` — visual by visual, with mandatory caveat captions |
+| 6.2 | Load data, build model + date table | [!] | Blocked — needs Windows. Spec ready in `powerbi/data_model.md` |
+| 6.3 | Power Query transformations | [!] | Blocked. Views are pre-shaped, so minimal transformation needed |
+| 6.4 | DAX measures | [~] | Written and logic-verified (37/37). **Not executed** — needs Power BI |
+| 6.5 | Page 1 Executive Overview | [!] | Blocked — fully specified |
+| 6.6 | Page 2 Customer Intelligence | [!] | Blocked — fully specified |
+| 6.7 | Page 3 Product Analytics | [!] | Blocked — fully specified |
+| 6.8 | Page 4 Seller Performance | [!] | Blocked — fully specified |
+| 6.9 | Page 5 Order & Delivery Operations | [!] | Blocked — fully specified |
+| 6.10 | Page 6 Customer Satisfaction | [!] | Blocked — fully specified |
+| 6.11 | Slicers, drill-through, tooltips | [!] | Blocked — specified |
+| 6.12 | Apply charcoal / white / orange theme | [x] | Theme file built and validated; **applying it needs Power BI** |
+| 6.13 | Capture screenshots | [!] | Blocked — nothing to screenshot yet. No fake images created |
+| 6.14 | Phase 6 review gate | [!] | **NOT PASSED — cannot pass without Windows.** Phase 6 is explicitly incomplete |
 
 ---
 
@@ -275,6 +281,7 @@ None.
 | MT-01 monthly revenue chart | 2 | 🔲 Manual, deferred by your request. Blocks nothing |
 | MySQL root has no password | 4 | Deliberate — fresh Homebrew default. `mysql_secure_installation` is your call |
 | Views take 2–3s | 4 | Fine here; Power BI should Import, not DirectQuery |
-| Power BI needs Windows | 6 | **Hard blocker for the next phase.** Decide VM route before starting |
+| **Power BI needs Windows** | 6 | **HARD BLOCKER — Phase 6 cannot be completed on this machine.** Verified absent: Power BI, Parallels, VMware, UTM, VirtualBox, CrossOver, wine, Docker, QEMU. All non-Windows assets are built and validated |
+| ~~Insight 14: product vs delivery~~ | 7 | ✅ **Resolved 2026-11-13.** Category-specific: `bed_bath_table` and `furniture_decor` keep their full deficit on on-time orders (product); `watches_gifts` and `electronics` lose theirs entirely (delivery) |
 | Cleaned data not in version control | 3 | 90 MB derived artifact; regenerates in ~2 min |
 | 2016-11 absent from the dataset entirely | 3 | New finding. Reinforces the 2017-01 window start |

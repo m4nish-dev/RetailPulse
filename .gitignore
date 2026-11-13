@@ -49,6 +49,12 @@ __pycache__/
 .~lock.*
 *.xlk
 
+# --- Power BI data extracts: NOT committed ---------------------------------
+# 48 MB of CSV exported from the MySQL views, regenerable in seconds with
+# scripts/export_powerbi_data.py. Same reasoning as dataset/cleaned/.
+powerbi/data/*.csv
+!powerbi/data/.gitkeep
+
 # --- Power BI temp / cache ---
 *.pbix.tmp
 .pbi/

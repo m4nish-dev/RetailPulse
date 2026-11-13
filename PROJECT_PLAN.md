@@ -254,8 +254,28 @@ Headline finding: an order 1–7 days late loses 1.02 stars and quadruples
 - [ ] Apply theme: dark charcoal background, white text, orange accent
 - [ ] Capture screenshots into `reports/dashboard_screenshots/`
 
-**Deliverables:** `powerbi/RetailPulse.pbix`, theme JSON, DAX measure
-documentation, screenshots.
+**Deliverables:** 🚧 **PARTIAL — the dashboard itself is BLOCKED.**
+
+| Deliverable | Status |
+|---|---|
+| `powerbi/RetailPulse_Theme.json` | ✅ Built and validated (JSON + CVD checks) |
+| `powerbi/dax_measures.md` (37 measures) | ✅ Logic verified 37/37 against MySQL |
+| `powerbi/data_model.md` | ✅ Complete |
+| `powerbi/dashboard_specification.md` | ✅ All 6 pages specified |
+| `powerbi/data/` (11 CSV extracts) | ✅ Generated, 335,797 rows |
+| **`powerbi/RetailPulse.pbix`** | ❌ **Does not exist** |
+| Dashboard screenshots | ❌ Nothing to capture |
+
+**Power BI Desktop runs only on Windows.** The environment was checked on
+2026-11-13 and contains no Windows VM, emulation layer or Power BI install.
+No `.pbix` was fabricated and no substitute tool was used.
+
+**Verified as far as macOS permits:** every measure's filter context, grain,
+denominator and arithmetic were checked by expressing them as SQL over the
+same views Power BI will import — 37/37 agree. DAX *execution* remains
+untested.
+
+**To finish:** one Windows environment. See `powerbi/README.md`.
 
 ---
 

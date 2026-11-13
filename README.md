@@ -7,12 +7,14 @@ orders. Raw CSV files are cleaned in Python, modelled in MySQL, analysed with
 SQL and pandas, and delivered as a six-page interactive Power BI dashboard
 with evidence-backed business recommendations.
 
-> **Status:** 🚧 In development — **Phases 1–5 and 7 of 9 complete.**
+> **Status:** 🚧 In development — **Phases 1–5 and 7 of 9 complete; Phase 6 prepared but blocked.**
 > Dataset profiled · spreadsheet validation passed (17/17 KPIs) · data cleaned
 > (34/34 checks, 0 rows deleted) · MySQL 8.4 database built and validated
 > (61/61 checks, 34 queries, 7 views) · EDA complete (15 charts, 15/15 metrics
-> agree with MySQL) · 14 business insights, all 38 claims re-verified.
-> Phase 6 (Power BI) is blocked on a Windows environment; Phase 8 is next.
+> agree with MySQL) · 14 business insights, all 38 claims re-verified ·
+> Power BI model, theme and 37 logic-verified DAX measures prepared.
+> **Phase 6's dashboard is blocked: Power BI Desktop requires Windows.**
+> Phase 8 is next.
 > This README is expanded into its final portfolio form in Phase 8.
 
 ---
@@ -218,7 +220,15 @@ Full detail in [`reports/business_insights.md`](reports/business_insights.md)
 
 ## Dashboard screenshots
 
-_To be added in Phase 6._
+🚧 **Not yet available.** Power BI Desktop runs only on Windows and this
+project was built on macOS. No `.pbix` has been created and no placeholder
+images have been fabricated.
+
+Everything that does not depend on the tool is ready and validated: the data
+model, a validated theme, 37 DAX measures whose logic has been verified
+against MySQL (37/37), and a visual-by-visual specification of all six pages.
+See [`powerbi/README.md`](powerbi/README.md) for the build guide and what is
+required to finish.
 
 ---
 

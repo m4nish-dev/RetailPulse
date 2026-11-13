@@ -761,6 +761,69 @@ settles it, and the answer changes who owns the fix.
 
 ---
 
+### ✅ RESOLVED — follow-up analysis, 2026-11-13
+
+The query above was run. **The original insight stands unchanged; this
+section answers the question it left open.**
+
+**Method.** Hold delivery constant by comparing each category's average
+review score **using on-time orders only**. If a category's deficit vanishes
+once lateness is removed, it was a logistics problem. If it persists, it is
+a product problem. Baselines across all delivered, revenue-eligible orders:
+
+| Baseline | Avg review |
+|---|---|
+| All delivered orders | 4.0820 |
+| On-time orders only | **4.2115** |
+| Late orders only | **2.5489** |
+
+**The answer is category-specific, not one global story:**
+
+| Category | Items | Gap overall | Gap when on-time only | Verdict |
+|---|---|---|---|---|
+| `office_furniture` | 1,654 | −0.569 | **−0.598** | **Product** — deficit *widens* |
+| `home_confort` | 427 | −0.227 | −0.201 | Product |
+| **`bed_bath_table`** | **10,831** | −0.158 | **−0.160** | **Product** |
+| `furniture_living_room` | 490 | −0.147 | −0.143 | Product |
+| **`furniture_decor`** | **8,080** | −0.128 | **−0.131** | **Product** |
+| `computers_accessories` | 7,607 | −0.095 | −0.106 | Product |
+| `audio` | 358 | −0.245 | −0.104 | Mostly delivery |
+| `electronics` | 2,710 | −0.015 | −0.001 | **Delivery** — gap vanishes |
+| `watches_gifts` | 5,813 | −0.011 | **+0.009** | **Delivery** — gap vanishes |
+
+**Finding: for the largest affected categories, delivery does NOT explain the
+deficit.** `bed_bath_table` (1.01M BRL) and `furniture_decor` (706k BRL) keep
+essentially their entire gap once only on-time orders are counted. These are
+genuine product or merchandising problems.
+
+`office_furniture` is the clearest case and the worst: a −0.569 deficit that
+**widens to −0.598** when delivery is held constant, despite also having the
+slowest average delivery in the dataset at 20.8 days. It is both slow *and*
+intrinsically poorly rated — two separate problems in one category.
+
+Conversely `watches_gifts` and `electronics` were delivery victims all along:
+remove late orders and they rate at or above baseline.
+
+**Revised action.** Split the fix by owner:
+
+- **Merchandising and seller quality** own `bed_bath_table`,
+  `furniture_decor`, `office_furniture` and `home_confort`. Investigate
+  listing accuracy, product descriptions, dimensions and damage in transit
+  for bulky goods.
+- **Logistics** owns `watches_gifts`, `electronics` and `audio` — these need
+  no product intervention, only the delivery work in Insights 9 and 12.
+- **`office_furniture` needs both**, and given it is the largest single
+  deficit in the dataset it is the obvious place to start.
+
+> **Caveat.** Holding delivery constant controls for *lateness*, not for
+> total delivery time, handling damage, or packaging. A bulky item that
+> arrives on time but damaged still rates badly, and this dataset has no
+> damage or returns field. So "product problem" here means "not explained by
+> lateness" — it does not isolate product quality from every other
+> non-delivery factor.
+
+---
+
 # Top five strategic priorities
 
 Ranked by evidence strength × size of the opportunity.
