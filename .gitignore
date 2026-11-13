@@ -11,10 +11,15 @@ dataset/raw/*
 dataset/interim/*
 !dataset/interim/.gitkeep
 
-# Cleaned data IS committed (Phase 3 output, needed to rerun analysis).
-# Uncomment if any file approaches GitHub's 100 MB per-file limit.
-# dataset/cleaned/*
-# !dataset/cleaned/.gitkeep
+# --- Cleaned data: NOT committed -----------------------------------------
+# Phase 3 output is ~90 MB across 9 CSVs. It is a DERIVED artifact: running
+# notebooks/02_data_cleaning.ipynb regenerates it byte-for-byte from
+# dataset/raw/ in about two minutes. Committing 90 MB of regenerable data on
+# every rebuild would bloat the repository permanently for no benefit.
+# Regeneration instructions: dataset/cleaned/README.md
+dataset/cleaned/*.csv
+!dataset/cleaned/README.md
+!dataset/cleaned/.gitkeep
 
 # --- Archives (the source zip, and anything re-downloadable) ---
 *.zip

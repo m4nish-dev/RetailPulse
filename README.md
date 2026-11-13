@@ -7,8 +7,9 @@ orders. Raw CSV files are cleaned in Python, modelled in MySQL, analysed with
 SQL and pandas, and delivered as a six-page interactive Power BI dashboard
 with evidence-backed business recommendations.
 
-> **Status:** 🚧 In development — **Phase 1 of 9 complete** (Project Setup &
-> Dataset Understanding). Next: Phase 2, Excel exploration.
+> **Status:** 🚧 In development — **Phases 1–3 of 9 complete.**
+> Dataset profiled · spreadsheet validation passed (17/17 KPIs) · data cleaned
+> (34/34 checks, 0 rows deleted). Next: Phase 4, MySQL.
 > This README is expanded into its final portfolio form in Phase 8.
 
 ---
@@ -108,7 +109,8 @@ RetailPulse/
 │   ├── interim/      # Mid-pipeline outputs
 │   └── cleaned/      # Analysis-ready tables
 ├── notebooks/
-│   └── 01_data_exploration.ipynb   # ✅ Phase 1 profiling (49 cells, executes clean)
+│   ├── 01_data_exploration.ipynb   # ✅ Phase 1 profiling (49 cells)
+│   └── 02_data_cleaning.ipynb      # ✅ Phase 3 cleaning (42 cells, 34/34 checks)
 ├── sql/              # Schema, data load, and analytical queries
 ├── scripts/          # Reusable Python utilities
 ├── excel/            # Phase 2 exploration workbooks
@@ -164,6 +166,14 @@ facts the analysis must respect:
   of 3,095 sellers — a concentration risk worth quantifying.
 - **Referential integrity is near-perfect**, so the MySQL schema in Phase 4 can
   declare genuine foreign key constraints.
+- **Undelivered orders are savaged in reviews.** Orders still `processing`
+  average **1.27 stars** against **4.16** for delivered. Customers are rating
+  the wait, not the product — fulfilment, not product quality, dominates
+  satisfaction here.
+- **Growth is volume, not price.** Like-for-like Jan–Aug, revenue rose
+  **+138.3%** and orders **+135.1%**, while AOV moved just **+1.4%**.
+- **Revenue is heavily concentrated**: the top 3 of 27 states hold **63.4%**,
+  and delivery time varies 2.7× across the country (SP 8.8 days, PA 23.8).
 
 ## Business recommendations
 

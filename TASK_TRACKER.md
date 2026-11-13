@@ -3,10 +3,10 @@
 **Legend:** `[ ]` pending · `[~]` in progress · `[x]` done · `[!]` blocked
 
 **Last updated:** 2026-11-12
-**Current phase:** ✅ Phase 1 COMPLETE → ready for Phase 2
-**Overall progress:** Environment built, all 9 tables profiled, keys and
-relationships validated, 17 data quality issues logged, 25 KPIs defined and
-26 business questions scoped. No data has been modified.
+**Current phase:** ✅ Phases 1–3 COMPLETE → ready for Phase 4 (MySQL)
+**Overall progress:** Git initialised. Phase 2 spreadsheet validation PASSED
+(17/17 computable KPIs reconcile, 0 formula errors). Phase 3 cleaning PASSED
+(34/34 checks, 0 rows deleted, 0 values imputed). 1 manual chart deferred.
 
 ---
 
@@ -31,8 +31,8 @@ relationships validated, 17 data quality issues logged, 25 KPIs defined and
 | 1.15 | Write `documentation/data_dictionary.md` | [x] | All 9 tables, measured values only |
 | 1.16 | Write `documentation/business_questions.md` | [x] | 26 questions (15 P1), plus 9 the data cannot answer |
 | 1.17 | Write `documentation/kpi_definitions.md` | [x] | 25 KPIs with formula, columns, validation, limitations |
-| 1.18 | Write `documentation/architecture.md` | [ ] | Deferred to Phase 3 — schema is clearer once cleaning rules are fixed |
-| 1.19 | Initialise git repository | [ ] | Not yet done — offered, awaiting your go-ahead |
+| 1.18 | Write `documentation/architecture.md` | [ ] | Deferred again to Phase 4 — the data-flow diagram is most accurate once the MySQL schema exists |
+| 1.19 | Initialise git repository | [x] | Branch `main`; .gitignore hardened (removed over-broad `*.cfg`) |
 | 1.20 | Phase 1 review gate | [x] | Notebook executes end-to-end, 0 errors, 26/26 cells |
 | 1.21 | Write `documentation/data_quality_report.md` | [x] | 17 issues: 4 High, 3 Medium, 9 Low, 1 Info |
 | 1.22 | Write `documentation/table_relationships.md` | [x] | PK/FK test results + ER diagram + join rules |
@@ -44,16 +44,18 @@ relationships validated, 17 data quality issues logged, 25 KPIs defined and
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 2.1 | Choose spreadsheet tool | [ ] | Excel not installed — LibreOffice recommended. All business tables fit a sheet; geolocation (1.00M rows) is Python-only |
-| 2.2 | Missing-value audit per column | [ ] | |
-| 2.3 | Duplicate ID check | [ ] | |
-| 2.4 | Distribution review: price, freight, review score | [ ] | |
-| 2.5 | Pivot: revenue by month | [ ] | |
-| 2.6 | Pivot: orders by status | [ ] | |
-| 2.7 | Pivot: orders by state | [ ] | |
-| 2.8 | Record manual baseline metrics | [ ] | Used to verify Python later |
-| 2.9 | Write `reports/excel_exploration_report.md` | [ ] | |
-| 2.10 | Phase 2 review gate | [ ] | |
+| 2.1 | Choose spreadsheet tool | [x] | LibreOffice Calc 26.8.3.1 via Homebrew (1st download failed mid-transfer; retry OK) |
+| 2.2 | Missing-value audit per column | [x] | Sheet `02_Missing_Values` — 13 of 52 columns, each with a verdict |
+| 2.3 | Duplicate ID check | [x] | Sheet `03_Keys_Duplicates` — 10 PK candidates + 7 relationships |
+| 2.4 | Distribution review: price, freight, review score | [x] | Sheets 08, 09 |
+| 2.5 | Revenue by month | [x] | Sheet `05` — live SUMIFS, 25 months |
+| 2.6 | Orders by status | [x] | Sheet `06` — live COUNTIF |
+| 2.7 | Orders by state | [x] | Sheet `07` — 27 states, revenue + AOV + delivery |
+| 2.8 | KPI validation vs Python | [x] | **17/17 computable KPIs reconcile.** 2 not computable in a spreadsheet |
+| 2.9 | Write `reports/excel_exploration_report.md` | [x] | Methodology, KPI table, fan-out, 8 observations |
+| 2.10 | Phase 2 review gate | [x] | PASSED — workbook recalculated in LibreOffice, 0 formula errors |
+| 2.11 | **MT-01 Monthly revenue trend chart** | [ ] | 🔲 **DEFERRED — manual task for you.** See `MANUAL_TASKS.md`. Blocks nothing |
+| 2.12 | Build 8 pivot tables by hand | [ ] | Optional practice. Sheet `11_Pivot_Exercises` |
 
 ---
 
@@ -62,18 +64,20 @@ relationships validated, 17 data quality issues logged, 25 KPIs defined and
 | # | Task | Status | Notes |
 |---|---|---|---|
 | 3.1 | Create virtual environment | [x] | `venv/` on Python 3.14.3 (done early — Phase 1 needed pandas) |
-| 3.2 | Install dependencies from requirements.txt | [~] | Phase 1–3 packages installed. MySQL/Excel packages deferred to their phases |
+| 3.2 | Install dependencies from requirements.txt | [x] | + openpyxl for Phase 2. MySQL packages deferred to Phase 4 |
 | 3.3 | `01_data_exploration.ipynb` | [x] | 49 cells, 5 charts, executes clean end-to-end |
-| 3.4 | Null-handling rule per column, documented | [ ] | |
-| 3.5 | Duplicate resolution | [ ] | |
-| 3.6 | Data type corrections | [ ] | |
-| 3.7 | Referential integrity checks | [ ] | |
-| 3.8 | Derived columns | [ ] | revenue, delivery_days, delay_days, on_time flag, order_month |
-| 3.9 | Revenue-eligible status rule, documented | [ ] | |
-| 3.10 | `02_data_cleaning.ipynb` | [ ] | |
-| 3.11 | Export cleaned tables | [ ] | |
-| 3.12 | Post-clean validation log | [ ] | |
-| 3.13 | Phase 3 review gate | [ ] | |
+| 3.4 | Null-handling rule per column, documented | [x] | All 13 null columns have a recorded decision; 0 values imputed |
+| 3.5 | Duplicate resolution | [x] | review_id investigated: 0 of 789 carry differing scores → kept all rows |
+| 3.6 | Data type corrections | [x] | Strict converters that raise on failure; IDs and zips kept as text |
+| 3.7 | Referential integrity checks | [x] | 7 PKs + 4 FKs re-validated after conversion; 0 orphans |
+| 3.8 | Derived columns | [x] | 28 added to orders_clean; `is_late` from UNROUNDED timestamps |
+| 3.9 | Revenue-eligible status rule, documented | [x] | Excludes canceled + unavailable → 13,494,400.74 BRL |
+| 3.10 | `02_data_cleaning.ipynb` | [x] | 42 cells, 14 sections, executes clean |
+| 3.11 | Export cleaned tables | [x] | 9 files, 569,776 rows, 90 MB. Gitignored (derived) — see dataset/cleaned/README.md |
+| 3.12 | Post-clean validation log | [x] | **34/34 checks passed.** reports/data_cleaning_report.md |
+| 3.13 | Phase 3 review gate | [x] | PASSED |
+| 3.14 | Re-verify the issue register from raw | [x] | `scripts/verify_issue_register.py` — all 17 counts match, 0 mismatches |
+| 3.15 | Write `documentation/cleaning_decisions.md` | [x] | Definitive register with reason + validation per issue |
 
 ---
 
@@ -81,7 +85,7 @@ relationships validated, 17 data quality issues logged, 25 KPIs defined and
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 4.1 | Install / provision MySQL | [ ] | Not currently installed |
+| 4.1 | Install / provision MySQL | [ ] | **NEXT TASK.** Not installed. Homebrew or Docker — see documentation/environment_setup.md |
 | 4.2 | Design relational schema | [ ] | |
 | 4.3 | `sql/01_schema.sql` | [ ] | PKs, FKs, indexes |
 | 4.4 | `sql/02_data_load.sql` | [ ] | |
@@ -250,4 +254,7 @@ None.
 | Are delivery estimates deliberately padded? | 5 | Orders arrive ~11 days early on average. A finding, not a defect — needs Q19 to confirm |
 | Portuguese review text | 5 | Sentiment analysis needs a multilingual model. Optional |
 | `documentation/architecture.md` | 3 | Deferred — the data flow diagram is more accurate once cleaning rules are final |
-| Git repository not yet initialised | 1 | Awaiting your go-ahead |
+| ~~Git repository not initialised~~ | 1 | ✅ Done — branch `main` |
+| MT-01 monthly revenue chart | 2 | 🔲 Manual, deferred by your request. Blocks nothing |
+| Cleaned data not in version control | 3 | 90 MB derived artifact; regenerates in ~2 min |
+| 2016-11 absent from the dataset entirely | 3 | New finding. Reinforces the 2017-01 window start |

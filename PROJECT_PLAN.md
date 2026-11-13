@@ -148,7 +148,13 @@ eyeballing raw rows catches problems code can hide.
 - [ ] Build pivot tables: revenue by month, orders by status, orders by state
 - [ ] Record headline metrics by hand to later verify the Python pipeline
 
-**Deliverable:** `reports/excel_exploration_report.md` plus the workbook in `excel/`.
+**Deliverable:** ✅ `reports/excel_exploration_report.md` + `excel/RetailPulse_Phase2_Exploration.xlsx`
+(15 sheets, 22 MB, recalculated in LibreOffice Calc 26.8.3.1).
+
+**Result: PASSED.** 17 of 17 computable spreadsheet KPIs reconcile with Python;
+0 formula errors. Two KPIs are *not computable* in a spreadsheet at this scale
+(distinct customer count, conditional median) — reported as findings and a
+concrete reason to move to SQL. One manual chart (MT-01) deferred.
 
 ---
 
@@ -170,8 +176,13 @@ Phase 3 now has a concrete worklist: the 17 issues in
 - [ ] Export cleaned tables to `dataset/cleaned/`
 - [ ] Validate: row counts before/after, no unexpected nulls, totals reconcile
 
-**Deliverables:** `notebooks/01_data_exploration.ipynb`,
-`notebooks/02_data_cleaning.ipynb`, cleaned CSVs, cleaning log.
+**Deliverables:** ✅ `notebooks/02_data_cleaning.ipynb` (42 cells, executes clean) ·
+✅ 9 cleaned tables in `dataset/cleaned/` · ✅ `reports/data_cleaning_report.md` ·
+✅ `documentation/cleaning_decisions.md`
+
+**Result: PASSED.** 34/34 validation checks. **0 rows deleted, 0 values
+imputed, 0 original columns overwritten.** All 17 issue counts were
+independently re-verified from raw before cleaning began.
 
 ---
 
