@@ -7,9 +7,10 @@ orders. Raw CSV files are cleaned in Python, modelled in MySQL, analysed with
 SQL and pandas, and delivered as a six-page interactive Power BI dashboard
 with evidence-backed business recommendations.
 
-> **Status:** 🚧 In development — **Phases 1–3 of 9 complete.**
+> **Status:** 🚧 In development — **Phases 1–4 of 9 complete.**
 > Dataset profiled · spreadsheet validation passed (17/17 KPIs) · data cleaned
-> (34/34 checks, 0 rows deleted). Next: Phase 4, MySQL.
+> (34/34 checks, 0 rows deleted) · MySQL 8.4 database built and validated
+> (61/61 checks, 34 queries, 7 views). Next: Phase 5, exploratory analysis.
 > This README is expanded into its final portfolio form in Phase 8.
 
 ---
@@ -111,7 +112,7 @@ RetailPulse/
 ├── notebooks/
 │   ├── 01_data_exploration.ipynb   # ✅ Phase 1 profiling (49 cells)
 │   └── 02_data_cleaning.ipynb      # ✅ Phase 3 cleaning (42 cells, 34/34 checks)
-├── sql/              # Schema, data load, and analytical queries
+├── sql/              # ✅ 8 files: schema, import, 34 queries, 7 views, validation
 ├── scripts/          # Reusable Python utilities
 ├── excel/            # Phase 2 exploration workbooks
 ├── powerbi/          # RetailPulse.pbix and theme JSON
@@ -173,7 +174,19 @@ facts the analysis must respect:
 - **Growth is volume, not price.** Like-for-like Jan–Aug, revenue rose
   **+138.3%** and orders **+135.1%**, while AOV moved just **+1.4%**.
 - **Revenue is heavily concentrated**: the top 3 of 27 states hold **63.4%**,
-  and delivery time varies 2.7× across the country (SP 8.8 days, PA 23.8).
+  and delivery time varies 2.8× across the country (SP 8.8 days, AL 24.5).
+- **Late delivery destroys satisfaction, and the cliff is sharp.** An order
+  8–15 days late averages **1.73 stars with 68.5% one-star**, against 4.32 and
+  6.3% for one arriving early — a **10× increase** in angry customers. Most of
+  the damage happens within the first week of lateness.
+- **Delivery promises are padded, but narrowing.** In Jan 2017 Olist promised
+  39.5 days and delivered in 12.6; by Aug 2018 it promised 15.2 and delivered
+  in **7.7**. Actual speed improved 39% while the promise tightened 62%.
+- **74% of delivery time is last-mile carriage** (9.31 of 12.56 days). Payment
+  approval takes 0.41 days — the bottleneck is logistics, not process.
+- **Champions hold only 2.3% of revenue.** RFM finds just 957 of them. The
+  22,072 "Potential Loyalists" carry **34%** — first-to-second purchase
+  conversion matters far more than a loyalty programme.
 
 ## Business recommendations
 

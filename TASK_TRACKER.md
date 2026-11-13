@@ -3,10 +3,11 @@
 **Legend:** `[ ]` pending · `[~]` in progress · `[x]` done · `[!]` blocked
 
 **Last updated:** 2026-11-12
-**Current phase:** ✅ Phases 1–3 COMPLETE → ready for Phase 4 (MySQL)
-**Overall progress:** Git initialised. Phase 2 spreadsheet validation PASSED
-(17/17 computable KPIs reconcile, 0 formula errors). Phase 3 cleaning PASSED
-(34/34 checks, 0 rows deleted, 0 values imputed). 1 manual chart deferred.
+**Current phase:** ✅ Phases 1–4 COMPLETE → ready for Phase 5 (EDA)
+**Overall progress:** Phase 2 PASSED (17/17 spreadsheet KPIs). Phase 3 PASSED
+(34/34 checks, 0 rows deleted). Phase 4 PASSED — MySQL 8.4.13, 569,776 rows
+imported, 34 queries executed, 7 views verified, **61/61 validation checks**.
+1 manual chart still deferred.
 
 ---
 
@@ -31,7 +32,7 @@
 | 1.15 | Write `documentation/data_dictionary.md` | [x] | All 9 tables, measured values only |
 | 1.16 | Write `documentation/business_questions.md` | [x] | 26 questions (15 P1), plus 9 the data cannot answer |
 | 1.17 | Write `documentation/kpi_definitions.md` | [x] | 25 KPIs with formula, columns, validation, limitations |
-| 1.18 | Write `documentation/architecture.md` | [ ] | Deferred again to Phase 4 — the data-flow diagram is most accurate once the MySQL schema exists |
+| 1.18 | Write `documentation/architecture.md` | [ ] | Deferred to Phase 8 — most of the flow is now documented in mysql_schema.md; the full diagram belongs with the final README |
 | 1.19 | Initialise git repository | [x] | Branch `main`; .gitignore hardened (removed over-broad `*.cfg`) |
 | 1.20 | Phase 1 review gate | [x] | Notebook executes end-to-end, 0 errors, 26/26 cells |
 | 1.21 | Write `documentation/data_quality_report.md` | [x] | 17 issues: 4 High, 3 Medium, 9 Low, 1 Info |
@@ -85,20 +86,27 @@
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 4.1 | Install / provision MySQL | [ ] | **NEXT TASK.** Not installed. Homebrew or Docker — see documentation/environment_setup.md |
-| 4.2 | Design relational schema | [ ] | |
-| 4.3 | `sql/01_schema.sql` | [ ] | PKs, FKs, indexes |
-| 4.4 | `sql/02_data_load.sql` | [ ] | |
-| 4.5 | Validate row counts vs Python | [ ] | |
-| 4.6 | Module 1 queries | [ ] | |
-| 4.7 | Module 2 queries | [ ] | |
-| 4.8 | Module 3 queries | [ ] | |
-| 4.9 | Module 4 queries | [ ] | |
-| 4.10 | Module 5 queries | [ ] | |
-| 4.11 | Module 6 queries | [ ] | |
-| 4.12 | Advanced queries: CTEs, window functions | [ ] | |
-| 4.13 | Save real query results | [ ] | |
-| 4.14 | Phase 4 review gate | [ ] | |
+| 4.1 | Install / provision MySQL | [x] | MySQL **8.4.13 LTS** via `mysql@8.4`. Plain `mysql` would have given 26.10; 8.0 is EOL. No root password set — your call |
+| 4.2 | Design relational schema | [x] | 9 tables, InnoDB, utf8mb4. DECIMAL for money, CHAR(32) ids, CHAR(5) zips |
+| 4.3 | `sql/01_schema.sql` | [x] | 7 FKs, 3 composite PKs, 1 measured covering index |
+| 4.4 | `sql/02_import.sql` | [x] | LOAD DATA LOCAL INFILE. 3 real bugs found and fixed — see 4.15 |
+| 4.5 | Validate row counts vs Python | [x] | 569,776 rows, all 9 tables exact, **0 warnings** |
+| 4.6 | Module 1 queries (executive) | [x] | Q1–Q10, Q21–Q23 |
+| 4.7 | Module 2 queries (customer) | [x] | Q28–Q34 incl. RFM, cohorts |
+| 4.8 | Module 3 queries (product) | [x] | Q11–Q13, Q24 |
+| 4.9 | Module 4 queries (seller) | [x] | Q14–Q16 |
+| 4.10 | Module 5 queries (delivery) | [x] | Q17–Q20, Q27 |
+| 4.11 | Module 6 queries (satisfaction) | [x] | Q4, Q25, Q26 |
+| 4.12 | Advanced queries: CTEs, window functions | [x] | ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, NTILE, running totals, moving averages |
+| 4.13 | Save real query results | [x] | All 34 executed, 0 failures. Results in reports/sql_analysis_report.md |
+| 4.14 | Phase 4 review gate | [x] | **PASSED** — rebuilt from scratch, 61/61 validation checks |
+| 4.15 | Fix import bugs found during execution | [x] | (a) 2 review rows silently lost — MySQL's backslash escaping vs Python's RFC4180 quote-doubling → `ESCAPED BY ''` (b) 11 rows diverged on NULLs — PAD SPACE collation makes `' '=''` → `CHAR_LENGTH()=0` (c) geolocation truncation → DOUBLE |
+| 4.16 | Create 7 analytical views | [x] | Grains verified; `vw_order_summary` proven free of fan-out |
+| 4.17 | Performance check with EXPLAIN | [x] | 1 index added on evidence: 0.35s→0.21s, now a covering index |
+| 4.18 | `documentation/mysql_setup.md` | [x] | Install, credentials, local_infile, troubleshooting |
+| 4.19 | `documentation/mysql_schema.md` | [x] | ERD, design decisions, keys, views |
+| 4.20 | `documentation/sql_analysis_guide.md` | [x] | Run order, the 3 rules, concept map |
+| 4.21 | `reports/sql_analysis_report.md` | [x] | 9 business findings from executed queries |
 
 ---
 
@@ -248,7 +256,7 @@ None.
 
 | Item | Phase | Note |
 |---|---|---|
-| `reviews` has no natural single-column primary key | 4 | Use `(review_id, order_id)` composite, or a surrogate key. Decide when writing the schema |
+| ~~`reviews` primary key~~ | 4 | ✅ Resolved: composite `(review_id, order_id)`. Surrogate rejected — it would hide that review_id repeats |
 | City names are unnormalised (4,119 variants) | 3 | Geographic analysis is state-level until this is cleaned |
 | 23 orders show delivery before carrier handoff | 3 | Flag only; cause unknowable from the data |
 | Are delivery estimates deliberately padded? | 5 | Orders arrive ~11 days early on average. A finding, not a defect — needs Q19 to confirm |
@@ -256,5 +264,7 @@ None.
 | `documentation/architecture.md` | 3 | Deferred — the data flow diagram is more accurate once cleaning rules are final |
 | ~~Git repository not initialised~~ | 1 | ✅ Done — branch `main` |
 | MT-01 monthly revenue chart | 2 | 🔲 Manual, deferred by your request. Blocks nothing |
+| MySQL root has no password | 4 | Deliberate — fresh Homebrew default. `mysql_secure_installation` is your call |
+| Views take 2–3s | 4 | Fine here; Power BI should Import, not DirectQuery |
 | Cleaned data not in version control | 3 | 90 MB derived artifact; regenerates in ~2 min |
 | 2016-11 absent from the dataset entirely | 3 | New finding. Reinforces the 2017-01 window start |

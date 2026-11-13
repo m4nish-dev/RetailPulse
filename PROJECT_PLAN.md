@@ -201,8 +201,14 @@ Required SQL techniques: `GROUP BY` / `HAVING`, `INNER` and `LEFT JOIN`,
 aggregates, `CASE`, subqueries, CTEs, window functions
 (`ROW_NUMBER`, `RANK`, `LAG`, running totals), date functions.
 
-**Deliverables:** `sql/01_schema.sql`, `sql/02_data_load.sql`,
-`sql/03_business_analysis.sql`, `sql/04_advanced_analysis.sql`, validation log.
+**Deliverables:** ✅ 8 SQL files (`01_schema` → `08_validation`) · ✅ 34 executed
+queries · ✅ 7 views · ✅ `documentation/mysql_setup.md`, `mysql_schema.md`,
+`sql_analysis_guide.md` · ✅ `reports/sql_analysis_report.md`
+
+**Result: PASSED.** MySQL 8.4.13 LTS. 569,776 rows imported with zero warnings.
+**61/61 validation checks pass**; revenue reconciles with Python to the cent.
+Three real import bugs were found by execution and fixed — two of them would
+have silently corrupted data (2 lost review rows, 11 rows diverging on NULLs).
 
 ---
 
