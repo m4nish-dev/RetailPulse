@@ -269,7 +269,17 @@ Every insight documented in this exact shape:
 4. Business implication
 5. Recommended action
 
-**Deliverable:** `reports/business_insights.md`.
+**Deliverable:** ✅ [`reports/business_insights.md`](reports/business_insights.md)
+
+**Result: PASSED.** 14 insights, each in the five-part format. **All 38
+numeric claims were recomputed from MySQL during QA**, independently of the
+Phase 4 and 5 reports — 38/38 agreed. All 23 file references resolve; no
+contradictions; no causal claims from correlational evidence; no profit or
+margin figures anywhere.
+
+Phase 7 was completed ahead of Phase 6 because Power BI Desktop does not run
+on macOS and the dashboard phase is blocked on a Windows environment. The
+insights depend only on Phases 4–5, so the ordering costs nothing.
 
 ---
 

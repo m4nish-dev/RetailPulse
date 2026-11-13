@@ -3,10 +3,11 @@
 **Legend:** `[ ]` pending · `[~]` in progress · `[x]` done · `[!]` blocked
 
 **Last updated:** 2026-11-12
-**Current phase:** ✅ Phases 1–5 COMPLETE → ready for Phase 6 (Power BI)
-**Overall progress:** Phases 2–5 all PASSED. MySQL 8.4 database live (61/61
-checks). Phase 5 EDA complete: 15 charts, 29/29 cells clean, **15/15 metrics
-agree with MySQL**. 1 manual chart still deferred.
+**Current phase:** ✅ Phases 1–5 + 7 COMPLETE → Phase 6 (Power BI) blocked on Windows; Phase 8 next
+**Overall progress:** Phases 1–5 and 7 all PASSED. MySQL 8.4 live (61/61
+checks), EDA complete (15 charts, 15/15 vs MySQL), **14 business insights
+written with all 38 numeric claims re-verified against MySQL**. Phase 6 is
+blocked on a Windows environment. 1 manual chart still deferred.
 
 ---
 
@@ -155,10 +156,15 @@ agree with MySQL**. 1 manual chart still deferred.
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 7.1 | Draft 10-15 insights in the 5-part format | [ ] | |
-| 7.2 | Verify every number against source query | [ ] | |
-| 7.3 | Write `reports/business_insights.md` | [ ] | |
-| 7.4 | Phase 7 review gate | [ ] | |
+| 7.1 | Draft 10–15 insights in the 5-part format | [x] | **14 insights**, each with question / method / finding / implication / action |
+| 7.2 | Verify every number against source query | [x] | **38/38 claims re-verified against MySQL**, independently of earlier reports |
+| 7.3 | Write `reports/business_insights.md` | [x] | 850 lines: exec summary, 14 insights, top-5 priorities, 12 limitations |
+| 7.4 | Phase 7 review gate | [x] | **PASSED** — 38/38 claims, 0 broken refs, 0 contradictions |
+| 7.5 | QA: file references resolve | [x] | 23 references checked, all resolve |
+| 7.6 | QA: no causation claimed from correlation | [x] | 5 explicit caveats; no unqualified causal language |
+| 7.7 | QA: no profit/margin claims | [x] | None — dataset has no cost data |
+| 7.8 | QA: historical framing | [x] | Explicit "not current performance" banner at the top |
+| 7.9 | Resolve cross-document RFM count variance | [x] | NTILE vs qcut tie-breaking (~0.3%); disclosed in Insight 6, revenue shares identical |
 
 ---
 

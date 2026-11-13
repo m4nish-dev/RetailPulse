@@ -7,11 +7,12 @@ orders. Raw CSV files are cleaned in Python, modelled in MySQL, analysed with
 SQL and pandas, and delivered as a six-page interactive Power BI dashboard
 with evidence-backed business recommendations.
 
-> **Status:** 🚧 In development — **Phases 1–5 of 9 complete.**
+> **Status:** 🚧 In development — **Phases 1–5 and 7 of 9 complete.**
 > Dataset profiled · spreadsheet validation passed (17/17 KPIs) · data cleaned
 > (34/34 checks, 0 rows deleted) · MySQL 8.4 database built and validated
 > (61/61 checks, 34 queries, 7 views) · EDA complete (15 charts, 15/15 metrics
-> agree with MySQL). Next: Phase 6, Power BI.
+> agree with MySQL) · 14 business insights, all 38 claims re-verified.
+> Phase 6 (Power BI) is blocked on a Windows environment; Phase 8 is next.
 > This README is expanded into its final portfolio form in Phase 8.
 
 ---
@@ -200,7 +201,20 @@ facts the analysis must respect:
 
 ## Business recommendations
 
-_To be completed in Phase 7, each tied to a specific finding._
+Full detail in [`reports/business_insights.md`](reports/business_insights.md)
+— 14 evidence-backed insights. The top five strategic priorities:
+
+1. **Make "never miss the promised date" the operational goal.** Lateness
+   costs a full star within a week; earliness is worth nothing.
+2. **Build a first-to-second purchase programme** aimed at the 21,917
+   "Potential Loyalists" holding 33.9% of revenue — not a VIP tier for the
+   982 Champions holding 2.4%.
+3. **Make average order value an owned KPI.** It *fell* 13.4% while orders
+   grew 716%.
+4. **Treat geographic concentration as the top business risk** — 3 of 27
+   states hold 63.4% of revenue.
+5. **Report the 1-star rate, not just the 4.09 average**, which hides a
+   J-shaped distribution.
 
 ## Dashboard screenshots
 
