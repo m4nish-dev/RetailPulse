@@ -1,0 +1,38 @@
+# RetailPulse — Python dependencies
+#
+# Verified on macOS (Apple Silicon) with Python 3.14.3 on 2026-11-12.
+# All installed from prebuilt wheels — no compiler required.
+#
+#   python3.14 -m venv venv
+#   source venv/bin/activate
+#   pip install -r requirements.txt
+#
+# Versions below are the ones this project was actually built and tested
+# against. Phase 1 packages are pinned; later-phase packages are listed but
+# commented out until their phase, so a fresh install stays small and fast.
+
+# --- Core data manipulation ---
+pandas==3.1.1
+numpy==2.5.4
+
+# --- Visualisation ---
+matplotlib==3.11.2
+seaborn==0.13.2
+
+# --- Notebooks ---
+jupyterlab==4.6.6
+ipykernel==7.4.0
+nbformat==5.11.1
+nbconvert==7.17.2
+
+# --- Utilities ---
+tabulate==0.10.0
+python-dateutil==4.0.0
+
+# --- Phase 2: Excel / spreadsheet I/O (uncomment when Phase 2 starts) ---
+# openpyxl
+# xlsxwriter
+
+# --- Phase 4: MySQL connectivity (uncomment when Phase 4 starts) ---
+# mysql-connector-python
+# sqlalchemy

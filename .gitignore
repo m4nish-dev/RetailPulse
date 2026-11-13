@@ -1,0 +1,94 @@
+# =============================================================================
+#  RetailPulse — .gitignore
+#  Principle: commit everything needed to REPRODUCE the project; never commit
+#  data we do not own, anything regenerable, or anything secret.
+# =============================================================================
+
+# --- Raw dataset: licensed (CC BY-NC-SA 4.0), 120 MB, reproducible by download
+#     Download instructions: documentation/dataset_setup.md
+dataset/raw/*
+!dataset/raw/.gitkeep
+dataset/interim/*
+!dataset/interim/.gitkeep
+
+# Cleaned data IS committed (Phase 3 output, needed to rerun analysis).
+# Uncomment if any file approaches GitHub's 100 MB per-file limit.
+# dataset/cleaned/*
+# !dataset/cleaned/.gitkeep
+
+# --- Archives (the source zip, and anything re-downloadable) ---
+*.zip
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# --- Python ---
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.Python
+.python-version
+.pytest_cache/
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# --- Spreadsheet lock & temp files (Excel and LibreOffice both create these) ---
+~$*
+.~lock.*#
+.~lock.*
+*.xlk
+
+# --- Power BI temp / cache ---
+*.pbix.tmp
+.pbi/
+
+# --- Credentials: NEVER commit --------------------------------------------
+# Narrow patterns only. A blanket *.cfg would silently exclude legitimate
+# config files such as setup.cfg, which is worse than the risk it prevents.
+.env
+.env.*
+!.env.example
+kaggle.json
+credentials.json
+secrets.yml
+secrets.yaml
+config/secrets*
+*.pem
+*.key
+mysql.cnf
+.my.cnf
+
+# --- Logs & scratch output ---
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+scratch/
+tmp/
+
+# --- macOS ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# --- Windows (in case this repo is ever cloned there) ---
+Thumbs.db
+Desktop.ini
+
+# --- Editors / IDEs ---
+.vscode/
+.idea/
+*.sublime-workspace
+
+# --- Claude Code local settings (machine-specific permissions) ---
+.claude/settings.local.json

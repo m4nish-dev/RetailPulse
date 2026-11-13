@@ -1,0 +1,289 @@
+# RetailPulse — Project Plan
+
+**Project type:** E-Commerce Business Intelligence & Customer Analytics
+**Dataset:** Brazilian E-Commerce Public Dataset by Olist (Kaggle)
+**Owner:** Manish
+**Started:** 2026-11-12
+
+---
+
+## 1. Objective
+
+Turn raw, multi-table e-commerce transaction data into validated business
+insights and actionable recommendations, delivered through SQL analysis and
+interactive Power BI dashboards.
+
+The project answers questions a real business stakeholder would ask:
+
+- Is revenue growing, and where is it coming from?
+- Which customers are worth keeping, and which are slipping away?
+- Which products and categories carry the business?
+- Which sellers help or hurt the customer experience?
+- Are we delivering on time, and what does it cost us when we do not?
+- What drives customer satisfaction up or down?
+
+---
+
+## 2. Guiding rules
+
+These rules apply to every phase. They are what separate a credible analytics
+project from a tutorial.
+
+1. **No fabricated numbers.** Every figure in any document, dashboard, or
+   resume bullet must trace back to a query or notebook cell that produced it.
+2. **Inspect, never assume.** Column names, data types, and row counts are
+   confirmed by reading the actual files.
+3. **Validate after every transformation.** Row counts, key uniqueness, and
+   join coverage are checked and recorded before moving on.
+4. **State methodology.** Any derived metric (RFM scores, CLV proxy, on-time
+   definition) is documented with its exact formula and its assumptions.
+5. **Separate fact from estimate.** Historical customer value is a fact.
+   Lifetime value is a proxy estimate. They are never presented as the same thing.
+6. **No profit margins.** The dataset has no product cost data, so margin
+   cannot be computed. Revenue and freight cost only.
+7. **Phase gate.** A phase is not finished until its deliverables exist and
+   have been reviewed.
+
+---
+
+## 3. Technology stack
+
+| Layer | Tool | Role in this project |
+|---|---|---|
+| Exploration | Excel / LibreOffice Calc | First look, pivot tables, sanity checks |
+| Cleaning & analysis | Python 3, pandas, NumPy | Transformations, derived columns, validation |
+| Visual exploration | Matplotlib, Seaborn | Distributions, trends, correlations |
+| Notebooks | Jupyter Lab | Documented, reproducible analysis |
+| Database | MySQL 8 | Relational schema, analytical SQL |
+| Dashboards | Power BI Desktop | Six-page interactive BI layer |
+| Metrics | DAX | KPI measures, time intelligence |
+| Version control | Git + GitHub | History and public portfolio artefact |
+
+Deliberately excluded: machine learning (no genuine business problem requires
+it here), web frontends, cloud warehouses, orchestration tools. Scope is held
+to what a Data Analyst job description actually asks for.
+
+---
+
+## 4. Analytical modules
+
+| # | Module | Core questions |
+|---|---|---|
+| 1 | Executive Business Overview | Revenue, orders, customers, AOV, MoM/YoY growth, geography, top categories |
+| 2 | Customer Intelligence & Retention | New vs returning, repeat rate, frequency, RFM, CLV proxy, cohorts, retention |
+| 3 | Product & Category Intelligence | Best/worst sellers, category revenue, order frequency, contribution, monthly trends |
+| 4 | Seller Performance Analytics | Seller revenue, order volume, delivery speed, late rate, review scores, scorecard |
+| 5 | Order & Delivery Operations | Status mix, cancellations, delays, on-time rate, estimate vs actual, freight cost |
+| 6 | Customer Satisfaction & Reviews | Average rating, distribution, 1 vs 5 star, trends, rating by category, delay-vs-rating link |
+
+### Advanced features (built only after the underlying data is validated)
+
+1. RFM customer segmentation — Champions, Loyal, Potential Loyalists, At Risk, Lost
+2. Cohort analysis by first-purchase month
+3. Retention curves
+4. Seller performance scorecards (composite, weighted)
+5. Delivery performance analysis vs promised dates
+6. Month-over-month KPI comparison
+7. Power BI drill-through
+8. Geographic sales analysis by state and city
+9. Customer satisfaction driver analysis
+10. Evidence-backed business recommendations
+
+---
+
+## 5. Development phases
+
+### Phase 1 — Project Setup & Dataset Understanding
+**Goal:** Know exactly what data exists before writing any analysis.
+
+- [x] Inspect workspace and available tooling
+- [x] Create folder structure
+- [x] Create PROJECT_PLAN.md, README.md, TASK_TRACKER.md
+- [x] Download Olist dataset into `dataset/raw/` — 9/9 files
+- [x] Build Python environment (`venv`, Python 3.14.3)
+- [x] Inspect every CSV: row counts, columns, data types, null counts
+- [x] Map table relationships — 13 PK candidates, 7 FK relationships tested
+- [x] Write `documentation/data_dictionary.md` from the actual files
+- [x] Write `documentation/data_quality_report.md` — 17 issues logged
+- [x] Write `documentation/table_relationships.md`
+- [x] Write `documentation/business_questions.md` — 26 questions
+- [x] Write `documentation/kpi_definitions.md` — 25 KPIs
+- [ ] Write `documentation/architecture.md` — **deferred to Phase 3**, where the
+      data flow can be drawn against final cleaning rules rather than guessed
+
+**Deliverables:** ✅ folder structure · ✅ data dictionary · ✅ data quality
+report · ✅ relationship validation · ✅ business questions · ✅ KPI definitions ·
+⏭ architecture (Phase 3)
+
+### Key decisions locked in Phase 1
+
+Each is evidence-based and recorded with its justification:
+
+1. **Revenue** = `SUM(order_items.price)` — excludes freight, excludes
+   `canceled`/`unavailable`. Chosen over `payment_value` because only
+   `order_items` can be attributed to a product, category or seller.
+2. **Customers** are counted on `customer_unique_id` (96,096 people), never
+   `customer_id` (99,441 order-level ids).
+3. **Trend window** = 2017-01 → 2018-08. The four edge months hold 4, 1, 16 and
+   4 orders and would imply a collapse that did not happen.
+4. **YoY** is reported only as 2018 Jan–Aug vs 2017 Jan–Aug. 2016 has 329 orders.
+5. **AOV denominator** = 98,666 orders with line items, not all 99,441.
+6. **Delivery denominator** = 96,476 orders with an actual delivery date.
+7. **RFM frequency** is scored as a 1/3/5 ordinal, not quintiles — 96.88% of
+   customers have exactly one order, so quintiles are impossible.
+8. **CLV** is reported as historical value and labelled as such.
+9. **No row is ever deleted.** Exclusions are scoped per metric and documented.
+
+---
+
+### Phase 2 — Excel Data Exploration
+**Goal:** Build intuition for the data by hand before automating anything.
+This matters because Data Analyst interviews still test Excel, and because
+eyeballing raw rows catches problems code can hide.
+
+- [ ] Open the main CSVs in a spreadsheet tool
+- [ ] Count missing values per column
+- [ ] Look for duplicate IDs
+- [ ] Inspect distributions of price, freight, review score
+- [ ] Build pivot tables: revenue by month, orders by status, orders by state
+- [ ] Record headline metrics by hand to later verify the Python pipeline
+
+**Deliverable:** `reports/excel_exploration_report.md` plus the workbook in `excel/`.
+
+---
+
+### Phase 3 — Python Data Cleaning
+**Goal:** Produce trustworthy, analysis-ready tables.
+
+Phase 3 now has a concrete worklist: the 17 issues in
+`documentation/data_quality_report.md`, each with a decision already recorded.
+
+- [x] Set up virtual environment and install dependencies *(done in Phase 1)*
+- [ ] Load all CSVs, record shapes and dtypes
+- [ ] Decide and document a handling rule for every column with nulls
+- [ ] Detect and resolve duplicates
+- [ ] Convert date columns to real datetimes, IDs to strings, money to float
+- [ ] Verify referential integrity (do all foreign keys match a parent row?)
+- [ ] Build derived columns: order revenue, delivery days, delay days,
+      on-time flag, order month, English category name
+- [ ] Decide and document which order statuses count as revenue
+- [ ] Export cleaned tables to `dataset/cleaned/`
+- [ ] Validate: row counts before/after, no unexpected nulls, totals reconcile
+
+**Deliverables:** `notebooks/01_data_exploration.ipynb`,
+`notebooks/02_data_cleaning.ipynb`, cleaned CSVs, cleaning log.
+
+---
+
+### Phase 4 — MySQL Database Development
+**Goal:** Demonstrate relational modelling and real SQL fluency.
+
+- [ ] Install / provision MySQL
+- [ ] Design schema with correct data types, primary keys, foreign keys, indexes
+- [ ] Write `sql/01_schema.sql`
+- [ ] Load cleaned CSVs
+- [ ] Validate row counts against the Python output
+- [ ] Write 25-30 analytical queries, grouped by module
+- [ ] Save each query's actual result for the insights report
+
+Required SQL techniques: `GROUP BY` / `HAVING`, `INNER` and `LEFT JOIN`,
+aggregates, `CASE`, subqueries, CTEs, window functions
+(`ROW_NUMBER`, `RANK`, `LAG`, running totals), date functions.
+
+**Deliverables:** `sql/01_schema.sql`, `sql/02_data_load.sql`,
+`sql/03_business_analysis.sql`, `sql/04_advanced_analysis.sql`, validation log.
+
+---
+
+### Phase 5 — Exploratory Data Analysis
+**Goal:** Find the real story in the data.
+
+- [ ] Sales trends over time, seasonality, growth rates
+- [ ] Customer behaviour: order frequency, basket size, payment behaviour
+- [ ] Product and category performance
+- [ ] Seller distribution and concentration
+- [ ] Delivery performance and its drivers
+- [ ] Review score analysis
+- [ ] RFM segmentation with documented scoring method
+- [ ] Cohort and retention analysis
+- [ ] Correlation between delivery delay and review score
+
+**Deliverable:** `notebooks/03_exploratory_analysis.ipynb`,
+`notebooks/04_rfm_segmentation.ipynb`, `notebooks/05_cohort_retention.ipynb`,
+with findings written in plain English next to each chart.
+
+---
+
+### Phase 6 — Power BI Dashboards
+**Goal:** A BI layer a stakeholder could use without a tour guide.
+
+- [ ] Load cleaned data, build star-schema-style model with a date table
+- [ ] Shape in Power Query where needed
+- [ ] Write DAX measures for every KPI in `kpi_definitions.md`
+- [ ] Page 1 Executive Overview
+- [ ] Page 2 Customer Intelligence
+- [ ] Page 3 Product Analytics
+- [ ] Page 4 Seller Performance
+- [ ] Page 5 Order & Delivery Operations
+- [ ] Page 6 Customer Satisfaction
+- [ ] Add slicers, drill-through, tooltips, conditional formatting
+- [ ] Apply theme: dark charcoal background, white text, orange accent
+- [ ] Capture screenshots into `reports/dashboard_screenshots/`
+
+**Deliverables:** `powerbi/RetailPulse.pbix`, theme JSON, DAX measure
+documentation, screenshots.
+
+---
+
+### Phase 7 — Business Insights
+**Goal:** 10-15 insights, each defensible.
+
+Every insight documented in this exact shape:
+1. Business question
+2. Method (the SQL or Python that produced it)
+3. Actual result (real numbers)
+4. Business implication
+5. Recommended action
+
+**Deliverable:** `reports/business_insights.md`.
+
+---
+
+### Phase 8 — Final Documentation & GitHub
+- [ ] Professional README with screenshots and findings
+- [ ] Complete methodology document
+- [ ] Documented limitations and assumptions
+- [ ] Setup and reproduction instructions
+- [ ] Clean commit history, pushed to GitHub
+
+---
+
+### Phase 9 — Resume & Interview Preparation
+- [ ] ATS-friendly project description
+- [ ] 2-3 quantified resume bullets (real numbers only)
+- [ ] Architecture walkthrough script
+- [ ] SQL, Python, Power BI interview question banks from this project
+- [ ] Business case questions
+- [ ] Rationale for every analytical decision made
+
+---
+
+## 6. Known limitations to carry forward
+
+Stated up front so they are never presented as oversights:
+
+- Data covers roughly 2016-2018 and is historical, not live.
+- Customer identity: `customer_id` is per-order; `customer_unique_id` is the
+  real person. Repeat-purchase analysis must use `customer_unique_id`.
+- No product cost data, therefore no profit or margin analysis.
+- Review text is in Portuguese; sentiment analysis would need translation or a
+  multilingual model. Treated as optional.
+- Geography is Brazil only; findings are not globally generalisable.
+- **Measured 2026-11-12:** only **3.12%** of customers (2,997 of 96,096) ever
+  placed a second order. This bounds cohort, retention and CLV analysis, and
+  makes the RFM frequency dimension nearly degenerate. The honest framing of
+  that constraint is itself a finding, and is handled explicitly rather than
+  worked around.
+- **Measured 2026-11-12:** the dataset's edge months are near-empty and 2016
+  holds just 329 orders, so trend analysis is restricted to 2017-01 → 2018-08
+  and full-year YoY growth is not reported.
