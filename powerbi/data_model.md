@@ -169,7 +169,7 @@ Setting these once in the model means every visual inherits them.
 
 | Column | Format |
 |---|---|
-| `order_revenue`, `order_freight`, `historical_value`, `revenue` | Currency, **R$**, 2 dp, thousands separator |
+| `order_revenue`, `order_freight`, `historical_value`, `revenue` | Currency **BRL** (display symbol R$), 2 dp, thousands separator |
 | `delivery_days`, `delay_days` | Decimal, 1 dp |
 | `late_pct`, `on_time_pct` | Percentage, 1 dp |
 | `review_score_avg`, `avg_review_score` | Decimal, 2 dp |

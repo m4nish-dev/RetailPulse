@@ -264,7 +264,7 @@ A view stores no data — it re-runs its SQL each time, so it can never go stale
 | View | Grain | Purpose |
 |---|---|---|
 | `vw_order_summary` | one per **order** (99,441) | the workhorse. Items, payments and reviews pre-aggregated to order level, so no consumer can cause fan-out |
-| `vw_monthly_revenue` | one per **month** (25) | trend table with MoM growth, 3-month moving average, running total |
+| `vw_monthly_revenue` | one per **month** (25) | trend table with MoM growth, 3-month moving average, running total. ⚠ MoM and moving average span the 2016/2017 data gap (2017-01 MoM +1,101,719%); monthly AOV includes 8 item-less orders. Use the DAX measures for those; see `reports/phase6_documentation_audit.md` |
 | `vw_customer_summary` | one per **person** (96,096) | retention, RFM and value analysis. Grain is `customer_unique_id` |
 | `vw_category_performance` | **category × month** | category trends over time |
 | `vw_seller_performance` | one per **seller** (3,095) | seller scorecard |

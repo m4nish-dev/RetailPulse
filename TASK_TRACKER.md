@@ -2,13 +2,15 @@
 
 **Legend:** `[ ]` pending · `[~]` in progress · `[x]` done · `[!]` blocked
 
-**Last updated:** 2026-11-12
-**Current phase:** ✅ Phases 1–5 + 7 COMPLETE · 🚧 Phase 6 PREPARED but BLOCKED (needs Windows) → Phase 8 next
-**Overall progress:** Phases 1–5 and 7 PASSED. Phase 6 assets built and
-validated as far as macOS allows (**37/37 DAX measures logic-verified**,
-theme validated, model + 6-page spec written) but **no .pbix exists — Power
-BI Desktop requires Windows**. Insight 14's open question is now resolved.
-1 manual chart still deferred.
+**Last updated:** 2026-11-20
+**Current phase:** ✅ Phases 1–5 + 7 COMPLETE · ✅ corrective fix phases complete (see below) · 🚧 Power BI dashboard PREPARED but NOT BUILT (needs Windows)
+**Overall progress:** All analysis is complete and validated by one command
+(`scripts/run_all_validations.py`: 12 PASS, 0 FAIL). Power BI assets are
+built and logic-validated as far as macOS allows (**84 DAX measures, 230/230
+checks**; 9 analytical sources, 90/90), but **no .pbix exists**. Outstanding
+manual work: MT-01 Excel chart, the Power BI build and screenshots, the final
+GitHub push. Live checklist: `documentation/project_completion_checklist.md`.
+Rows below record each phase as it was completed; superseded figures are marked.
 
 ---
 
@@ -139,12 +141,12 @@ BI Desktop requires Windows**. Insight 14's open question is now resolved.
 | 6.1 | Install Power BI Desktop | [!] | **BLOCKED.** Environment checked 2026-11-13: no Power BI, Parallels, VMware, UTM, VirtualBox, CrossOver, wine, Docker or QEMU. macOS cannot run Power BI Desktop |
 | 6.1a | Export validated views for Power BI | [x] | `scripts/export_powerbi_data.py` — 11 CSVs + generated dim_date, 335,797 rows |
 | 6.1b | Build + validate Power BI theme | [x] | `powerbi/RetailPulse_Theme.json` — valid JSON, palette passes CVD checks on dark surface |
-| 6.1c | Write + verify 37 DAX measures | [x] | `powerbi/dax_measures.md`; **37/37 logic verified** via `scripts/validate_dax_logic.py`. Caught 1 fabricated expected value |
+| 6.1c | Write + verify 37 DAX measures | [x] | `powerbi/dax_measures.md`; **37/37 logic verified** via `scripts/validate_dax_logic.py`. Caught 1 fabricated expected value. *Superseded by fix-phase F4: 84 measures, 15 corrected, 230/230 checks* |
 | 6.1d | Specify data model | [x] | `powerbi/data_model.md` — 3 relationships, cardinality, Import rationale, 3 aggregate tables deliberately unrelated |
 | 6.1e | Specify all 6 dashboard pages | [x] | `powerbi/dashboard_specification.md` — visual by visual, with mandatory caveat captions |
 | 6.2 | Load data, build model + date table | [!] | Blocked — needs Windows. Spec ready in `powerbi/data_model.md` |
 | 6.3 | Power Query transformations | [!] | Blocked. Views are pre-shaped, so minimal transformation needed |
-| 6.4 | DAX measures | [~] | Written and logic-verified (37/37). **Not executed** — needs Power BI |
+| 6.4 | DAX measures | [~] | Written and logic-verified (84 measures, 230/230 after the audit). **Not executed** — needs Power BI |
 | 6.5 | Page 1 Executive Overview | [!] | Blocked — fully specified |
 | 6.6 | Page 2 Customer Intelligence | [!] | Blocked — fully specified |
 | 6.7 | Page 3 Product Analytics | [!] | Blocked — fully specified |
@@ -170,7 +172,21 @@ BI Desktop requires Windows**. Insight 14's open question is now resolved.
 | 7.6 | QA: no causation claimed from correlation | [x] | 5 explicit caveats; no unqualified causal language |
 | 7.7 | QA: no profit/margin claims | [x] | None — dataset has no cost data |
 | 7.8 | QA: historical framing | [x] | Explicit "not current performance" banner at the top |
-| 7.9 | Resolve cross-document RFM count variance | [x] | NTILE vs qcut tie-breaking (~0.3%); disclosed in Insight 6, revenue shares identical |
+| 7.9 | Resolve cross-document RFM count variance | [x] | NTILE vs qcut tie-breaking (~0.3%); disclosed in Insight 6. *Fully resolved in F5: tie-consistent scoring everywhere* |
+
+---
+
+## Corrective fix phases (2026-11-20, after the final project audit)
+
+| # | Task | Status | Notes |
+|---|---|---|---|
+| F1 | Audit P0 fixes | [x] | requirements, workbook COUNTIFS, like-for-like AOV, CMGR, notebook narrative |
+| F2 | Data-quality investigation | [x] | Q18 carrier-before-approval (1,359), Q19 reviews before delivery (4,795); flags added, 0 rows deleted; Insight 9 revised; register 19 issues |
+| F3 | Power BI analytical sources | [x] | 6 sources + `dim_category` (later + `seller_scorecard`); `sql/09`, validated 90/90 |
+| F4 | DAX audit | [x] | 49 audited, 15 corrected, 35 added; validator rewritten, 230/230; Insight 14 revised |
+| F5 | Consistency cleanup | [x] | RFM, cohort and category methods aligned across SQL, notebook 03, reports and sources |
+| F6 | Security & reproducibility | [x] | read-only `retailpulse_app`, `.env`, `scripts/rp_db.py`, `scripts/run_all_validations.py` |
+| F7 | Documentation audit | [x] | README rewritten, inconsistencies corrected, B3 chart clarified; `reports/phase6_documentation_audit.md` |
 
 ---
 
@@ -178,13 +194,13 @@ BI Desktop requires Windows**. Insight 14's open question is now resolved.
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 8.1 | Expand README to portfolio standard | [ ] | |
-| 8.2 | Complete `methodology.md` | [ ] | |
-| 8.3 | Write `limitations.md` | [ ] | |
-| 8.4 | Setup / reproduction instructions | [ ] | |
-| 8.5 | Embed dashboard screenshots | [ ] | |
-| 8.6 | Push to GitHub | [ ] | |
-| 8.7 | Phase 8 review gate | [ ] | |
+| 8.1 | Expand README to portfolio standard | [x] | Rewritten 2026-11-20 (F7) |
+| 8.2 | Methodology documentation | [x] | Covered by `kpi_definitions.md`, `cleaning_decisions.md` and the reports; no separate `methodology.md` |
+| 8.3 | Limitations | [x] | README, `business_insights.md` and `kpi_definitions.md`; no separate `limitations.md` |
+| 8.4 | Setup / reproduction instructions | [x] | README, `mysql_setup.md`, `.env.example`, validation runner |
+| 8.5 | Embed dashboard screenshots | [!] | Waits for the Power BI build (Windows) |
+| 8.6 | Push to GitHub | [~] | Pushed through F6 (commit b6eb1a6); final push pending your instruction |
+| 8.7 | Phase 8 review gate | [ ] | After screenshots and final push |
 
 ---
 
@@ -279,7 +295,8 @@ None.
 | `documentation/architecture.md` | 3 | Deferred — the data flow diagram is more accurate once cleaning rules are final |
 | ~~Git repository not initialised~~ | 1 | ✅ Done — branch `main` |
 | MT-01 monthly revenue chart | 2 | 🔲 Manual, deferred by your request. Blocks nothing |
-| MySQL root has no password | 4 | Deliberate — fresh Homebrew default. `mysql_secure_installation` is your call |
+| MySQL root has no password | 4 | Deliberate — fresh Homebrew default. Application code no longer uses root (F6); `mysql_secure_installation` is your call |
+| `vw_monthly_revenue` MoM / moving average across the 2016/2017 gap; monthly AOV includes 8 item-less orders | F7 | Documented, fix proposed in `reports/phase6_documentation_audit.md`; needs an admin to apply. No reported figure or DAX measure uses these columns |
 | Views take 2–3s | 4 | Fine here; Power BI should Import, not DirectQuery |
 | **Power BI needs Windows** | 6 | **HARD BLOCKER — Phase 6 cannot be completed on this machine.** Verified absent: Power BI, Parallels, VMware, UTM, VirtualBox, CrossOver, wine, Docker, QEMU. All non-Windows assets are built and validated |
 | ~~Insight 14: product vs delivery~~ | 7 | ✅ **Resolved 2026-11-13.** Category-specific: `bed_bath_table` and `furniture_decor` keep their full deficit on on-time orders (product); `watches_gifts` and `electronics` lose theirs entirely (delivery) |

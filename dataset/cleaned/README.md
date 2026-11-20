@@ -33,16 +33,16 @@ ls -lh dataset/cleaned/
 
 The notebook asserts its own results: if any row count, key, relationship or
 revenue total fails to reconcile, it raises an error rather than writing a
-quietly wrong file. A clean run means all 34 validation checks passed.
+quietly wrong file. A clean run means all 46 validation checks passed.
 
 ## What gets produced
 
 | File | Rows | Grain |
 |---|---|---|
-| `orders_clean.csv` | 99,441 | one row per order (+23 derived columns) |
+| `orders_clean.csv` | 99,441 | one row per order (38 columns: 8 original + 30 derived or joined) |
 | `order_items_clean.csv` | 112,650 | one row per product line |
 | `order_payments_clean.csv` | 103,886 | one row per payment |
-| `order_reviews_clean.csv` | 99,224 | one row per review record |
+| `order_reviews_clean.csv` | 99,224 | one row per review record (+ `review_before_delivery` flag) |
 | `customers_clean.csv` | 99,441 | one row per order-level customer id |
 | `products_clean.csv` | 32,951 | one row per product |
 | `sellers_clean.csv` | 3,095 | one row per seller |

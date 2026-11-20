@@ -1,7 +1,7 @@
 # Phase 5 — Exploratory Data Analysis Report
 
 **Date:** 2026-11-13
-**Notebook:** `notebooks/03_exploratory_data_analysis.ipynb` (56 cells, 29 code — executes end to end, 0 errors)
+**Notebook:** `notebooks/03_exploratory_data_analysis.ipynb` (57 cells, 30 code — executes end to end, 0 errors; 56 / 29 before the 2026-11-20 follow-up cell)
 **Charts:** 15, saved to [`reports/eda_charts/`](eda_charts/)
 **Validation:** ✅ **15/15 metrics agree with MySQL**
 **Status:** ✅ **PASSED**

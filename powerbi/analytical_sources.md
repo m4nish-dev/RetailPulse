@@ -79,7 +79,7 @@ are kept with `rfm_segment = 'Not scored'` so the table relates 1:1 to
 | `last_eligible_purchase_date` | date | last revenue-eligible order with items (basis of R); empty if not scored |
 | `recency_days` | integer | days from the dataset's last purchase (2018-10-17) to `last_eligible_purchase_date` |
 | `frequency` | integer | eligible orders with items (0 if not scored) |
-| `monetary_value` | decimal (R$) | eligible revenue (= `vw_customer_summary.historical_value`) |
+| `monetary_value` | decimal (BRL) | eligible revenue (= `vw_customer_summary.historical_value`) |
 | `r_score`, `m_score` | integer 1–5 | quintile scores (5 = most recent / highest spend) |
 | `f_score` | integer 1, 3, 5 | **ordinal**: 1 order → 1, 2 → 3, 3+ → 5 |
 | `rfm_code` | text | e.g. `414` |
@@ -178,9 +178,9 @@ review join, so revenue cannot fan out.
 | `category` | text | English category (`unknown` for the 610 uncategorised, Q04) → `dim_category` |
 | `order_count` | integer | distinct eligible orders containing the product |
 | `units_sold` | integer | eligible item rows |
-| `product_revenue` | decimal (R$) | eligible `SUM(price)` |
+| `product_revenue` | decimal (BRL) | eligible `SUM(price)` |
 | `avg_item_price` | decimal | eligible `AVG(price)`; empty if never sold on an eligible order |
-| `freight_value` | decimal (R$) | eligible `SUM(freight_value)`: freight **charged to the customer** |
+| `freight_value` | decimal (BRL) | eligible `SUM(freight_value)`: freight **charged to the customer** |
 | `avg_freight_value` | decimal | eligible `AVG(freight_value)` |
 | `seller_count` | integer | distinct sellers of the product on eligible orders |
 | `first_sale_date`, `last_sale_date` | date | eligible orders only |
@@ -205,8 +205,8 @@ category", "categories this seller sells").
 | `category` | text | → `dim_category` | key |
 | `order_count` | integer | distinct eligible orders with this seller's items in this category | **No** |
 | `item_count` | integer | eligible item rows | Yes |
-| `product_revenue` | decimal (R$) | eligible `SUM(price)` | Yes |
-| `freight_value` | decimal (R$) | eligible `SUM(freight_value)` | Yes |
+| `product_revenue` | decimal (BRL) | eligible `SUM(price)` | Yes |
+| `freight_value` | decimal (BRL) | eligible `SUM(freight_value)` | Yes |
 | `orders_shared_with_other_sellers` | integer | of `order_count`, orders that also contain another seller | No |
 | `delivery_measurable_orders` | integer | of `order_count`, orders with a real delivery date | No |
 | `avg_delivery_days` | decimal | purchase → delivery, measurable orders | — |

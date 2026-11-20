@@ -120,8 +120,11 @@ the person, go `orders → customers → customer_unique_id`.
 ### `order_items` → `orders` · one-to-many, 775 childless parents
 **775 orders have no line items.** By status: `unavailable` 603, `canceled` 164,
 `created` 5, `invoiced` 2, `shipped` 1. Logically correct — these orders never
-completed. **Consequence:** revenue and AOV must use the 98,666 orders that have
-items, not all 99,441. Using the wrong denominator understates AOV by ~0.8%.
+completed. **Consequence:** AOV must not divide by all 99,441 orders. The
+validated denominator (`kpi_definitions.md` KPI 4) is **98,199
+revenue-eligible orders that have items**. 98,666 counts orders with items of
+every status, including canceled and unavailable ones whose revenue is
+excluded from the numerator. *(Corrected 2026-11-20; the Phase 1 text said 98,666.)*
 
 ### `payments` → `orders` · one-to-many, 1 childless parent
 One order has no payment record. An order can have up to 29 payment rows
@@ -177,7 +180,8 @@ key will be declared, and no KPI depends on it.
    orders and 13 products respectively.
 5. **Revenue lives in `order_items`, not `payments`** — only `order_items` can
    be attributed to a product, category and seller.
-6. **AOV denominator = 98,666 orders with items**, not 99,441.
+6. **AOV denominator = 98,199 revenue-eligible orders with items**, not 99,441
+   (and not 98,666, which includes canceled/unavailable orders; corrected 2026-11-20).
 7. In Power BI, model this as a **star schema**: `order_items` as the central
    fact, with `orders`, `products`, `sellers` and `customers` as dimensions, and
    a dedicated date table.

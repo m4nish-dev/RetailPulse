@@ -5,6 +5,17 @@
 **Owner:** Manish
 **Started:** 2026-11-12
 
+> **Current status (2026-11-20).** Phases 1–5 and 7 are complete. The original
+> Phase 6 (Power BI) is **prepared but not built**: data sources, data model,
+> 84 logic-validated DAX measures and the page specification exist; the
+> `.pbix` needs Windows. After the final audit, corrective work was done in
+> addition to this plan: metric fixes, a data-quality investigation (issues
+> Q18–Q19), Power BI analytical sources, a DAX audit, a consistency cleanup,
+> security hardening (read-only MySQL account, `.env`) and a documentation
+> audit. Phase-by-phase records below are kept as written at the time; figures
+> superseded since are marked. Live checklist:
+> `documentation/project_completion_checklist.md`.
+
 ---
 
 ## 1. Objective
@@ -52,7 +63,7 @@ project from a tutorial.
 |---|---|---|
 | Exploration | Excel / LibreOffice Calc | First look, pivot tables, sanity checks |
 | Cleaning & analysis | Python 3, pandas, NumPy | Transformations, derived columns, validation |
-| Visual exploration | Matplotlib, Seaborn | Distributions, trends, correlations |
+| Visual exploration | Matplotlib (Seaborn planned, not used) | Distributions, trends, correlations |
 | Notebooks | Jupyter Lab | Documented, reproducible analysis |
 | Database | MySQL 8 | Relational schema, analytical SQL |
 | Dashboards | Power BI Desktop | Six-page interactive BI layer |
@@ -127,7 +138,9 @@ Each is evidence-based and recorded with its justification:
 3. **Trend window** = 2017-01 → 2018-08. The four edge months hold 4, 1, 16 and
    4 orders and would imply a collapse that did not happen.
 4. **YoY** is reported only as 2018 Jan–Aug vs 2017 Jan–Aug. 2016 has 329 orders.
-5. **AOV denominator** = 98,666 orders with line items, not all 99,441.
+5. **AOV denominator** = 98,199 revenue-eligible orders with line items, not
+   all 99,441. *(Corrected 2026-11-20: the original text said 98,666, which
+   includes canceled and unavailable orders.)*
 6. **Delivery denominator** = 96,476 orders with an actual delivery date.
 7. **RFM frequency** is scored as a 1/3/5 ordinal, not quintiles — 96.88% of
    customers have exactly one order, so quintiles are impossible.
@@ -233,8 +246,11 @@ separate files — splitting them would have duplicated the shared customer-grai
 setup for no benefit.
 
 **Result: PASSED.** 29/29 cells, 0 errors, **15/15 metrics agree with MySQL**.
-Headline finding: an order 1–7 days late loses 1.02 stars and quadruples
-1-star reviews; 8–15 days late collapses it to 1.73 stars with 68.5% one-star.
+Headline finding at the time: an order 1–7 days late loses 1.02 stars and
+quadruples 1-star reviews; 8–15 days late averages 1.73 stars. *(Superseded
+2026-11-20: much of that drop comes from 4,795 reviews answered before the
+parcel arrived; after arrival only, 1–7 days late averages 3.86 and 8–15 days
+late 3.66. See Insight 9.)*
 
 ---
 
@@ -259,10 +275,11 @@ Headline finding: an order 1–7 days late loses 1.02 stars and quadruples
 | Deliverable | Status |
 |---|---|
 | `powerbi/RetailPulse_Theme.json` | ✅ Built and validated (JSON + CVD checks) |
-| `powerbi/dax_measures.md` (37 measures) | ✅ Logic verified 37/37 against MySQL |
+| `powerbi/dax_measures.md` (37 measures at the time; **84** after the 2026-11-20 audit) | ✅ Logic verified 37/37 then; now **230/230** checks, 15 original measures corrected |
 | `powerbi/data_model.md` | ✅ Complete |
 | `powerbi/dashboard_specification.md` | ✅ All 6 pages specified |
 | `powerbi/data/` (11 CSV extracts) | ✅ Generated, 335,797 rows |
+| `powerbi/data/analytical/` (9 sources, added 2026-11-20) | ✅ Validated 90/90 |
 | **`powerbi/RetailPulse.pbix`** | ❌ **Does not exist** |
 | Dashboard screenshots | ❌ Nothing to capture |
 
@@ -272,8 +289,9 @@ No `.pbix` was fabricated and no substitute tool was used.
 
 **Verified as far as macOS permits:** every measure's filter context, grain,
 denominator and arithmetic were checked by expressing them as SQL over the
-same views Power BI will import — 37/37 agree. DAX *execution* remains
-untested.
+same views Power BI will import — 37/37 agree. *(Since superseded by the
+2026-11-20 DAX audit: 84 measures, 230/230 checks against independent SQL.)*
+DAX *execution* remains untested.
 
 **To finish:** one Windows environment. See `powerbi/README.md`.
 
@@ -304,11 +322,11 @@ insights depend only on Phases 4–5, so the ordering costs nothing.
 ---
 
 ### Phase 8 — Final Documentation & GitHub
-- [ ] Professional README with screenshots and findings
-- [ ] Complete methodology document
-- [ ] Documented limitations and assumptions
-- [ ] Setup and reproduction instructions
-- [ ] Clean commit history, pushed to GitHub
+- [~] Professional README with findings — **done 2026-11-20**; screenshots wait for the dashboard
+- [x] Methodology documented (`kpi_definitions.md`, `cleaning_decisions.md`, reports)
+- [x] Documented limitations and assumptions
+- [x] Setup and reproduction instructions, one-command validation
+- [~] Clean commit history, pushed to GitHub — pushed through Phase 5; final push pending
 
 ---
 

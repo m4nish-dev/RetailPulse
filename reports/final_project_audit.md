@@ -1,5 +1,12 @@
 # RetailPulse — Final Project Audit
 
+> **Historical snapshot (2026-11-20, before the fix phases).** This audit is
+> preserved as written. Its findings have since been addressed or explicitly
+> carried forward; the current state, and what remains outstanding, are in
+> [`phase6_documentation_audit.md`](phase6_documentation_audit.md) and
+> [`../documentation/project_completion_checklist.md`](../documentation/project_completion_checklist.md).
+
+
 **Audit date:** 2026-11-20
 **Repository state:** `main` @ `19fff0f`, in sync with `origin/main`, clean working tree
 **Method:** read-only inspection plus *execution* of every existing validator, and an

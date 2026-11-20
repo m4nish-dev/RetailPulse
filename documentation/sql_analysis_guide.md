@@ -131,7 +131,7 @@ them.
 | View | Rows | Grain |
 |---|---|---|
 | `vw_order_summary` | 99,441 | order — **the workhorse** |
-| `vw_monthly_revenue` | 25 | month, with MoM growth and moving average |
+| `vw_monthly_revenue` | 25 | month, with MoM growth and moving average (⚠ unreliable for 2016-12 to 2017-02; see `reports/phase6_documentation_audit.md`) |
 | `vw_customer_summary` | 96,096 | **person**, not order |
 | `vw_category_performance` | 1,282 | category × month |
 | `vw_seller_performance` | 3,053 | seller |

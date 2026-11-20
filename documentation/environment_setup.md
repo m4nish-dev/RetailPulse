@@ -14,7 +14,7 @@ for the tools that are missing. Nothing here blocks the project.
 | Python 3.9 (system, `/usr/bin/python3`) | ✅ Installed | Do not use |
 | pip 26.0 | ✅ Installed | Phase 3 |
 | Git 2.53.0 | ✅ Installed | Phase 1 |
-| pandas / NumPy / Matplotlib / Seaborn | ❌ Missing | Phase 3 |
+| pandas / NumPy / Matplotlib | ❌ Missing at the time (Seaborn was planned but never used) | Phase 3 |
 | Jupyter Lab | ❌ Missing | Phase 3 |
 | MySQL | ❌ Missing | Phase 4 |
 | Microsoft Excel | ❌ Missing (Numbers.app present) | Phase 2 |
@@ -63,6 +63,13 @@ pip install -r requirements.txt
 ```
 
 This decision is logged in the tracker under Open Decisions.
+
+> **Outcome (verified 2026-11-20).** Python 3.14.3 worked; every pinned package
+> installs from a prebuilt wheel. The 3.10 fallback above **no longer applies**:
+> the pinned versions require **Python ≥ 3.12** (`numpy==2.5.4` requires
+> ≥ 3.12; `pandas==3.1.1` and `matplotlib==3.11.2` ≥ 3.11). Use 3.14 (tested)
+> or at least 3.12. A fresh `venv` + `pip install -r requirements.txt` on 3.14
+> was re-tested in Phase 5.
 
 ---
 

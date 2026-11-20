@@ -144,7 +144,7 @@ baseline).
 - [ ] Drill-through works on Pages 3 and 4
 - [ ] Trend visuals are filtered to the stable window and show no cliff at
       either end
-- [ ] Currency displays as R$ with 2 dp everywhere
+- [ ] Currency (BRL) displays with the R$ symbol and 2 dp everywhere
 - [ ] No visual is blank or shows an error
 - [ ] All mandatory captions are present and readable
 - [ ] Refresh completes with no warnings
