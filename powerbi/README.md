@@ -26,17 +26,19 @@
 | Asset | Status | How it was verified |
 |---|---|---|
 | `RetailPulse_Theme.json` | ✅ Complete | Parsed as JSON; all 8 hex values well-formed; palette passes colour-vision checks on the dark surface (worst adjacent pair ΔE 8.4 protan, all ≥ 3:1 contrast) |
-| `dax_measures.md` — 37 measures | ✅ Logic verified | `scripts/validate_dax_logic.py` — **37/37 PASS** against MySQL |
+| `dax_measures.md` — 84 measures | ✅ Logic verified, audited 2026-11-20 | `scripts/validate_dax_logic.py` — **230/230 checks PASS**, every measure covered; 15 of the original 49 corrected. See [`dax_measure_audit.md`](dax_measure_audit.md) |
 | `data_model.md` | ✅ Complete | Relationships and cardinality derived from Phase 1's validated key analysis |
 | `dashboard_specification.md` | ✅ Complete | Six pages specified visual by visual, every KPI naming a verified measure |
-| `data/` — 11 CSV extracts | ✅ Generated | 335,797 rows, 48.3 MB, exported from the validated views |
+| `data/` — 11 CSV extracts | ✅ Regenerated 2026-11-20 | 335,797 rows, 49 MB, exported from the validated views; now include the Phase 2 flags (`carrier_before_approval`, `stage_timing_valid`, `review_before_delivery`). All other values byte-identical to the 2026-11-13 export |
+| `data/analytical/` — 6 analytical sources + `dim_category` + `seller_scorecard` | ✅ Built and validated 2026-11-20 | RFM, cohort matrix, product and seller × category drill-through, delivery stages, category satisfaction, seller counts. `scripts/validate_powerbi_sources.py` **90/90 PASS** — see [`analytical_sources.md`](analytical_sources.md) |
 | **The `.pbix` dashboard** | ❌ **Not built** | **Requires Windows** |
 
-### ⚠ What "37/37 PASS" does and does not mean
+### ⚠ What "230/230 PASS" does and does not mean
 
-`scripts/validate_dax_logic.py` expresses each measure as equivalent SQL over
-the same views Power BI will import, and compares against values verified in
-Phases 3–5.
+`scripts/validate_dax_logic.py` emulates each measure's logic in pandas over
+the CSVs Power BI imports, including its filter behaviour, and compares it in
+several filter contexts with an independent SQL answer from the base tables.
+No expected value is typed in.
 
 - ✅ **Verified:** filter context, grain, denominator, arithmetic — whether
   each measure asks the right question of the right rows.
@@ -90,12 +92,18 @@ exposing the port.** For a one-off build, the CSVs avoid the issue entirely.
 
 If `powerbi/data/` is absent, regenerate it:
 ```bash
-./venv/bin/python scripts/export_powerbi_data.py
+./venv/bin/python scripts/export_powerbi_data.py      # the 7 views + dim_date
+./venv/bin/python scripts/export_powerbi_sources.py   # data/analytical/ (read-only SQL)
+./venv/bin/python scripts/validate_powerbi_sources.py # 90 checks
+./venv/bin/python scripts/validate_dax_logic.py       # 230 checks; writes dax_validation_results.csv
+./venv/bin/python scripts/build_dax_audit.py          # regenerates dax_measure_audit.md
 ```
 
 ### 2. Build the model
-Follow [`data_model.md`](data_model.md): load the 7 views + `dim_date`,
-create the 3 relationships, **mark `dim_date` as the date table**, set
+Follow [`data_model.md`](data_model.md): load the 7 views + `dim_date` and the
+analytical sources in `data/analytical/`, create the relationships (3
+original + 7 for the analytical sources, set **one-to-many, single
+direction**), **mark `dim_date` as the date table**, set
 column formats, and set "Don't summarize" on every ID column.
 
 ### 3. Apply the theme
@@ -164,8 +172,12 @@ logic, the page specifications — is complete and verified.
 | File | Contents |
 |---|---|
 | `RetailPulse_Theme.json` | Power BI theme: charcoal / white / orange, CVD-validated |
-| `dax_measures.md` | 37 measures, logic verified 37/37 |
+| `dax_measures.md` | 84 measures, logic verified (230/230 checks) |
+| `dax_measure_audit.md` | Generated audit: every measure, its status, what changed and the evidence |
+| `dax_validation_results.csv` | Every validation check with model value, expected value and context |
 | `data_model.md` | Tables, relationships, cardinality, formatting, Import rationale |
 | `dashboard_specification.md` | Six pages, visual by visual, with mandatory captions |
-| `data/` | 11 CSV extracts + generated `dim_date` (gitignored — 48 MB, regenerable) |
+| `data/` | 11 CSV extracts + generated `dim_date` (gitignored — 49 MB, regenerable) |
+| `data/analytical/` | 8 analytical source CSVs + `_manifest.csv` (gitignored — 23 MB, regenerable) |
+| `analytical_sources.md` | Grain, columns, logic, relationships, limitations and validation of the analytical sources |
 | `RetailPulse.pbix` | **Does not exist yet** |

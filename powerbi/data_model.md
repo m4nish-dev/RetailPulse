@@ -47,6 +47,23 @@ than relying on the author to remember.
 slicer lookups but are optional — the views already carry the descriptive
 columns the dashboards need.
 
+### Analytical sources (added 2026-11-20)
+
+Built by `sql/09_powerbi_sources.sql` → `data/analytical/`; full definitions in
+[`analytical_sources.md`](analytical_sources.md).
+
+| Table | Rows | Grain | Role |
+|---|---|---|---|
+| `rfm_customer_segments` | 96,096 | one per person | Page 2 RFM |
+| `cohort_retention` | 400 | cohort month × months since acquisition | Page 2 heatmap (unrelated) |
+| `product_performance` | 32,951 | one per product | Page 3 drill-through |
+| `seller_category_performance` | 6,545 | seller × category | Page 3/4 drill-through |
+| `delivery_stage_orders` | 95,088 | one per order with valid stage timing | Page 5 |
+| `delivery_stage_summary` | 4 | one per stage + Total | Page 5 stacked bar (unrelated) |
+| `category_satisfaction` | 74 | one per category | Page 6 |
+| `dim_category` | 74 | one per category | shared category key |
+| `seller_scorecard` | 3,053 | one per seller | additive counts behind the weighted seller measures (added in the DAX audit) |
+
 ---
 
 ## 3. Relationships
@@ -56,6 +73,30 @@ columns the dashboards need.
 | `dim_date` | `vw_order_summary` | `Date` → `order_date` | **1 : many** | Single | ✅ |
 | `vw_order_summary` | `vw_review_summary` | `order_id` | **1 : many** | Single | ✅ |
 | `vw_customer_summary` | `vw_order_summary` | `customer_unique_id` | **1 : many** | Single | ✅ |
+
+**Added for the analytical sources (2026-11-20):**
+
+| From | To | Column | Cardinality | Cross-filter |
+|---|---|---|---|---|
+| `dim_category` | `product_performance` | `category` | 1 : many | Single |
+| `dim_category` | `seller_category_performance` | `category` | 1 : many | Single |
+| `dim_category` | `category_satisfaction` | `category` | 1 : many (set manually; unique in practice) | Single |
+| `dim_category` | `vw_category_performance` | `category` | 1 : many | Single |
+| `vw_customer_summary` | `rfm_customer_segments` | `customer_unique_id` | 1 : many (set manually; unique in practice) | Single |
+| `vw_order_summary` | `delivery_stage_orders` | `order_id` | 1 : many (set manually; 95,088 of 99,441) | Single |
+| `vw_seller_performance` | `seller_scorecard` | `seller_id` | 1 : many (set manually; unique in practice) | Single |
+
+> **Set these to one-to-many, single direction, by hand.** Power BI detects
+> them as one-to-one because both key columns are unique, and **a one-to-one
+> relationship always cross-filters in both directions**. Both directions would
+> let, for example, a `delivery_stage_orders` field on a visual silently restrict
+> the order fact to the 95,088 stage-valid orders. The DAX in `dax_measures.md`
+> assumes single direction, from the parent table to the analytical table.
+
+`cohort_retention` and `delivery_stage_summary` are pre-aggregated and stay
+unrelated. Relating `dim_category` to `vw_category_performance` updates the
+earlier "not related" rule below: a one-sided dimension filter cannot fan out,
+whereas relating the aggregate to the order fact could.
 
 **Deliberately NOT related:**
 
@@ -98,6 +139,7 @@ miss because nothing looks broken.
 | `YearMonth` | `'YYYY-MM'`, matches `order_month` in the views |
 | `YearMonthSort` | Sort-by column so `MonthName` orders chronologically, not alphabetically |
 | `InStableWindow` | **Flags the 20 complete months (2017-01 → 2018-08)** |
+| `MonthIndex` | Year × 12 + Month, contiguous. Month arithmetic in the time-intelligence measures (added 2026-11-20) |
 
 `InStableWindow` matters: the dataset's edge months hold 4, 1, 16 and 4
 orders, and **November 2016 is absent entirely**. Any unfiltered trend visual
@@ -158,4 +200,8 @@ done — see `powerbi/README.md`.
 - [ ] Refresh completes with no errors and no "column not found" warnings
 - [ ] No relationship shows as inactive or ambiguous in Model view
 - [ ] `dim_date` is marked as the date table
-- [ ] Time-intelligence measures return values, not blanks
+- [ ] Time-intelligence measures return values, not blanks — except by design: `[Revenue MoM %]` is BLANK for 2017-01 and `[Revenue 3M Moving Avg]` for 2017-01/02 and outside the stable window
+- [ ] `[Category Revenue Share]` on a `dim_category[category]` axis sums to 100% (not 100% per row)
+- [ ] `[Cohort Retention %]` matrix is blank below the diagonal
+- [ ] Analytical-source relationships show as one-to-many, single direction
+- [ ] Spot-check values against `powerbi/dax_validation_results.csv`

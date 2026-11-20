@@ -234,6 +234,20 @@ Carried over from Phase 3 cleaning. Original timestamps are never altered.
 | `has_date_anomaly` | TINYINT(1) | 23 orders delivered before carrier handoff (Q08) |
 | `has_delivery_anomaly` | TINYINT(1) | 8 orders 'delivered' with no date (Q01) |
 | `date_anomaly_note` | VARCHAR(60) | free-text reason, NULL when clean |
+| `carrier_before_approval` | TINYINT(1) | 1,359 orders whose carrier handoff is earlier than payment approval (Q18) |
+| `stage_timing_valid` | TINYINT(1) | all four timestamps present and purchase ≤ approval ≤ carrier ≤ customer. **95,088 orders: the only population for delivery-stage metrics** |
+
+**On `order_reviews`:** `review_before_delivery` TINYINT(1) **NULL**. 1 when
+`review_answer_timestamp` is earlier than the order's delivery timestamp (4,795
+reviews, Q19), 0 when after, NULL when the order has no delivery date. It is a
+review-grain flag: filter on it *before* averaging scores per order.
+
+> **Added 2026-11-20 (fix-Phase 2).** These three columns are exposed in
+> `vw_order_summary` and `vw_review_summary`. To apply them to an existing
+> database, regenerate `dataset/cleaned/` with notebook 02 and rebuild by
+> re-running `01_schema.sql`, `02_import.sql` and `07_business_analysis.sql`
+> (the schema script drops and recreates the database). `08_validation.sql` §13
+> checks the new columns: 71/71 checks pass.
 
 > **`is_delivered` (96,478) and `delivery_measurable` (96,476) differ by 8.**
 > That is not an error — it is data quality issue Q01. Delivery-timing metrics

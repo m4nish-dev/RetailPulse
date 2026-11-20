@@ -2,7 +2,8 @@
 
 **Date:** 2026-11-13
 **Database:** `retailpulse` · MySQL 8.4.13 LTS (Homebrew, Apple Silicon)
-**Status:** ✅ **PASSED** — 34/34 queries executed, 7/7 views verified, **61/61 validation checks passed**
+**Status:** ✅ **PASSED** — 34/34 queries executed, 7/7 views verified, **71/71 validation checks passed**
+**Updated:** 2026-11-20 — Q18/Q19 flag columns added, Q20 corrected, Q26b sensitivity added, validation §13 (+10 checks)
 
 ---
 
@@ -17,7 +18,7 @@
 | Queries written and executed | **34** |
 | Queries failing | **0** |
 | Views created and verified | **7** |
-| Validation checks | **61 PASS, 0 FAIL** |
+| Validation checks | **71 PASS, 0 FAIL** |
 | Revenue agreement with Python | **to the cent** |
 
 Three independent engines — pandas (Phase 3), LibreOffice Calc (Phase 2) and
@@ -184,7 +185,7 @@ touched was canceled or unavailable. Correct behaviour, not a bug.
 
 ---
 
-## 6. Validation: 61 PASS, 0 FAIL
+## 6. Validation: 71 PASS, 0 FAIL
 
 | Group | Checks | Result |
 |---|---|---|
@@ -200,6 +201,7 @@ touched was canceled or unavailable. Correct behaviour, not a bug.
 | 10. Fan-out detection | 1 | ✅ |
 | 11. Duplicate detection | 3 | ✅ |
 | 12. Zip leading zeros | 1 | ✅ |
+| 13. Q18 / Q19 flags (added 2026-11-20) | 10 | ✅ |
 
 ### MySQL vs Python, side by side
 
@@ -236,10 +238,15 @@ SQL reproduces Phase 2's spreadsheet measurements exactly.
 
 All from executed queries against the real database.
 
-### 7.1 Late delivery destroys satisfaction — and the cliff is sharp
+### 7.1 Late delivery is associated with lower satisfaction — but the "cliff" was mostly survey timing
 
-**The strongest finding in the project.** Average review score by how the
-delivery landed against its promise:
+> **Revised 2026-11-20.** The table below (Q26, all reviews) is unchanged
+> arithmetic but is no longer read as a "cliff". Issue Q19 showed that 4,795
+> reviews were answered before the parcel arrived. Q26b repeats the analysis
+> with and without them; see the sensitivity table after this one.
+
+Average review score by how the delivery landed against its promise (Q26,
+all reviews):
 
 | Delivery | Orders | Avg review | 1-star % | 5-star % |
 |---|---|---|---|---|
@@ -251,16 +258,28 @@ delivery landed against its promise:
 | 16–30 days late | 992 | 1.622 | 70.4% | 5.1% |
 | 30+ days late | 343 | 2.025 | 64.1% | 13.1% |
 
-Being merely *on time* scores 4.20. Slipping 1–7 days costs **a full point**
-and quadruples 1-star reviews. Slipping 8–15 days collapses the score to
-**1.73**, with **68.5% one-star** — a **10× increase** over an early delivery.
+**Q26b sensitivity** — reviews filtered at review grain
+(`review_before_delivery = 0`), then averaged per order:
 
-There is no gentle decline. The damage is almost entirely done within the
-first fortnight of lateness, and arriving *very* early buys nothing over
-arriving moderately early (4.318 vs 4.316).
+| Delivery vs promise | All reviews: avg / 1-star | After arrival only: orders, avg / 1-star |
+|---|---|---|
+| On time (0–7 early) | 4.201 / 7.0% | 17,193 · 4.202 / 7.0% |
+| 1–7 days late | 3.184 / 29.5% | 3,055 · **3.860 / 11.1%** |
+| 8–15 days late | 1.733 / 68.5% | 106 · **3.660 / 17.9%** |
+| Over 15 days late | 1.726 / 68.8% | 19 · 2.895 / 31.6% |
 
-**Action:** the 7,827 late orders are a concentrated, addressable satisfaction
-problem. Preventing a 1–7 day slip is worth roughly one review star per order.
+Once pre-arrival reviews are removed, late orders still score lower and the
+one-star share still rises with lateness, so the **association survives**. The
+**magnitude does not**: 8–15 days late goes from 1.73 to 3.66. Most of the
+original drop came from customers surveyed while still waiting. Beyond 7 days
+late, only 106 and 19 orders remain, so those rows are indicative only.
+Arriving *very* early still buys nothing over arriving moderately early
+(4.318 vs 4.316).
+
+**Action:** the 7,827 late orders remain a concentrated, addressable
+satisfaction problem. Prevent the slip, and stop surveying customers whose
+parcel has not arrived. These are associations, not proof that lateness
+causes the lower score.
 
 ### 7.2 Delivery estimates are heavily padded — and the padding is shrinking
 
@@ -280,7 +299,7 @@ it promised 15.2 and delivered in 7.7 — **actual delivery time improved 39%**
 while the promise tightened 62%.
 
 **Action:** the padding is real but narrowing. Since §7.1 shows lateness is
-brutally punished, the conservative promise is rational — but a 15-day quote
+associated with lower ratings, the conservative promise is rational — but a 15-day quote
 on a 7.7-day delivery still likely costs conversions at checkout. This is a
 measurable trade-off worth testing.
 
@@ -289,11 +308,15 @@ measurable trade-off worth testing.
 Like-for-like January–August (the only honest comparison — 2016 holds 329
 orders):
 
-| | 2017 | 2018 | Change |
+| Jan–Aug, revenue-eligible orders with items | 2017 | 2018 | Change |
 |---|---|---|---|
 | Revenue | 3,080,850.81 | 7,341,037.41 | **+138.3%** |
 | Orders | 22,562 | 53,530 | **+137.3%** |
-| AOV | ~136.6 | ~137.1 | **+0.4%** |
+| AOV | 136.55 | 137.14 | **+0.4%** |
+
+The order population matches Q22: `orders JOIN order_items` with
+`revenue_eligible = 1`, i.e. the AOV denominator defined in
+`kpi_definitions.md`.
 
 Revenue more than doubled almost entirely through **more orders**, not bigger
 ones. Monthly YoY growth decelerates steadily: +687% in January to **+49.4% by
@@ -304,13 +327,19 @@ is the untouched lever.
 
 ### 7.4 The bottleneck is last-mile carriage, not payment
 
-Average 12.56 days from purchase to delivery, split:
+Average 12.62 days from purchase to delivery on the **95,088 orders with a
+valid stage sequence** (`stage_timing_valid = 1`), split:
 
 | Stage | Days | Share |
 |---|---|---|
-| Purchase → payment approval | 0.41 | 3% |
-| Approval → carrier handoff | 2.78 | 22% |
-| **Carrier → customer** | **9.31** | **74%** |
+| Purchase → payment approval | 0.40 | 3.2% |
+| Approval → carrier handoff | 2.85 | 22.6% |
+| **Carrier → customer** | **9.36** | **74.2%** |
+
+**Corrected 2026-11-20.** The original Q20 used all 96,461 orders, including
+1,373 with an impossible sequence (1,350 carrier-before-approval, issue Q18;
+23 customer-before-carrier, Q08), and truncated stages to whole hours. It gave
+0.41 / 2.78 / 9.31 days (74.1%). The finding is unchanged.
 
 **Action:** three-quarters of delivery time sits with the carrier. Payment
 approval is near-instant and seller dispatch is already fast. Logistics

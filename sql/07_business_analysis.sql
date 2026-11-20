@@ -76,7 +76,9 @@ SELECT
     o.is_late,
     o.delivery_measurable,
     o.has_date_anomaly,
-    o.has_delivery_anomaly
+    o.has_delivery_anomaly,
+    o.carrier_before_approval,          -- Q18 flag
+    o.stage_timing_valid                -- population for delivery-stage metrics
 FROM orders o
 JOIN customers c ON c.customer_id = o.customer_id
 LEFT JOIN (
@@ -317,7 +319,8 @@ SELECT
         WHEN o.delay_days <=   7   THEN '1-7 days late'
         WHEN o.delay_days <=  15   THEN '8-15 days late'
         ELSE                            '15+ days late'
-    END                                               AS delivery_bucket
+    END                                               AS delivery_bucket,
+    r.review_before_delivery                          -- Q19: answered before arrival
 FROM order_reviews r
 JOIN vw_order_summary o ON o.order_id = r.order_id;
 

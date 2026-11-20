@@ -58,7 +58,10 @@ def main() -> None:
     for name in VIEWS + TABLES:
         df = pd.read_sql(f"SELECT * FROM {name}", conn)
         path = OUT / f"{name}.csv"
-        df.to_csv(path, index=False)
+        # Explicit format: pandas 3 otherwise writes date-only text for any
+        # write chunk whose timestamps are all midnight, leaving one column
+        # with two formats (seen on vw_review_summary.review_creation_date).
+        df.to_csv(path, index=False, date_format="%Y-%m-%d %H:%M:%S")
         mb = path.stat().st_size / 1024**2
         manifest.append({"object": name, "rows": len(df),
                          "columns": df.shape[1], "size_mb": round(mb, 2)})
@@ -85,6 +88,10 @@ def main() -> None:
     # and 4 orders and November 2016 is absent entirely, so trend visuals must
     # filter on this or they show a collapse that never happened.
     dt["InStableWindow"] = dt.YearMonth.between("2017-01", "2018-08")
+    # Contiguous month number (Year*12 + Month). DAX month arithmetic uses
+    # this instead of DATEADD/DATESINPERIOD, whose end-of-month handling can
+    # pull partial months into a window. Added 2026-11-20 (DAX audit).
+    dt["MonthIndex"] = dt.Date.dt.year * 12 + dt.Date.dt.month
     dt.to_csv(OUT / "dim_date.csv", index=False)
     print(f"  {'dim_date (generated)':<30}{len(dt):>9,} rows x {dt.shape[1]:>2} cols")
     print(f"     range {dt.Date.min().date()} .. {dt.Date.max().date()}, "

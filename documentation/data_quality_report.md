@@ -2,6 +2,9 @@
 
 **Assessed:** 2026-11-12 · `notebooks/01_data_exploration.ipynb`
 **Scope:** all 9 raw tables, 1,551,933 rows
+**Addendum:** 2026-11-20 · Q18 and Q19 added after the final project audit;
+investigated in `notebooks/04_data_quality_investigation.ipynb`. The definitive
+register is `cleaning_decisions.md` (19 issues, all verified from raw).
 
 > **Nothing in this report has been fixed.** Phase 1 measures; Phase 3 fixes.
 > Separating the two is deliberate: you cannot choose a sensible remedy before
@@ -22,9 +25,10 @@ corruption. Three are serious enough to change how analysis must be done.
 | Severity | Count | Meaning |
 |---|---|---|
 | 🔴 High | 4 | Will produce wrong conclusions if ignored |
-| 🟠 Medium | 3 | Will distort specific metrics |
+| 🟠 Medium | 4 | Will distort specific metrics (incl. Q18, added 2026-11-20) |
 | 🟡 Low | 9 | Small; flag and document |
-| ⚪ Info | 1 | No defect; a trap to be aware of |
+| ⚪ Info | 2 | No defect; a trap or limitation to be aware of (incl. Q19, added 2026-11-20) |
+| **Total** | **19** | 17 found in Phase 1, 2 added after the final audit |
 
 ---
 
@@ -131,6 +135,38 @@ By status: `unavailable` 603, `canceled` 164, `created` 5, `invoiced` 2,
 cancellation story) but **exclude them from the AOV denominator**. AOV uses the
 98,666 orders that have items.
 
+> **Correction (2026-11-20).** The sentence above is the original Phase 1
+> wording, kept for the record. The validated AOV denominator is **98,199**:
+> revenue-eligible orders that have items (eligible revenue 13,494,400.74 ÷
+> 98,199 = 137.42). 98,666 counts orders with items of every status,
+> including canceled and unavailable ones, whose revenue is excluded from the
+> numerator. See `kpi_definitions.md` KPI 4.
+
+### Q18 · Carrier handoff recorded before payment approval *(added 2026-11-20)*
+**Table:** `orders` · **Count:** 1,359 (1,350 delivered, 9 shipped)
+
+`order_delivered_carrier_date` is earlier than `order_approved_at`. Both
+timestamps have full time precision, so this is not rounding. Phase 1 missed
+it: it checked "approved before purchased" and "delivered before purchased",
+but not carrier against approval.
+
+**Investigation:** 61% of cases fall on two approval dates (2018-04-24,
+2018-07-05). On each, a week's backlog of approvals was recorded within 7–9
+hours. Flagged orders took 54.5 h from purchase to approval (normal: 9.7 h) yet
+reached the carrier sooner. This is consistent with approvals **recorded late
+in bulk**. Not explained by boleto, sellers or region. A 166-order subset
+has the carrier handoff before the *purchase*, which points instead to
+carrier-timestamp errors.
+
+**Disclosure:** the Phase 3 notebook printed the 166 count but it was never
+registered, and later summaries implied Q08's 23 rows were the only sequence
+failures. This entry corrects that.
+
+**Decision:** flag `carrier_before_approval`; compute delivery-stage metrics
+only on `stage_timing_valid = 1` (95,088 orders). No timestamp altered. Overall
+delivery time and on-time rate are unaffected. The last-mile share is 74.2%
+(was 74.1%).
+
 ---
 
 ## 🟡 Low severity
@@ -164,6 +200,23 @@ Reconciliation: 99,224 records + 1 header + 5,495 embedded newlines = 104,720. �
 `wc -l`. Separately, `product_category_name_translation.csv` has no trailing
 newline, so `wc -l` undercounts it by one.
 
+### Q19 · Reviews answered before the order was delivered *(added 2026-11-20)*
+**Table:** `order_reviews` vs `orders` · **Count:** 4,795 reviews (4.98% of
+reviews on delivered orders)
+
+`review_answer_timestamp` is earlier than `order_delivered_customer_date`. The
+audit's original figure of 8,320 used `review_creation_date`. That field is the
+date the survey was *sent*, stored as a date only (99.91% at midnight), so 3,193
+of those were simply sent on the delivery day.
+
+**Cause:** the survey goes out the day after delivery, or about two days after
+the estimated date when the parcel has not arrived. 94% of these reviews are on
+late orders. **Not a defect:** an analytical limitation.
+
+**Decision:** flag `review_before_delivery` at review grain (NULL when the order
+has no delivery date). Keep every review, and report satisfaction by delivery
+timing with and without these reviews (KPI 25).
+
 ---
 
 ## Checks that passed
@@ -178,6 +231,7 @@ Worth recording — a clean result is a finding too.
 | Orphan foreign keys | **0** in 6 of 7 relationships |
 | Delivered before purchased | **0** |
 | Approved before purchased | **0** |
+| Carrier handoff before approval | ❌ **1,359**, not checked in Phase 1; see Q18 (added 2026-11-20) |
 | Estimated delivery before purchase | **0** |
 | Nulls in any key column | **0** |
 | `order_status` unexpected values | **0** — all 8 are valid |
@@ -191,6 +245,8 @@ Worth recording — a clean result is a finding too.
 |---|---|---|
 | Flag, do not drop | 23 | Q08 impossible date sequence |
 | Flag, do not drop | 14 | Q09, Q10, Q11 payment anomalies |
+| Flag, do not drop; stage metrics use valid sequence only | 1,359 | Q18 (fix-Phase 2) |
+| Flag reviews, report with and without | 4,795 reviews | Q19 (fix-Phase 2) |
 | Relabel to `unknown` | 610 | Q04 null category |
 | Add missing translations | 13 | Q03 |
 | Exclude from delivery metrics only | 8 | Q01 |

@@ -310,3 +310,53 @@ SELECT 'customer zips starting with 0' AS check_name,
        MIN(customer_zip_code_prefix) AS example,
        IF(COUNT(*) > 0 AND CHAR_LENGTH(MIN(customer_zip_code_prefix))=5,'PASS','FAIL') AS result
 FROM customers WHERE customer_zip_code_prefix LIKE '0%';
+
+
+-- =============================================================================
+--  13. QUALITY FLAGS — Q18 carrier-before-approval, Q19 review-before-delivery
+-- =============================================================================
+--  Every stored flag is recomputed here from the raw timestamps, so a flag can
+--  never silently drift from its definition.
+-- =============================================================================
+SELECT '13. QUALITY FLAGS' AS check_group, '' AS a, '' AS b, '' AS c;
+
+SELECT 'Q18 carrier_before_approval count' AS check_name,
+       SUM(carrier_before_approval) AS actual, 1359 AS expected,
+       IF(SUM(carrier_before_approval) = 1359,'PASS','FAIL') AS result FROM orders
+UNION ALL
+SELECT 'Q18 flag matches timestamps (mismatches)',
+       SUM(carrier_before_approval <> COALESCE(order_delivered_carrier_date < order_approved_at, 0)), 0,
+       IF(SUM(carrier_before_approval <> COALESCE(order_delivered_carrier_date < order_approved_at, 0)) = 0,'PASS','FAIL')
+FROM orders
+UNION ALL
+SELECT 'stage_timing_valid population', SUM(stage_timing_valid), 95088,
+       IF(SUM(stage_timing_valid) = 95088,'PASS','FAIL') FROM orders
+UNION ALL
+SELECT 'stage_timing_valid: negative stage intervals', COUNT(*), 0, IF(COUNT(*) = 0,'PASS','FAIL')
+FROM orders WHERE stage_timing_valid = 1
+  AND (order_approved_at < order_purchase_timestamp
+       OR order_delivered_carrier_date < order_approved_at
+       OR order_delivered_customer_date < order_delivered_carrier_date)
+UNION ALL
+SELECT 'stage_timing_valid excludes all Q18 + Q08 rows', COUNT(*), 0, IF(COUNT(*) = 0,'PASS','FAIL')
+FROM orders WHERE stage_timing_valid = 1 AND (carrier_before_approval = 1 OR has_date_anomaly = 1)
+UNION ALL
+SELECT 'Q19 review_before_delivery count', SUM(review_before_delivery), 4795,
+       IF(SUM(review_before_delivery) = 4795,'PASS','FAIL') FROM order_reviews
+UNION ALL
+SELECT 'Q19 flag matches timestamps (mismatches)',
+       SUM(r.review_before_delivery <> (r.review_answer_timestamp < o.order_delivered_customer_date)), 0,
+       IF(SUM(r.review_before_delivery <> (r.review_answer_timestamp < o.order_delivered_customer_date)) = 0,'PASS','FAIL')
+FROM order_reviews r JOIN orders o ON o.order_id = r.order_id
+WHERE o.order_delivered_customer_date IS NOT NULL
+UNION ALL
+SELECT 'Q19 flag NULL exactly where no delivery date',
+       SUM((r.review_before_delivery IS NULL) <> (o.order_delivered_customer_date IS NULL)), 0,
+       IF(SUM((r.review_before_delivery IS NULL) <> (o.order_delivered_customer_date IS NULL)) = 0,'PASS','FAIL')
+FROM order_reviews r JOIN orders o ON o.order_id = r.order_id
+UNION ALL
+SELECT 'vw_order_summary exposes Q18 flag', SUM(carrier_before_approval), 1359,
+       IF(SUM(carrier_before_approval) = 1359,'PASS','FAIL') FROM vw_order_summary
+UNION ALL
+SELECT 'vw_review_summary exposes Q19 flag', SUM(review_before_delivery), 4795,
+       IF(SUM(review_before_delivery) = 4795,'PASS','FAIL') FROM vw_review_summary;

@@ -219,6 +219,13 @@ CREATE TABLE orders (
     has_delivery_anomaly          TINYINT(1)    NOT NULL,
     date_anomaly_note             VARCHAR(60)   NULL,
 
+    -- data quality issue Q18 (added Phase 2 of the fix programme): carrier
+    -- handoff recorded before payment approval. 1,359 orders. Timestamps are
+    -- untouched; stage_timing_valid defines the ONLY population for
+    -- delivery-stage metrics (all four timestamps present and non-decreasing).
+    carrier_before_approval       TINYINT(1)    NOT NULL,
+    stage_timing_valid            TINYINT(1)    NOT NULL,
+
     PRIMARY KEY (order_id),
     UNIQUE KEY uq_orders_customer (customer_id),   -- validated 1:1
     INDEX idx_orders_status    (order_status),
@@ -327,6 +334,10 @@ CREATE TABLE order_reviews (
     review_comment_message  TEXT         NULL,  -- 58.70% NULL, Portuguese
     review_creation_date    DATETIME     NOT NULL,
     review_answer_timestamp DATETIME     NOT NULL,
+    -- issue Q19: customer ANSWERED before the parcel arrived (answer timestamp
+    -- < delivered date). NULL where the order has no delivery date. Analytical
+    -- limitation from the survey process, not invalid data.
+    review_before_delivery  TINYINT(1)   NULL,
     PRIMARY KEY (review_id, order_id),
     INDEX idx_rev_order (order_id),
     INDEX idx_rev_score (review_score),

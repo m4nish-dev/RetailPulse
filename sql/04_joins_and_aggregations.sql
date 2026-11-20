@@ -303,15 +303,59 @@ ORDER BY freight_pct_of_revenue DESC;
 -- -----------------------------------------------------------------------------
 -- Business: identifies the real bottleneck. If the delay sits in payment
 -- approval rather than shipping, the fix belongs to finance, not logistics.
--- Concepts: TIMESTAMPDIFF, multi-stage conditional aggregation.
+-- Concepts: TIMESTAMPDIFF, multi-stage conditional aggregation, UNION ALL.
+--
+-- CORRECTED (data quality issue Q18). 1,350 delivered orders have a carrier
+-- handoff recorded BEFORE payment approval, and 23 (Q08) a delivery before the
+-- carrier handoff. Those rows produce NEGATIVE stage durations, which pulled
+-- the approval->carrier average down. The original query also truncated every
+-- interval to whole hours (TIMESTAMPDIFF(HOUR)).
+--
+-- Three rows isolate the two effects:
+--   1 superseded : original method, all orders with the timestamps
+--   2 precision  : same orders, second-level precision (isolates truncation)
+--   3 corrected  : second-level precision, stage_timing_valid = 1 only
+-- Row 3 is the figure to use. On that population the three stages add up to
+-- the total exactly, so the shares are well defined.
 -- -----------------------------------------------------------------------------
+WITH base AS (
+    SELECT *,
+           TIMESTAMPDIFF(SECOND, order_purchase_timestamp,     order_approved_at)             / 86400 AS s1,
+           TIMESTAMPDIFF(SECOND, order_approved_at,            order_delivered_carrier_date)  / 86400 AS s2,
+           TIMESTAMPDIFF(SECOND, order_delivered_carrier_date, order_delivered_customer_date) / 86400 AS s3
+    FROM orders
+    WHERE delivery_measurable = 1
+      AND order_approved_at            IS NOT NULL
+      AND order_delivered_carrier_date IS NOT NULL
+)
+SELECT '1 superseded: hour-truncated, all orders' AS method,
+       COUNT(*) AS orders,
+       ROUND(AVG(TIMESTAMPDIFF(HOUR, order_purchase_timestamp, order_approved_at))/24, 2)            AS days_purchase_to_approval,
+       ROUND(AVG(TIMESTAMPDIFF(HOUR, order_approved_at, order_delivered_carrier_date))/24, 2)        AS days_approval_to_carrier,
+       ROUND(AVG(TIMESTAMPDIFF(HOUR, order_delivered_carrier_date, order_delivered_customer_date))/24, 2) AS days_carrier_to_customer,
+       ROUND(AVG(delivery_days), 2) AS total_days,
+       SUM(s2 < 0) + SUM(s3 < 0)   AS negative_intervals
+FROM base
+UNION ALL
+SELECT '2 exact, all orders', COUNT(*),
+       ROUND(AVG(s1), 2), ROUND(AVG(s2), 2), ROUND(AVG(s3), 2), ROUND(AVG(delivery_days), 2),
+       SUM(s2 < 0) + SUM(s3 < 0)
+FROM base
+UNION ALL
+SELECT '3 CORRECTED: exact, stage_timing_valid = 1', COUNT(*),
+       ROUND(AVG(s1), 2), ROUND(AVG(s2), 2), ROUND(AVG(s3), 2), ROUND(AVG(delivery_days), 2),
+       SUM(s2 < 0) + SUM(s3 < 0)
+FROM base
+WHERE stage_timing_valid = 1;
+
+-- Stage shares on the corrected population (stages sum to the total exactly).
 SELECT
-    COUNT(*)                                                                             AS orders,
-    ROUND(AVG(TIMESTAMPDIFF(HOUR, order_purchase_timestamp, order_approved_at))/24, 2)   AS days_purchase_to_approval,
-    ROUND(AVG(TIMESTAMPDIFF(HOUR, order_approved_at, order_delivered_carrier_date))/24, 2) AS days_approval_to_carrier,
-    ROUND(AVG(TIMESTAMPDIFF(HOUR, order_delivered_carrier_date, order_delivered_customer_date))/24, 2) AS days_carrier_to_customer,
-    ROUND(AVG(delivery_days), 2)                                                         AS total_days
+    COUNT(*)                                          AS orders,
+    ROUND(100 * SUM(TIMESTAMPDIFF(SECOND, order_purchase_timestamp, order_approved_at))
+              / SUM(TIMESTAMPDIFF(SECOND, order_purchase_timestamp, order_delivered_customer_date)), 1) AS pct_purchase_to_approval,
+    ROUND(100 * SUM(TIMESTAMPDIFF(SECOND, order_approved_at, order_delivered_carrier_date))
+              / SUM(TIMESTAMPDIFF(SECOND, order_purchase_timestamp, order_delivered_customer_date)), 1) AS pct_approval_to_carrier,
+    ROUND(100 * SUM(TIMESTAMPDIFF(SECOND, order_delivered_carrier_date, order_delivered_customer_date))
+              / SUM(TIMESTAMPDIFF(SECOND, order_purchase_timestamp, order_delivered_customer_date)), 1) AS pct_carrier_to_customer
 FROM orders
-WHERE delivery_measurable = 1
-  AND order_approved_at            IS NOT NULL
-  AND order_delivered_carrier_date IS NOT NULL;
+WHERE stage_timing_valid = 1;

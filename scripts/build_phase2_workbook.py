@@ -352,9 +352,18 @@ last_kpi = r - 1
 
 r += 1
 ws.cell(row=r, column=2, value="Rows where spreadsheet ≠ Python:").font = H2
-chk = ws.cell(row=r, column=3, value=f'=SUMPRODUCT(--(ABS(E{first_kpi}:E{last_kpi})>0.01))')
+# COUNTIFS, not SUMPRODUCT(ABS(...)). Two rows in this range hold the literal
+# text "—" for KPIs a spreadsheet cannot compute (distinct count, conditional
+# median). ABS() over text returns #VALUE!, so the original SUMPRODUCT version
+# broke the whole cell on recalculation. COUNTIFS skips non-numeric cells.
+# The 0.011 threshold tolerates the 2dp rounding of the Python reference column.
+chk = ws.cell(row=r, column=3,
+              value=f'=COUNTIFS(E{first_kpi}:E{last_kpi},">0.011")'
+                    f'+COUNTIFS(E{first_kpi}:E{last_kpi},"<-0.011")')
 chk.font = Font(bold=True, size=12)
-ws.cell(row=r, column=4, value="(0 = every computable KPI reconciles)").font = MUTED
+ws.cell(row=r, column=4,
+        value="(0 = every computable KPI reconciles; the 2 'not computable' rows are skipped)"
+        ).font = MUTED
 r += 2
 
 for head, body in [

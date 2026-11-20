@@ -85,13 +85,25 @@ the count by 3.5% and makes repeat purchase rate collapse to zero.
 
 ### KPI 4 — Average Order Value (AOV)
 **Business meaning:** average spend per order. Drives pricing and bundling decisions.
-**Formula:** `SUM(order_items.price) / COUNT(DISTINCT order_items.order_id)`
-**Validated:** denominator is 98,666 orders with items.
+**Formula:** `SUM(order_items.price) / COUNT(DISTINCT order_items.order_id)`,
+**both restricted to revenue-eligible orders** (status not canceled/unavailable).
+**Validated:** 13,494,400.74 ÷ **98,199** eligible orders with items = **137.42 BRL**
+(SQL, pandas and the DAX logic check agree).
 **Limitations:**
-- ⚠ The denominator must be **orders with items (98,666)**, not all orders
-  (99,441). Using the wrong one understates AOV by ~0.8%.
+- ⚠ Numerator and denominator must describe **the same orders**. The
+  denominator is eligible orders *with items* (98,199) — not all orders
+  (99,441), and not all orders with items (98,666, which includes canceled
+  ones and gives 137.75). Mixing populations, e.g. eligible revenue ÷
+  all-status orders, silently understates AOV.
 - The mean is sensitive to the long right tail (max item price 6,735). Report
   **median order value alongside the mean.**
+
+**Comparing AOV over time — rules:**
+- Compare **equal, complete periods** (Jan–Aug 2017 vs Jan–Aug 2018: 136.55 →
+  137.14, **+0.4%**). Never compare two single months: January 2017 is a
+  787-order ramp month and the highest-AOV month of the window (152.60), so a
+  single-month endpoint comparison reports a spurious −13.4%.
+- Always state the population and date range beside the figure.
 
 ### KPI 5 — Monthly Revenue
 **Formula:** revenue grouped by `DATE_FORMAT(order_purchase_timestamp, '%Y-%m')`
@@ -101,9 +113,35 @@ collapse that did not happen.
 
 ### KPI 6 — Month-over-Month Growth
 **Formula:** `(revenue_this_month − revenue_prev_month) / revenue_prev_month`
-(SQL: `LAG()` window function; DAX: `DATEADD`)
+(SQL: `LAG()` window function; DAX: `dim_date[MonthIndex] - 1`, see `powerbi/dax_measures.md` M10)
 **Limitations:** undefined for the first month. Only meaningful inside the
-stable window.
+stable window: **both** months must be complete, so 2017-01 (vs December
+2016's single order) is BLANK in DAX. The 3-month moving average (M11) likewise
+needs three complete months and starts at 2017-03. `vw_monthly_revenue`'s
+`mom_growth_pct` and `moving_avg_3m` do not apply this rule at the 2016/2017
+boundary; don't quote them for 2016-12 to 2017-02. **Month-over-month % is a volatility measure, not a growth
+rate** — never average it to describe overall growth (see KPI 6a).
+
+### KPI 6a — Compound Monthly Growth Rate (CMGR)
+**Business meaning:** the single constant monthly rate that takes revenue from
+the first month of a period to the last. This is the figure to quote for
+"how fast did revenue grow?".
+**Formula:** `(revenue_last_month / revenue_first_month) ^ (1 / intervals) − 1`,
+where `intervals` = number of months − 1.
+**Validated (SQL and pandas agree):**
+
+| Period | Start → end (BRL) | Intervals | CMGR |
+|---|---|---|---|
+| 2017, Jan → Dec | 120,098.27 → 742,183.79 | 11 | **+18.01%** |
+| 2018, Jan → Aug | 945,456.29 → 848,860.10 | 7 | **−1.53%** |
+
+**Limitations:**
+- ⚠ **Do not substitute the arithmetic mean of monthly % changes.** For 2017
+  that gives +22.69% (inflated by one +104% jump from a small January base);
+  for 2018 it gives +2.45% — showing growth where revenue actually declined.
+- CMGR depends on its two endpoint months. Check it against a log-linear trend
+  fitted to every month (2017: +15.1%/month; 2018: −1.1%/month). When the two
+  agree in sign and rough size, the conclusion does not depend on endpoint choice.
 
 ### KPI 7 — Year-over-Year Growth
 **Formula:** 2018 Jan–Aug revenue vs 2017 Jan–Aug revenue.
@@ -219,6 +257,12 @@ counts per seller therefore sum to more than total orders. Say so on the chart.
   and would be a weak interview answer.
 - Sellers with very few orders produce unstable averages. **Apply a minimum
   order threshold (e.g. 20) before ranking.**
+- **Totals across sellers must be weighted** (added 2026-11-20): `SUM(late
+  orders) / SUM(measurable orders)` from `seller_scorecard`, not the average of
+  per-seller rates (8.42% unweighted vs **8.02%** weighted). The weighted seller
+  figure counts seller-order pairs, so it differs from the platform's 8.11% at
+  order grain: multi-seller orders count once per seller and were late only
+  1.38% of the time.
 
 ### KPI 18 — Seller Review Score
 **Formula:** average `review_score` of orders containing that seller's items.
@@ -238,6 +282,25 @@ no negatives.
 - Denominator is **96,476**, not 99,441 or 96,478 (8 delivered orders lack a date).
 - Strongly right-skewed — **report the median alongside the mean.**
 - Measured from purchase, not from dispatch, so it includes payment approval time.
+- Unaffected by Q18: it uses only the purchase and delivery timestamps.
+
+### KPI 19a — Delivery-Stage Breakdown (added 2026-11-20)
+**Business meaning:** which stage of the journey (payment approval, seller
+dispatch, carrier) holds the delivery time.
+**Population:** `stage_timing_valid = 1`, meaning all four timestamps present
+and purchase ≤ approval ≤ carrier ≤ customer. **95,088 orders.**
+**Formula:** for each stage, `AVG(TIMESTAMPDIFF(SECOND, start, end)) / 86400`;
+share = `SUM(stage seconds) / SUM(purchase→delivery seconds)`. Stages sum
+exactly to the total on this population.
+**Validated:** 0.40 / 2.85 / 9.36 days, total 12.62; last-mile share **74.2%**.
+Same figures in MySQL and pandas.
+**Limitations:**
+- Excludes 1,373 orders with an impossible sequence (1,350 Q18 carrier before
+  approval, 23 Q08 customer before carrier) and 15 with a missing approval or
+  carrier timestamp. Do **not** compute stages on all orders: negative stages
+  would cancel against positive ones.
+- Use exact seconds. Truncating each stage to whole hours (the superseded
+  method) drops up to 59 minutes per stage.
 
 ### KPI 20 — On-Time Delivery Rate
 **Formula:** `COUNT(order_delivered_customer_date <= order_estimated_delivery_date) / 96,476`
@@ -290,6 +353,15 @@ delivery investment case writes itself.
   experience (a poor seller) rather than causing it.
 - Needs a **LEFT JOIN** on reviews, and reviews aggregated to one score per
   order first.
+- ⚠ **Review timing (Q19, added 2026-11-20).** 4,795 reviews (4.98%) were
+  answered *before* the order arrived, because the survey goes out about two
+  days after the estimated date when the parcel is late. They average 1.80
+  stars. Always report KPI 25 **twice**: all reviews, and reviews with
+  `review_before_delivery = 0` only. Filter at **review** grain, then average
+  per order. Denominator = delivered orders with ≥ 1 qualifying review. Use
+  `review_answer_timestamp`, not `review_creation_date` (a date-only send date).
+- After-arrival samples beyond 7 days late are small (106 and 19 orders), so
+  show confidence intervals there. SQL: `05_advanced_sql.sql` Q26 / Q26b.
 
 ---
 
@@ -300,9 +372,10 @@ delivery investment case writes itself.
 | 1 | Total Revenue | ✅ | Excludes freight by definition; no profit possible |
 | 2 | Total Orders | ✅ | 99,441 total vs 98,666 with items |
 | 3 | Total Customers | ✅ | **Must** use `customer_unique_id` |
-| 4 | Average Order Value | ✅ | Denominator 98,666; report median too |
+| 4 | Average Order Value | ✅ | Denominator 98,199 (eligible with items); compare equal periods only; report median too |
 | 5 | Monthly Revenue | ⚠ | Restrict to 2017-01 → 2018-08 |
-| 6 | MoM Growth | ⚠ | Stable window only |
+| 6 | MoM Growth | ⚠ | Stable window only; volatility view, not a growth rate |
+| 6a | CMGR | ✅ | 2017 +18.01%, 2018 Jan–Aug −1.53%; cross-check with log-linear trend |
 | 7 | YoY Growth | ⚠ | **Jan–Aug 2018 vs Jan–Aug 2017 only** |
 | 8 | Revenue by Geography | ⚠ | State reliable; city needs cleaning |
 | 9 | Repeat Purchase Rate | ✅ | Only 3.12% — low by nature |

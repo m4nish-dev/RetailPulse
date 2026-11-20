@@ -248,6 +248,64 @@ ORDER BY delivery_bucket;
 
 
 -- -----------------------------------------------------------------------------
+-- Q26b. Sensitivity check: does the Q26 pattern survive without reviews
+--       answered before the parcel arrived?
+-- -----------------------------------------------------------------------------
+-- Why: Olist sends the survey the day after delivery - or, if the parcel has
+-- not arrived, about two days after the ESTIMATED date. 4,795 reviews on
+-- delivered orders (4.98%) were answered before delivery (issue Q19), and 94%
+-- of those belong to late orders. If they alone created the "late = low score"
+-- pattern, Q26 would be overstated.
+--
+-- Grain: ORDER (one average score per order), exactly as Q26.
+--   all_reviews   : Q26's population - every review of the order
+--   after_arrival : reviews filtered at REVIEW grain to review_before_delivery
+--                   = 0 FIRST, then averaged per order. An order whose only
+--                   reviews were answered early drops out; a mixed order keeps
+--                   only its post-arrival review(s).
+-- Denominator: delivered orders (delivery_measurable = 1) with >= 1 qualifying
+-- review. Buckets match Q26, with 16-30 and 30+ days late combined as >15.
+-- Association only: no causal claim.
+-- -----------------------------------------------------------------------------
+WITH bucketed AS (
+    SELECT o.order_id,
+           CASE
+               WHEN o.delay_days <= -15 THEN 'a. 15+ days early'
+               WHEN o.delay_days <=  -7 THEN 'b. 7-15 days early'
+               WHEN o.delay_days <=   0 THEN 'c. 0-7 days early (on time)'
+               WHEN o.delay_days <=   7 THEN 'd. 1-7 days late'
+               WHEN o.delay_days <=  15 THEN 'e. 8-15 days late'
+               ELSE                          'f. more than 15 days late'
+           END AS bucket
+    FROM orders o
+    WHERE o.delivery_measurable = 1
+),
+all_scores AS (
+    SELECT order_id, AVG(review_score) AS score FROM order_reviews GROUP BY order_id
+),
+after_scores AS (
+    SELECT order_id, AVG(review_score) AS score FROM order_reviews
+    WHERE review_before_delivery = 0 GROUP BY order_id
+)
+SELECT b.bucket,
+       -- NULL for orders with no qualifying review, so AVG() ignores them:
+       -- the denominator is exactly the orders that HAVE a qualifying review.
+       COUNT(a.order_id)                                                       AS orders_all,
+       ROUND(AVG(a.score), 3)                                                  AS avg_score_all,
+       ROUND(100.0 * AVG(CASE WHEN a.order_id IS NULL THEN NULL
+                              WHEN a.score = 1 THEN 1 ELSE 0 END), 1)          AS pct_1star_all,
+       COUNT(f.order_id)                                                       AS orders_after_arrival,
+       ROUND(AVG(f.score), 3)                                                  AS avg_score_after_arrival,
+       ROUND(100.0 * AVG(CASE WHEN f.order_id IS NULL THEN NULL
+                              WHEN f.score = 1 THEN 1 ELSE 0 END), 1)          AS pct_1star_after_arrival
+FROM bucketed b
+LEFT JOIN all_scores   a ON a.order_id = b.order_id
+LEFT JOIN after_scores f ON f.order_id = b.order_id
+GROUP BY b.bucket
+ORDER BY b.bucket;
+
+
+-- -----------------------------------------------------------------------------
 -- Q27. Are the delivery estimates padded?
 -- -----------------------------------------------------------------------------
 -- Business: follows directly from Q17. If orders routinely arrive far earlier

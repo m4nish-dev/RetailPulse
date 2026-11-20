@@ -1,9 +1,10 @@
 # Phase 3 — Data Cleaning Report
 
 **Date:** 2026-11-13
-**Notebook:** `notebooks/02_data_cleaning.ipynb` (42 cells — executes end to end, 0 errors)
+**Notebook:** `notebooks/02_data_cleaning.ipynb` (44 cells — executes end to end, 0 errors)
+**Updated:** 2026-11-20 — fix-Phase 2 added Q18 and Q19 flags and 12 validation checks
 **Output:** 9 tables in `dataset/cleaned/` (569,776 rows, 90 MB)
-**Status:** ✅ **PASSED** — 34 of 34 validation checks
+**Status:** ✅ **PASSED** — 46 of 46 validation checks
 
 ---
 
@@ -11,11 +12,11 @@
 
 | | |
 |---|---|
-| Issues resolved | **17 of 17** |
+| Issues resolved | **19 of 19** (Q18, Q19 added 2026-11-20) |
 | Rows deleted | **0** |
 | Values imputed or invented | **0** |
 | Original columns overwritten | **0** |
-| Validation checks | **34 passed, 0 failed** |
+| Validation checks | **46 passed, 0 failed** |
 | Raw files modified | **None** |
 
 Every exclusion in this project is scoped to a specific metric and recorded.
@@ -103,6 +104,8 @@ reference data for maps; no KPI depends on it.
 | Q13 | 🟡 Low | 2 | Left NULL |
 | Q14 | 🟡 Low | 768 | `has_review = False`; LEFT JOIN enforced |
 | Q15 | 🟡 Low | 160 | Left NULL |
+| Q18 | 🟠 Medium | 1,359 | Flagged `carrier_before_approval`; `stage_timing_valid` defines the stage-metric population; timestamps untouched (added 2026-11-20) |
+| Q19 | ⚪ Info | 4,795 reviews | Flagged `review_before_delivery` at review grain; no review removed (added 2026-11-20) |
 | Q16 | 🟡 Low | 2 columns | `lenght` → `length` in the cleaned output |
 | Q17 | ⚪ Info | 3,852 | CSV quoting verified by round-trip test |
 
@@ -149,20 +152,23 @@ is visible.
 
 ## 6. Derived columns
 
-`orders_clean.csv` carries **36 columns**: the 8 original plus 28
+`orders_clean.csv` carries **38 columns**: the 8 original plus 30
 derived or joined. No original column was overwritten.
 
 **Calendar:** `order_date` · `order_month` · `order_year`
 **Money:** `order_revenue` · `order_freight` · `item_count` · `n_sellers`
 **Delivery:** `delivery_days` · `delay_days` · `is_late` · `delivery_measurable`
 **Status flags:** `is_delivered` · `revenue_eligible` · `has_items` · `has_review` · `in_stable_window`
-**Quality flags:** `has_date_anomaly` · `date_anomaly_note` · `has_delivery_anomaly`
+**Quality flags:** `has_date_anomaly` · `date_anomaly_note` · `has_delivery_anomaly` · `carrier_before_approval` (Q18) · `stage_timing_valid` (Q18)
 **Reviews:** `review_score_avg` · `review_count`
 **Payments:** `payment_total` · `payment_count` · `max_installments`
 **Customer:** `customer_unique_id` · `customer_state` · `customer_city` · `customer_zip_code_prefix`
 
 `order_items_clean.csv` gains `product_category_name_english`, `seller_state`,
 `seller_city`, order context and `item_total`.
+
+`order_reviews_clean.csv` gains `review_before_delivery` (Q19): True/False when
+the order has a delivery date, empty (NULL) otherwise.
 
 ### Aggregate before joining — enforced by assertion
 
@@ -180,7 +186,7 @@ fanned out, execution would have stopped. Measured cost of getting this wrong:
 
 ---
 
-## 7. Validation results — 34 / 34 passed
+## 7. Validation results — 46 / 46 passed
 
 | Group | Checks | Result |
 |---|---|---|
@@ -191,6 +197,7 @@ fanned out, execution would have stopped. Measured cost of getting this wrong:
 | Money reconciliation | 4 | ✅ |
 | Counts vs Phase 1 | 7 | ✅ |
 | No silent data loss | 3 | ✅ |
+| Q18 / Q19 flags (counts, flag = condition, valid population, NULL rule, timestamps and review keys unchanged vs raw) | 12 | ✅ |
 
 **Money reconciliation** deserves a note. Beyond checking that raw and cleaned
 totals match, the notebook asserts that `SUM(orders.order_revenue)` equals
@@ -267,9 +274,9 @@ This strengthens the existing decision to start the analysis window at
 
 | File | Rows | Cols | Size |
 |---|---|---|---|
-| `orders_clean.csv` | 99,441 | 36 | 33 MB |
+| `orders_clean.csv` | 99,441 | 38 | 34 MB |
 | `order_items_clean.csv` | 112,650 | 18 | 24 MB |
-| `order_reviews_clean.csv` | 99,224 | 7 | 13 MB |
+| `order_reviews_clean.csv` | 99,224 | 8 | 14 MB |
 | `customers_clean.csv` | 99,441 | 5 | 8.2 MB |
 | `order_payments_clean.csv` | 103,886 | 8 | 6.7 MB |
 | `products_clean.csv` | 32,951 | 10 | 3.1 MB |
@@ -287,8 +294,8 @@ This strengthens the existing decision to start the analysis window at
 
 | Gate | Result |
 |---|---|
-| Notebook executes end to end | ✅ 27/27 code cells, 0 errors |
-| Validation checks | ✅ 34 / 34 |
+| Notebook executes end to end | ✅ 28/28 code cells, 0 errors |
+| Validation checks | ✅ 46 / 46 |
 | Raw data unmodified | ✅ |
 | Rows deleted | ✅ 0 |
 | Values imputed | ✅ 0 |

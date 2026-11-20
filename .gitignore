@@ -54,6 +54,9 @@ __pycache__/
 # scripts/export_powerbi_data.py. Same reasoning as dataset/cleaned/.
 powerbi/data/*.csv
 !powerbi/data/.gitkeep
+# Analytical sources (fix-Phase 3): ~23 MB, regenerable with
+# scripts/export_powerbi_sources.py from sql/09_powerbi_sources.sql.
+powerbi/data/analytical/*.csv
 
 # --- Power BI temp / cache ---
 *.pbix.tmp

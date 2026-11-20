@@ -29,13 +29,13 @@ that determined whether they were happy.**
 
 Five things stand out:
 
-1. **Growth stalled.** Average month-over-month revenue growth fell from
-   **+22.7% across 2017 to +2.5% across 2018**. Revenue plateaued at roughly
-   850–1,000k BRL/month.
+1. **Growth stalled, then turned slightly negative.** Compound monthly revenue
+   growth was **+18.0% across 2017** (Jan→Dec) and **−1.5% across Jan–Aug 2018**.
+   Revenue plateaued at roughly 850–1,000k BRL/month.
 
-2. **All growth came from new buyers, none from bigger baskets.** Orders grew
-   **+716%** across the stable window while average order value *fell*
-   **13.4%**. Basket size has never been worked on.
+2. **All growth came from new buyers, none from bigger baskets.** Comparing
+   Jan–Aug 2018 with Jan–Aug 2017, orders grew **+137.3%** while average order
+   value was **flat (+0.4%)**. Basket size has never been worked on.
 
 3. **Customers do not come back.** Only **3.12%** ever placed a second order.
    Every cohort retained under 4.5%. This is not a leaky bucket — there is
@@ -45,18 +45,26 @@ Five things stand out:
    revenue, but **93% of the top 1% placed exactly one order**. There is no
    loyal elite to reward.
 
-5. **Late delivery is the single biggest destroyer of satisfaction, and it
-   has a cliff.** An order 1–7 days late loses **a full star** and quadruples
-   1-star reviews. At 8–15 days late the score collapses to **1.73** with
-   **68.5% one-star** — ten times the on-time rate.
+5. **Late delivery is strongly associated with lower satisfaction, but part
+   of the effect is a survey-timing artefact.** Across all reviews, orders 1–7
+   days late average **3.18** stars against 4.20 on time, and orders 8–15 days
+   late average 1.73. Most of that 1.73 comes from customers who answered the
+   survey **before their parcel arrived** (Olist sends it about two days after
+   the promised date). Counting only reviews answered after arrival, 1–7 days
+   late averages **3.86** and 8–15 days late **3.66** (small sample, n = 106).
+   The association holds; the "cliff" does not.
 
 **The strategic read:** with retention structurally near zero, the levers that
 remain are (a) basket size, which is untouched, and (b) delivery reliability,
-which measurably drives satisfaction and correlates with the small amount of
+which is strongly associated with satisfaction and with the small amount of
 repeat behaviour that does exist.
 
 **Every number in this report was re-verified against the MySQL database on
-2026-11-13**, independently of the earlier phase reports.
+2026-11-13**, independently of the earlier phase reports. The growth and AOV
+figures in Insights 1 and 2 were corrected on 2026-11-20 and re-verified in
+both SQL and pandas. Insights 9, 12 and 13 were re-tested on 2026-11-20 after a
+data-quality investigation of two timestamp issues (Q18, Q19); Insight 9 was
+revised, Insight 12 confirmed and Insight 13 strengthened.
 
 ---
 
@@ -92,10 +100,27 @@ show a collapse that never happened.
 
 **3. Actual finding**
 
-| Period | Months | Mean MoM revenue growth |
-|---|---|---|
-| 2017 | 11 | **+22.69%** |
-| 2018 | 8 | **+2.45%** |
+Growth is measured as the **compound monthly growth rate (CMGR)** — the
+constant monthly rate that turns the first month's revenue into the last
+month's: `(end ÷ start)^(1 ÷ intervals) − 1`.
+
+| Period | Start → end revenue (BRL) | Intervals | **CMGR** | Log-linear trend (all months) |
+|---|---|---|---|---|
+| 2017 (Jan → Dec) | 120,098.27 → 742,183.79 | 11 | **+18.01%** | +15.1% |
+| 2018 (Jan → Aug) | 945,456.29 → 848,860.10 | 7 | **−1.53%** | −1.1% |
+
+The log-linear trend fits every month rather than only the two endpoints, and
+confirms the same picture: strong growth through 2017, a slight decline in
+2018. The 2018 decline is therefore not an artefact of which months were
+chosen as start and end.
+
+> **Correction (2026-11-20).** An earlier version of this insight reported
+> the *arithmetic mean of month-over-month % changes* (+22.69% for 2017,
+> +2.45% for 2018) as if it were the growth rate. That measure is not a
+> growth rate: it is inflated by one +104% jump from a small January 2017
+> base, and it showed 2018 as mildly *growing* when revenue in fact
+> *declined*. The month-over-month series remains valid as a volatility view
+> (chart A1, lower panel) but is no longer used to describe overall growth.
 
 Revenue rose from 120,098 BRL (Jan 2017) to a plateau around 850–1,000k BRL
 through 2018. The single peak month is **November 2017 at 1,003,862 BRL**
@@ -103,9 +128,9 @@ through 2018. The single peak month is **November 2017 at 1,003,862 BRL**
 so the spike pulled demand forward rather than establishing a higher level.
 
 **4. Business implication**
-The business moved from rapid expansion to maintenance in roughly 18 months.
-A plateau is not a decline, but it means the growth model that worked in 2017
-had exhausted itself by 2018. Whatever drove 2017 — marketplace expansion,
+The business moved from rapid expansion to a plateau — and a slight decline —
+in roughly 18 months. The decline is small (about −1.5% a month), but it
+means the growth model that worked in 2017 had exhausted itself by 2018. Whatever drove 2017 — marketplace expansion,
 seller onboarding, category breadth — had stopped producing incremental
 revenue.
 
@@ -125,21 +150,41 @@ resumes on its own.
 Did the business grow by acquiring more buyers, or by getting more from each?
 
 **2. Analysis method**
-Orders, distinct customers and AOV indexed to 100 at 2017-01 so all three sit
-on one honest scale. Source:
-[`notebooks/03_exploratory_data_analysis.ipynb`](../notebooks/03_exploratory_data_analysis.ipynb) §A2 ·
+A like-for-like comparison of **January–August 2018 against January–August
+2017** — the only comparable period, because 2016 holds just 329 orders and
+2018 stops in August. AOV uses the KPI definition from
+`documentation/kpi_definitions.md`: eligible product revenue ÷ **eligible
+orders that have line items** (canceled and unavailable orders excluded from
+both numerator and denominator). Verified independently in SQL
+([`sql/05_advanced_sql.sql`](../sql/05_advanced_sql.sql) Q22) and pandas
+([`notebooks/03_exploratory_data_analysis.ipynb`](../notebooks/03_exploratory_data_analysis.ipynb) §A2) ·
 chart [`A2_growth_decomposition_indexed.png`](eda_charts/A2_growth_decomposition_indexed.png)
 
 **3. Actual finding**
 
-| | 2017-01 | 2018-08 | Change |
+| Jan–Aug, eligible orders with items | 2017 | 2018 | Change |
 |---|---|---|---|
-| Orders | 787 | 6,421 | **+716%** |
-| Distinct customers | 753 | 6,380 | +747% |
-| **Average order value** | **152.60 BRL** | **132.20 BRL** | **−13.4%** |
+| Orders | 22,562 | 53,530 | **+137.3%** |
+| Product revenue (BRL) | 3,080,850.81 | 7,341,037.41 | **+138.3%** |
+| **Average order value** | **136.55 BRL** | **137.14 BRL** | **+0.4%** |
 
-Orders and customers track each other almost perfectly. AOV not only failed to
-rise, it **declined**.
+Revenue grew almost exactly in step with order volume. **AOV was flat.**
+Across all 20 stable-window months, monthly AOV stayed in a narrow band
+(124.76–152.60 BRL, mean 138.59, standard deviation 7.44) with no trend.
+
+> **Correction (2026-11-20).** An earlier version reported AOV "falling
+> 13.4%" by comparing two single months: January 2017 (152.60 BRL) and
+> August 2018 (132.20 BRL). January 2017 is a 787-order ramp-up month and
+> happens to be the **highest-AOV month of the entire 20-month window**, so
+> that comparison starts from an outlier. Over comparable periods AOV did not
+> fall — it did not move. The recommendation below is unchanged: a flat AOV
+> is still an untouched lever.
+>
+> **Why other reports show slightly different figures.** The Phase 2
+> spreadsheet report counts **all-status** orders for volume (22,968 →
+> 53,991, +135.1%); that is a legitimate "orders placed" measure but it is not
+> the AOV denominator. Single-month endpoints (787 → 6,421 orders) describe
+> the ramp from launch and are not comparable periods.
 
 Overall AOV across the full period is **137.42 BRL**, against a **median order
 value of 86.90 BRL** — the mean sits 58% above the median because of a long
@@ -160,7 +205,7 @@ Make AOV an explicit, owned KPI with a target — it currently behaves like a
 number nobody is responsible for. The cheapest tests are a free-shipping
 threshold set just above the median order value (~87 BRL), and
 frequently-bought-together recommendations in the top categories from
-Insight 10. Report median order value alongside the mean so the target
+Insight 7. Report median order value alongside the mean so the target
 reflects typical customers rather than the tail.
 
 ---
@@ -333,6 +378,17 @@ Source: [`sql/06_customer_analytics.sql`](../sql/06_customer_analytics.sql) Q32 
 [`notebooks/03_exploratory_data_analysis.ipynb`](../notebooks/03_exploratory_data_analysis.ipynb) §B2 ·
 chart [`B2_rfm_segments_customers_vs_revenue.png`](eda_charts/B2_rfm_segments_customers_vs_revenue.png)
 
+> **Dependency (2026-11-20, DAX audit).** The project convention is now
+> **tie-consistent** scoring: customers with identical recency or spend always
+> share a score. The validated Power BI source `rfm_customer_segments` and the
+> DAX measures use it: Potential Loyalists **21,427** (33.61% of revenue), At
+> Risk 14,792 (30.75%), Needs Attention 33,498, Lost 23,420, Champions **951**
+> (2.31%), Loyal 895. The table below still shows the original `NTILE` counts,
+> which split tied customers arbitrarily and are not reproducible (re-running
+> the same query on 2026-11-20 gives 22,072 Potential Loyalists). **The finding
+> is unchanged** (about a third of revenue vs about 2%). `sql/06` Q32 and
+> notebook 03 §B2 have not yet been moved to the new scoring.
+>
 > **Segment counts differ slightly between implementations.** The figures
 > below come from the SQL `NTILE(5)` implementation. The Python version in
 > `notebooks/03_...ipynb` §B2 uses `qcut` and reports 21,989 Potential
@@ -480,62 +536,98 @@ rather than a one-off.
 
 # E · Delivery and Operations
 
-## Insight 9 — Late delivery destroys satisfaction, and the damage is front-loaded
+## Insight 9 — Late delivery is associated with lower satisfaction, but the "cliff" was mostly a survey-timing effect
+
+> **Revised 2026-11-20.** The original version of this insight said a late order
+> "loses a full star" and that 8–15 days late "collapses" the score to 1.73. A
+> data-quality investigation (issue **Q19**,
+> [`notebooks/04_data_quality_investigation.ipynb`](../notebooks/04_data_quality_investigation.ipynb))
+> found that **4,795 reviews (4.98%) were answered before the parcel arrived**,
+> and these are concentrated in late orders. The original figures are kept
+> below as *Analysis 1*. They are correct arithmetic, but they mix reviews of
+> the wait with reviews of the delivered order.
 
 **1. Business question**
-What does a late delivery actually cost in customer satisfaction?
+How is late delivery related to customer satisfaction?
 
 **2. Analysis method**
 Orders bucketed by `delay_days` (actual minus promised delivery date), with
 average review score per bucket. Reviews are aggregated to **one score per
 order first**, because 547 orders carry 2–3 reviews and counting those twice
-would bias the result. Denominator is the **96,476 orders with a real delivery
-date** — not the 96,478 marked `delivered`, since 8 of those have no date.
-Source: [`sql/05_advanced_sql.sql`](../sql/05_advanced_sql.sql) Q26 ·
-[`notebooks/03_exploratory_data_analysis.ipynb`](../notebooks/03_exploratory_data_analysis.ipynb) §F1 ·
-chart [`F1_delivery_delay_vs_review_score.png`](eda_charts/F1_delivery_delay_vs_review_score.png)
+would bias the result. The population is the **96,476 orders with a real
+delivery date** (not the 96,478 marked `delivered`, since 8 have no date).
+
+Two analyses:
+
+- **Analysis 1, all reviews:** the original method.
+- **Analysis 2, reviews answered after arrival only:** reviews with
+  `review_before_delivery = 1` are removed *at review grain* first, then the
+  remaining reviews are averaged per order.
+
+95% intervals use a normal approximation for averages and the Wilson method
+for the one-star share, because some Analysis 2 groups are small.
+
+Source: [`sql/05_advanced_sql.sql`](../sql/05_advanced_sql.sql) Q26 and Q26b ·
+[`notebooks/04_data_quality_investigation.ipynb`](../notebooks/04_data_quality_investigation.ipynb) §C ·
+chart [`DQ2_review_timing_sensitivity.png`](data_quality_charts/DQ2_review_timing_sensitivity.png)
 
 **3. Actual finding**
 
-| Delivery vs promise | Orders | Avg review | 1-star % | 5-star % |
-|---|---|---|---|---|
-| 15+ days early | 29,458 | 4.318 | 6.7% | 64.1% |
-| 7–15 days early | 41,476 | 4.316 | 6.3% | 63.2% |
-| On time (0–7 early) | 17,234 | 4.201 | 7.0% | 57.4% |
-| **1–7 days LATE** | 4,409 | **3.184** | **29.5%** | 33.1% |
-| **8–15 days late** | 1,918 | **1.733** | **68.5%** | 7.7% |
-| 16–30 days late | 992 | 1.622 | 70.4% | 5.1% |
-| 30+ days late | 343 | 2.025 | 64.1% | 13.1% |
+| Delivery vs promise | A1 orders | A1 avg | A1 1-star | A2 orders | A2 avg (95% CI) | A2 1-star (95% CI) |
+|---|---|---|---|---|---|---|
+| 15+ days early | 29,458 | 4.318 | 6.7% | 29,414 | 4.319 (±0.01) | 6.7% (6.4–7.0) |
+| 7–15 days early | 41,476 | 4.316 | 6.3% | 41,389 | 4.316 (±0.01) | 6.3% (6.0–6.5) |
+| On time (0–7 early) | 17,234 | 4.201 | 7.0% | 17,193 | 4.202 (±0.02) | 7.0% (6.7–7.4) |
+| **1–7 days late** | 4,409 | 3.184 | 29.5% | **3,055** | **3.860 (±0.05)** | **11.1% (10.0–12.3)** |
+| **8–15 days late** | 1,918 | 1.733 | 68.5% | **106** | **3.660 (±0.28)** | **17.9% (11.8–26.3)** |
+| **Over 15 days late** | 1,335 | 1.726 | 68.8% | **19** | **2.895 (±0.73)** | **31.6% (15.4–54.0)** |
 
-Slipping just **1–7 days costs 1.02 stars** and multiplies 1-star reviews
-**4.2×**. Slipping 8–15 days multiplies them **9.7×**.
+What survives:
 
-**Arriving very early buys nothing**: 15+ days early scores 4.318 against
-4.316 for 7–15 days early — indistinguishable.
+- **The direction.** Among reviews written after arrival, late orders still
+  score lower than on-time ones (all late orders 3.85 vs 4.30 for orders not late),
+  and the one-star share still rises with lateness. For 1–7 days late
+  (n = 3,055) the gap of about **0.34 stars** and **1.6× the one-star rate** is
+  well outside the confidence interval.
+- **Earliness buys nothing.** 15+ days early and 7–15 days early are
+  indistinguishable in both analyses (4.32 vs 4.32).
+
+What does not survive:
+
+- **The size of the drop.** The "8–15 days late → 1.73 stars, 68.5% one-star"
+  figure becomes **3.66 stars and about 18% one-star**. The steep cliff in
+  Analysis 1 is mostly customers rating **while still waiting**: the survey
+  reaches them about two days after the promised date.
+- **Precision beyond 7 days late.** Only 106 of 1,918 orders 8–15 days late,
+  and 19 of 1,335 orders over 15 days late, have a review answered after
+  arrival. Those intervals are wide, and those customers may differ from the
+  ones who reviewed while waiting. No precise conclusion is drawn for them.
 
 Across the whole period, **7,827 of 96,476 orders (8.11%) arrived late.**
 
 **4. Business implication**
-Two things follow, and the second is easy to miss.
+Late delivery and low ratings go together, but through **two channels** that
+the original analysis merged:
 
-First, **the damage is front-loaded.** Most of the harm happens in the first
-week of lateness. Preventing a small slip is worth far more than rescuing an
-order that is already three weeks overdue.
+1. **Waiting customers get surveyed.** About two days after a missed date the
+   survey goes out, and customers still waiting score it around **1.8 stars**
+   (two-thirds one-star). That depresses the public rating regardless of what
+   happens when the parcel arrives.
+2. **Delivered-late customers rate somewhat lower.** Once the parcel arrives, a
+   1–7 day slip is associated with about a third of a star less and a higher
+   one-star rate. This is real, but far gentler than "a full star".
 
-Second, **earliness has no upside.** Delivering two weeks early produces the
-same satisfaction as delivering one week early. Effort spent beating the
-promise by a wide margin is wasted; effort spent not missing it is not.
-
-> **Correlation, not causation.** A late delivery may share a root cause with
-> a bad experience — an unreliable seller, a difficult address — rather than
+> **Association, not causation.** A late delivery may share a root cause with a
+> bad experience (an unreliable seller, a difficult address) rather than
 > directly causing the low score.
 
 **5. Recommended action**
-Set the operational target as **"never miss the promise"** rather than
-"deliver as fast as possible". Build an at-risk alert for orders approaching
-their estimated date without a delivery scan, and intervene before the date
-passes rather than after. Given 7,827 late orders, even halving the 1–7 day
-slip category would move several thousand orders out of the 29.5% one-star band.
+Keep **"never miss the promise"** as the operational target: it addresses both
+channels. Build an at-risk alert for orders approaching their estimated date
+without a delivery scan, so the problem is handled before the survey reaches a
+waiting customer. Separately, **review the survey trigger** (Insight 13):
+holding it until delivery would stop the platform rating the wait instead of
+the order. When reporting satisfaction by delivery timing, show both analyses.
 
 ---
 
@@ -567,8 +659,9 @@ against Olist's own estimate, and that estimate was padded by nearly four
 weeks in early 2017.
 
 But read alongside Insight 9, the padding was **rational**: lateness is
-punished savagely while earliness earns nothing, so a conservative promise was
-the correct risk trade. And the company has been steadily removing it as
+associated with lower ratings (and, once the date passes, triggers a survey to
+a customer still waiting) while earliness earns nothing, so a conservative
+promise was the correct risk trade. And the company has been steadily removing it as
 actual performance improved, which is exactly the right direction.
 
 **5. Recommended action**
@@ -636,20 +729,34 @@ case at limited cost.
 Which stage of the journey should an operational improvement target?
 
 **2. Analysis method**
-Delivery decomposed into three stages using `TIMESTAMPDIFF` across the order
-timestamps.
-Source: [`sql/04_joins_and_aggregations.sql`](../sql/04_joins_and_aggregations.sql) Q20
+Delivery decomposed into three stages using exact (second-precision)
+`TIMESTAMPDIFF` across the order timestamps. **Corrected 2026-11-20:** the
+calculation now uses only orders whose four timestamps are in a possible
+order (`stage_timing_valid = 1`: purchase ≤ approval ≤ carrier ≤ customer).
+The original version included 1,373 orders where a stage was negative: 1,350
+with the carrier handoff recorded *before* payment approval (issue **Q18**)
+and 23 delivered before carrier handoff (Q08). It also truncated each stage
+to whole hours.
+Source: [`sql/04_joins_and_aggregations.sql`](../sql/04_joins_and_aggregations.sql) Q20 ·
+[`notebooks/04_data_quality_investigation.ipynb`](../notebooks/04_data_quality_investigation.ipynb) §A4
 
 **3. Actual finding**
 
-Across 96,461 orders with all three timestamps present:
+Across **95,088** orders with a valid stage sequence:
 
 | Stage | Days | Share of total |
 |---|---|---|
-| Purchase → payment approval | 0.41 | 3% |
-| Approval → carrier handoff (seller dispatch) | 2.78 | 22% |
-| **Carrier → customer (last mile)** | **9.31** | **74%** |
-| **Total** | **12.56** | |
+| Purchase → payment approval | 0.40 | 3.2% |
+| Approval → carrier handoff (seller dispatch) | 2.85 | 22.6% |
+| **Carrier → customer (last mile)** | **9.36** | **74.2%** |
+| **Total** | **12.62** | |
+
+**Robustness:** the superseded calculation on all 96,461 orders gave 0.41 /
+2.78 / 9.31 days (74.1% last mile). Removing the impossible sequences moves no
+stage by more than 0.07 days. **The finding is unchanged.** The Q18 anomaly is
+real but small (1.4% of orders) and short (two-thirds under 24 hours), and it
+looks like approvals recorded late in bulk on two dates rather than a
+logistics effect.
 
 **4. Business implication**
 Payment approval is effectively instantaneous and seller dispatch is already
@@ -694,58 +801,89 @@ chart [`F3_review_score_by_order_status.png`](eda_charts/F3_review_score_by_orde
 
 An order still `processing` scores **2.89 stars below** a delivered one.
 
+**Added 2026-11-20 (issue Q19), from the review timestamps directly:** of
+96,359 reviews on delivered orders, **4,795 were answered before the parcel
+arrived**. Those reviews average **1.80 stars with 67.2% one-star**, against
+**4.28 stars and 6.8% one-star** for reviews answered after arrival. 94% of
+them belong to orders that were delivered late. For a parcel that has not
+arrived, Olist sends the survey about two days after the promised date. The same pattern appears inside the `delivered` status, not only in
+undelivered statuses.
+
 Separately, the overall review distribution is J-shaped rather than
 bell-shaped: **57.78% five-star, 11.51% one-star**, little in between, with a
 mean of **4.0864** that describes almost nobody.
 
 **4. Business implication**
-Customers who review an undelivered order are rating **the absence of their
-parcel**, not the merchandise. Taken with Insights 9 and 12, the picture is
-consistent from three independent angles: **fulfilment, not product quality,
-is the dominant driver of satisfaction in this marketplace.**
+Customers who review an order that has not reached them are rating **the
+absence of their parcel**, not the merchandise. The review-timing evidence
+makes this direct rather than inferred: it shows up both in undelivered
+statuses and among delivered orders reviewed too early. Taken with Insights 9
+and 12, **fulfilment, more than product quality, is the dominant factor
+associated with satisfaction in this marketplace.** (Association: the data
+cannot rule out other differences between these customers.)
 
 The J-shaped distribution also means any dashboard reporting only the 4.09
 average hides the most actionable group — the 11.5% who are actively angry.
 
 **5. Recommended action**
 Report the **1-star rate** as a headline KPI alongside the average; the mean
-alone conceals the problem. Review when the satisfaction survey is triggered:
-sending it to customers whose order has not arrived harvests frustration and
-depresses the platform's public rating without producing usable product
-feedback.
+alone conceals the problem. **Change when the satisfaction survey is
+triggered:** today it goes to customers whose order has not arrived. Those
+4,795 reviews average 1.8 stars, depress the platform's public rating, and
+produce no usable product feedback. Holding the survey until a delivery scan
+exists is a cheap, testable change.
 
 ---
 
-## Insight 14 — Most rated revenue sits in categories scoring below average
+## Insight 14 — Below-average satisfaction reaches the revenue core, but not most rated revenue
+
+> **Revised 2026-11-20 (DAX audit).** The original version said **20 of 34**
+> categories, holding **60.0%** of rated revenue, score below average. That
+> scored each category by repeating every order's rating **once per item**, so
+> a 6-unit order counted six times. The project's review-grain convention
+> counts each review once per category it touches
+> (`powerbi/data/analytical/category_satisfaction.csv`, validated). On that
+> basis it is **15 of 34 categories and 45.1%**: no longer "most". Five
+> categories near the line move above average (auto, drinks, electronics,
+> garden_tools, housewares). Restricting reviews to eligible orders gives
+> 13 of 34 and 42.7%, so the conclusion does not depend on that choice. The
+> original also called the four categories below "four of the five largest";
+> by rated revenue they rank 2nd, 3rd, 5th and 6th.
 
 **1. Business question**
 Is weak satisfaction concentrated in small categories, or does it affect the
 ones that matter?
 
 **2. Analysis method**
-Average review score per category (item grain, joined to order-level review
-scores), with a floor of 300 items sold.
-Source: [`notebooks/03_exploratory_data_analysis.ipynb`](../notebooks/03_exploratory_data_analysis.ipynb) §F2 ·
-chart [`F2_review_score_by_category.png`](eda_charts/F2_review_score_by_category.png)
+Average review score per category at **review grain** (each review once per
+category in its order), with a floor of 300 eligible items sold. Revenue =
+eligible item revenue on orders that have a review ("rated revenue").
+Source: [`powerbi/data/analytical/category_satisfaction.csv`](../powerbi/analytical_sources.md) ·
+DAX `[Category Avg Review Score]` (N30). The original item-weighted figures come
+from [`notebooks/03_exploratory_data_analysis.ipynb`](../notebooks/03_exploratory_data_analysis.ipynb) §F2
+and chart [`F2_review_score_by_category.png`](eda_charts/F2_review_score_by_category.png), which have **not**
+been regenerated and still show the superseded method.
 
 **3. Actual finding**
 
-Of 34 categories meeting the volume floor, **20 score below the 4.0864 overall
-average**, and they account for **7,445,922 BRL — 60.0% of rated revenue.**
+Of 34 categories meeting the volume floor, **15 score below the 4.0864 overall
+average**, and they account for **5,591,643 BRL — 45.1% of rated revenue**
+(superseded item-weighted figure: 20 categories, 60.0%).
 
-Four of the five largest categories are among them:
+Three of the five largest categories are among them, plus the sixth:
 
-| Category | Revenue (BRL) | Avg score | 1-star % |
-|---|---|---|---|
-| watches_gifts | 1,189,934 | 4.03 | 12.4% |
-| bed_bath_table | 1,025,168 | **3.90** | 14.2% |
-| computers_accessories | 899,479 | 3.95 | 14.4% |
-| furniture_decor | 721,187 | **3.92** | 14.5% |
+| Category | Revenue rank | Rated revenue (BRL) | Avg score (review grain) | 1-star % | Score after arrival |
+|---|---|---|---|---|---|
+| watches_gifts | 2 | 1,189,934 | 4.07 | 11.7% | 4.26 |
+| bed_bath_table | 3 | 1,025,168 | **3.97** | 12.7% | 4.13 |
+| computers_accessories | 5 | 899,479 | 4.03 | 12.7% | 4.19 |
+| furniture_decor | 6 | 721,187 | **4.01** | 12.9% | 4.18 |
 
 **4. Business implication**
-Weak satisfaction is not confined to a fringe of small categories — it sits in
-the revenue core. However, the spread is narrow (3.90 to 4.03 against a 4.09
-average), so this is a broad mild underperformance rather than a few disasters.
+Weak satisfaction still reaches the revenue core: three of the five largest
+categories sit below average. But it covers less than half of rated revenue,
+and the gaps are small (3.97 to 4.07 against 4.09). This is a mild, broad
+underperformance in a few large categories, not a majority problem.
 
 Given Insights 9 and 13, part of this is likely delivery rather than product:
 bulky categories such as `bed_bath_table` and `furniture_decor` plausibly ship
@@ -763,8 +901,15 @@ settles it, and the answer changes who owns the fix.
 
 ### ✅ RESOLVED — follow-up analysis, 2026-11-13
 
-The query above was run. **The original insight stands unchanged; this
-section answers the question it left open.**
+> **Method note (2026-11-20).** The gaps in this follow-up were computed with
+> the superseded item-weighted scoring. The category verdicts below have
+> **not** been re-tested at review grain. The direction for the largest
+> categories (`bed_bath_table`, `furniture_decor` below average when on time)
+> agrees with the review-grain table above, where both stay below average
+> (3.97 and 4.01), but treat the exact gaps as provisional.
+
+The query above was run. This section answers the question the original
+insight left open.
 
 **Method.** Hold delivery constant by comparing each category's average
 review score **using on-time orders only**. If a category's deficit vanishes
@@ -829,11 +974,13 @@ remove late orders and they rate at or above baseline.
 Ranked by evidence strength × size of the opportunity.
 
 ### 1. Make "never miss the promised date" the primary operational goal
-**From Insights 9, 10, 12.** Lateness costs a full star within one week and
-collapses satisfaction to 1.73 stars by two. Earliness is worth nothing.
-7,827 orders arrived late. **Start with:** an at-risk alert before the
-promised date passes, and carrier accountability for the last mile, which is
-74% of the journey.
+**From Insights 9, 10, 12, 13.** Late orders are associated with lower ratings
+(3.86 vs 4.20 stars for 1–7 days late, reviews answered after arrival), and a
+missed date also triggers a survey to a customer still waiting, which averages
+1.8 stars. Earliness is worth nothing. 7,827 orders arrived late. **Start
+with:** an at-risk alert before the promised date passes, holding the review
+survey until delivery, and carrier accountability for the last mile, which is
+74.2% of delivery time.
 
 ### 2. Build a first-to-second purchase programme aimed at Potential Loyalists
 **From Insights 4, 5, 6.** 21,917 customers holding 33.9% of revenue, recent,
@@ -842,8 +989,9 @@ beat. **Do not** build a VIP tier — Champions are 982 people and 2.4% of
 revenue.
 
 ### 3. Make average order value an owned KPI with a target
-**From Insights 1, 2, 5.** Growth has flattened and AOV *fell* 13.4% while
-orders grew 716%. With retention structurally near zero, basket size is the
+**From Insights 1, 2, 5.** Growth has stalled (−1.5% compound monthly in
+2018) and AOV has been flat (+0.4%, Jan–Aug like-for-like) while orders more
+than doubled. With retention structurally near zero, basket size is the
 only lever that does not depend on customers returning. **Start with:** a
 free-shipping threshold just above the 86.90 BRL median order value.
 
@@ -855,8 +1003,9 @@ whether service improvement generates volume.
 
 ### 5. Report the 1-star rate, not just the average review score
 **From Insights 13, 14.** The 4.09 mean hides a J-shaped distribution with
-11.51% one-star reviews, and 60% of rated revenue sits in below-average
-categories. **Start with:** splitting category scores by on-time versus late
+11.51% one-star reviews, and 45% of rated revenue sits in below-average
+categories, including three of the five largest (review grain; the earlier 60%
+used item weighting). **Start with:** splitting category scores by on-time versus late
 delivery to establish whether the problem is product or logistics.
 
 ---
@@ -879,10 +1028,34 @@ Stated plainly, because every one of them bounds a conclusion above.
 | **City names unnormalised** | 4,119 spelling variants. All geographic analysis is state-level |
 | **Category ratings confound product and delivery** | Insight 14 cannot separate the two; this is flagged as the next piece of work |
 | **8 orders marked delivered with no date** | Delivery metrics use a 96,476 denominator, not 96,478 |
+| **Carrier handoff before approval (Q18, 1,359 orders)** | Delivery-*stage* figures use the 95,088 orders with a valid timestamp sequence. The cause (likely late-recorded approvals) cannot be proven from the data |
+| **Reviews answered before delivery (Q19, 4,795 reviews)** | Satisfaction by delivery timing is reported with and without them. After-arrival samples beyond 7 days late are small (106 and 19 orders), so no precise conclusion is drawn there, and those reviewers may not represent all late customers |
 
 ---
 
 # Verification
+
+**2026-11-20 DAX audit (fix-Phase 4)** — Insight 14 re-tested at review grain
+(each review once per category, the project convention): **15 of 34 categories,
+45.1% of rated revenue** below average, replacing the item-weighted 20 / 60.0%.
+The title and implication were revised. Insight 6 gained a dependency note
+with tie-consistent RFM counts; its conclusion is unchanged. Both new figures
+come from validated sources (`scripts/validate_powerbi_sources.py` 90/90,
+`scripts/validate_dax_logic.py` 230/230).
+
+**2026-11-20 data-quality re-test (fix-Phase 2)** — Insight 12 recomputed on
+the `stage_timing_valid` population (74.2% last mile, unchanged in substance).
+Insight 9 re-run with and without reviews answered before delivery (Q26b);
+its magnitude claims were revised. Insight 13 gained the review-timing
+evidence. All figures were reproduced independently in pandas
+(`notebooks/04_data_quality_investigation.ipynb`, 10/10 cross-checks against
+the stored flags and MySQL), and `sql/08_validation.sql` passes 71/71.
+
+**2026-11-20 corrections** — Insight 1 now reports compound monthly growth
+(2017 +18.01%, 2018 Jan–Aug −1.53%) instead of the arithmetic mean of monthly
+% changes; Insight 2 now compares AOV like-for-like (Jan–Aug 2017 136.55 vs
+Jan–Aug 2018 137.14 BRL, +0.4%) instead of two single months. Both were
+computed independently in SQL and pandas and agree to the cent.
 
 Every figure in this report was **recomputed from the MySQL database on
 2026-11-13**, independently of the Phase 4 and Phase 5 reports, using
@@ -893,7 +1066,7 @@ Underlying validation already established in earlier phases:
 
 | Check | Result |
 |---|---|
-| MySQL vs Python reference (Phase 4) | 61/61 PASS |
+| MySQL vs Python reference (Phase 4; 71/71 after the 2026-11-20 flag checks) | 61/61 PASS |
 | Python EDA vs MySQL (Phase 5) | 15/15 PASS |
 | Spreadsheet vs Python (Phase 2) | 17/17 computable KPIs reconcile |
 | Revenue reconciliation across all three engines | Agrees to the cent |

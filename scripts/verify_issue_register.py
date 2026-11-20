@@ -1,7 +1,7 @@
 """
 RetailPulse - independent re-verification of the data quality issue register.
 
-Recomputes the affected-record count for all 17 logged issues directly from
+Recomputes the affected-record count for all 19 logged issues directly from
 dataset/raw/, so no number in documentation/data_quality_report.md rests on a
 figure copied from an earlier run. Read-only.
 
@@ -104,6 +104,18 @@ emb = (revs.review_comment_message.fillna("").str.contains("\n")
        | revs.review_comment_title.fillna("").str.contains("\n"))
 chk("Q17", 3852, emb.sum(), "review records whose comment text contains a newline")
 
+# Q18 carrier handoff recorded before payment approval (added in fix-Phase 2)
+chk("Q18", 1359, (od.order_approved_at.notna() & od.order_delivered_carrier_date.notna()
+                  & (od.order_delivered_carrier_date < od.order_approved_at)).sum(),
+    "orders whose carrier-handoff timestamp is earlier than the approval timestamp")
+
+# Q19 review answered before the order was delivered (added in fix-Phase 2)
+rd = revs[["order_id", "review_answer_timestamp"]].merge(
+        od[["order_id", "order_delivered_customer_date"]], on="order_id", how="left")
+chk("Q19", 4795, (pd.to_datetime(rd.review_answer_timestamp)
+                  < rd.order_delivered_customer_date).sum(),
+    "reviews whose answer timestamp is earlier than the order's delivery timestamp")
+
 df = pd.DataFrame(checks)
 print("=" * 104)
 print("INDEPENDENT RE-VERIFICATION OF THE ISSUE REGISTER (recomputed from dataset/raw/)")
@@ -123,9 +135,9 @@ if len(bad):
     print(bad[["id", "claimed", "actual", "measures"]].to_string(index=False))
 
 sev = {"Q01":"High","Q02":"High","Q06":"High","Q07":"High",
-       "Q03":"Medium","Q04":"Medium","Q05":"Medium",
+       "Q03":"Medium","Q04":"Medium","Q05":"Medium","Q18":"Medium",
        "Q08":"Low","Q09":"Low","Q10":"Low","Q11":"Low","Q12":"Low",
-       "Q13":"Low","Q14":"Low","Q15":"Low","Q16":"Low","Q17":"Info"}
+       "Q13":"Low","Q14":"Low","Q15":"Low","Q16":"Low","Q17":"Info","Q19":"Info"}
 print("\nSeverity distribution (from the register):")
 s = pd.Series(sev).value_counts().reindex(["High","Medium","Low","Info"])
 for k, v in s.items():

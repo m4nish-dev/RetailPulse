@@ -1,7 +1,13 @@
 # RetailPulse — Dashboard Specification
 
 Six pages, specified visual by visual so the build is mechanical rather than
-improvised. Every KPI names the DAX measure from
+improvised.
+
+> **Updated 2026-11-20 (fix-Phase 3).** The RFM, cohort, drill-through, stage
+> breakdown and category-satisfaction visuals now have dedicated, validated
+> sources in `data/analytical/`. See [`analytical_sources.md`](analytical_sources.md).
+> The stage figures and the delay-vs-score table below were corrected to the
+> Phase 2 results. Every KPI names the DAX measure from
 [`dax_measures.md`](dax_measures.md), all of which have had their logic
 verified against MySQL.
 
@@ -60,7 +66,8 @@ Consistent across all six pages, so navigation feels like one product:
    share a time axis and are not being compared to each other.* If in doubt,
    split into two stacked charts.
 2. **Month-over-month growth** — column chart of `[Revenue MoM %]`, conditional
-   colour (green ≥ 0, red < 0).
+   colour (green ≥ 0, red < 0). 2017-01 is blank by design (December 2016
+   holds one order); optional line `[Revenue 3M Moving Avg]` starts at 2017-03.
 3. **Revenue by state** — map or horizontal bar, top 12. Include a caption:
    *top 3 of 27 states = 63.4% of revenue*.
 4. **Top 10 categories** — horizontal bar on `[Category Revenue]`.
@@ -86,10 +93,15 @@ Consistent across all six pages, so navigation feels like one product:
 ### Visuals
 1. **One-time vs repeat** — donut, 93,099 vs 2,997.
 2. **RFM segments** — bar chart, customers *and* revenue share side by side.
-   The gap between the two bars is the insight.
+   The gap between the two bars is the insight. Source:
+   `rfm_customer_segments` filtered `rfm_scored = 1`; values
+   `[Segment Customer Share]` and `[Segment Revenue Share]`; tooltip
+   `[Customers In Segment]`, `[Segment Avg Historical Value]`.
 3. **Customer value distribution** — histogram of `historical_value`, log scale.
 4. **Cohort retention matrix** — rows `cohort_month`, columns months-since,
-   values % active, conditional-formatted background.
+   values `[Cohort Retention %]`, conditional-formatted background. Source:
+   `cohort_retention`. Unobserved cells are blank by design, not 0; exclude
+   offset 0 (100%) from the colour scale.
 5. **Purchase frequency** — column chart, orders-per-person distribution.
 
 ### ⚠ Mandatory on-page captions
@@ -114,7 +126,11 @@ model is counting `customer_id` and is wrong.
 
 ### KPI cards
 `[Category Revenue]` R$ 13,494,400.74 · `[Distinct Categories]` 74 ·
-`[Category Items Sold]` · top category revenue R$ 1,255,695
+`[Category Items Sold]` 112,101 · `[Top Category Revenue]` R$ 1,255,695
+
+**Category axes and slicers use `dim_category[category]`**, so one selection
+filters revenue, products, sellers and satisfaction together. `[Category
+Revenue Share]` and `[Category Rank]` are written for that axis.
 
 ### Visuals
 1. **Revenue by category** — horizontal bar, top 15, sorted desc.
@@ -127,8 +143,10 @@ model is counting `customer_id` and is wrong.
 5. **Category table** — revenue, items, orders, avg price, share, rank.
 
 ### Drill-through
-From any category → a detail page showing that category's monthly trend,
-top products, top sellers and review distribution.
+From any category → a detail page showing that category's monthly trend
+(`vw_category_performance`), top products (`product_performance`), top
+sellers (`seller_category_performance`) and satisfaction
+(`category_satisfaction`), all filtered through `dim_category`.
 
 ---
 
@@ -136,7 +154,13 @@ top products, top sellers and review distribution.
 
 ### KPI cards
 `[Sellers With Revenue]` 3,053 · `[Seller Revenue]` · `[Largest Seller Share]`
-1.70% · `[Seller Avg Delivery Days]` · `[Seller Late Rate]`
+1.70% · `[Seller Avg Delivery Days]` 12.51 · `[Seller Late Rate]` 8.02%
+
+> Seller rates are **weighted** (from `seller_scorecard`) and counted per
+> seller-order pair. The late-rate card reads 8.02%, not the Page 5 figure of
+> 8.11%, because a multi-seller order counts once per seller. Card subtitle:
+> *"across seller-order pairs"*. Never show `[Seller Orders]` (99,542 pairs) as
+> an order count.
 
 ### Visuals
 1. **Top 20 sellers by revenue** — horizontal bar.
@@ -153,7 +177,7 @@ On both the scatter and the table:
 > *"Reviews attach to the **order**, not the seller. In a multi-seller order
 > every seller inherits the same score, so this is an inherited order rating,
 > not an independent seller rating. Delivery delay is also not wholly within
-> a seller's control — the carrier accounts for 74% of delivery time."*
+> a seller's control — the carrier accounts for 74.2% of delivery time."*
 
 Minimum 50 orders on any seller ranking; averages over tiny samples are
 unstable and would put one-order sellers at both extremes.
@@ -182,14 +206,21 @@ canceled or unavailable orders.
    This is the page's most important visual.
 3. **Delivery performance by state** — map or bar, coloured by late rate.
 4. **Delivery time distribution** — histogram, median reference line.
-5. **Delivery stage breakdown** — stacked bar: purchase→approval 0.41d,
-   approval→carrier 2.78d, carrier→customer 9.31d.
+5. **Delivery stage breakdown** — stacked bar from `delivery_stage_summary`
+   (95,088 orders with valid stage timing): purchase→approval 0.40d,
+   approval→carrier 2.85d, carrier→customer 9.36d (total 12.62d). Measures
+   N18–N24 (`[Last Mile Share]` 74.21%) on `delivery_stage_orders` respond to
+   state and date slicers.
 
 ### ⚠ Mandatory captions
 - On the on-time card: *"Measured against Olist's own estimated date, which
   was padded by up to 27 days in early 2017. This reflects cautious promising
   as much as fast logistics."*
-- On the stage breakdown: *"74% of delivery time is the carrier leg."*
+- On the stage breakdown: *"74.2% of delivery time is the carrier leg
+  (95,088 orders whose four timestamps are in a valid order; 1,388 with
+  missing or impossible timestamps excluded)."* The stage total (12.62d) uses
+  a smaller population than the Avg Delivery Time card (12.56d, 96,476
+  orders); label both.
 - Denominator note: *"Delivery averages use the 96,476 orders with an actual
   delivery date, not the 96,478 marked delivered — 8 have no date recorded."*
 
@@ -211,16 +242,26 @@ canceled or unavailable orders.
 
 ### Visuals
 1. **Review score distribution** — column chart, 1–5.
-2. **Delivery delay vs review score** — the project's headline finding.
-   Bars by delay bucket, with a second panel showing 1-star %.
-   | Bucket | Avg score | 1-star % |
+2. **Delivery delay vs review score** — show **both** analyses side by side
+   (revised 2026-11-20, Insight 9): all reviews, and reviews answered after
+   arrival only (`review_before_delivery = 0`), averaged per order. Axis
+   `vw_review_summary[delivery_bucket]`; values `[Avg Order Rating (Review
+   Table)]` and `[Avg Order Rating After Arrival]`. Card: `[Pre-Delivery
+   Reviews]` 4,795.
+   | Bucket | All reviews: avg / 1-star | After arrival: orders, avg / 1-star |
    |---|---|---|
-   | 7–15 days early | 4.316 | 6.3% |
-   | On time | 4.201 | 7.0% |
-   | 1–7 days late | 3.184 | 29.5% |
-   | 8–15 days late | 1.733 | 68.5% |
+   | 7–15 days early | 4.316 / 6.3% | 41,389 · 4.316 / 6.3% |
+   | On time | 4.201 / 7.0% | 17,193 · 4.202 / 7.0% |
+   | 1–7 days late | 3.184 / 29.5% | 3,055 · 3.860 / 11.1% |
+   | 8–15 days late | 1.733 / 68.5% | 106 · 3.660 / 17.9% |
 3. **Satisfaction trend** — monthly avg score and 1-star %, stable window.
-4. **Category satisfaction** — best and worst rated, minimum 300 items.
+4. **Category satisfaction** — best and worst rated, minimum 300 items, from
+   `category_satisfaction` (review grain; after-arrival columns available):
+   `[Category Avg Review Score]`, `[Category One-Star Rate]`, `[Category Avg
+   Score After Arrival]`. These are blank at the total row by design (not
+   additive across categories).
+   Caption: *"Reviews rate the whole order, delivery included — not product
+   quality alone."*
 
 ### ⚠ Mandatory caption
 On the delay-vs-score visual:
@@ -229,7 +270,8 @@ On the delay-vs-score visual:
 > with a bad experience — an unreliable seller, a difficult address — rather
 > than directly causing the low score. Note also that arriving very early
 > buys nothing: 15+ days early scores 4.318 against 4.316 for 7–15 days
-> early."*
+> early. 4,795 reviews were answered before the parcel arrived; the
+> after-arrival bars exclude them."*
 
 ---
 

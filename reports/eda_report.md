@@ -53,21 +53,44 @@ Every chart answers a business question. None were created to raise the count.
 
 ### 3.1 Growth is volume, and it has stopped
 
-Within the stable window (2017-01 → 2018-08):
+**Volume vs basket size** — January–August 2018 against January–August 2017,
+the only comparable period. Population: revenue-eligible orders that have
+line items (the AOV definition in `kpi_definitions.md`).
 
-| | 2017-01 | 2018-08 | Change |
+| Jan–Aug, eligible orders with items | 2017 | 2018 | Change |
 |---|---|---|---|
-| Orders | 787 | 6,421 | **+716%** |
-| AOV | 152.60 | 132.20 | **−13.4%** |
+| Orders | 22,562 | 53,530 | **+137.3%** |
+| Revenue (BRL) | 3,080,850.81 | 7,341,037.41 | **+138.3%** |
+| AOV (BRL) | 136.55 | 137.14 | **+0.4%** |
 
-Mean month-over-month revenue growth fell from **+22.7% across 2017** to
-**+2.5% across 2018**. The 3-month moving average shows a clean plateau at
-roughly 900k BRL/month through 2018.
+**Growth rate** — compound monthly growth rate (CMGR), from the first to the
+last month of each period:
 
-Indexing orders, customers and AOV to 100 at the start (chart A2) makes the
-mechanism obvious: orders and customers rise together almost perfectly while
-**AOV is flat and slightly declining**. Every bit of growth came from
-acquiring more buyers, none from persuading them to spend more.
+| Period | CMGR | Log-linear trend (all months) |
+|---|---|---|
+| 2017, Jan → Dec | **+18.01%** | +15.1% |
+| 2018, Jan → Aug | **−1.53%** | −1.1% |
+
+2017 grew strongly; 2018 declined slightly. The 3-month moving average shows
+a plateau at roughly 900k BRL/month through 2018.
+
+Chart A2 indexes orders, customers and AOV to their **2017 average** (= 100):
+orders and customers climb together while AOV stays in a narrow band around
+100 (monthly range 124.76–152.60 BRL, standard deviation 7.44). Every bit of
+growth came from acquiring more buyers, none from persuading them to spend
+more.
+
+> **Corrections (2026-11-20).**
+> - AOV was previously reported as "−13.4%", comparing January 2017
+>   (152.60 BRL) with August 2018 (132.20 BRL). January 2017 is a 787-order
+>   ramp-up month and the **highest-AOV month of the whole window**, so the
+>   comparison started from an outlier. Like-for-like, AOV is flat (+0.4%).
+>   Chart A2 was previously indexed to that same January, which made AOV
+>   appear to fall; it is now indexed to the 2017 average.
+> - Growth was previously reported as the arithmetic mean of monthly %
+>   changes (+22.7% for 2017, +2.5% for 2018). That is not a growth rate: it
+>   is inflated by one +104% jump from a small base, and it showed 2018 as
+>   growing when revenue declined. CMGR replaces it.
 
 **Implication.** Acquisition is working and has saturated. AOV is a
 completely untouched lever — and given near-zero retention (3.4), it may be
@@ -152,9 +175,12 @@ the business, and every one of them is a first-purchase customer not yet lost.
 customers?" but "how do we get a second order out of a recent first-time
 buyer?" That is onboarding and follow-up, not VIP perks.
 
-### 3.5 Lateness destroys satisfaction, and the cliff is sharp
+### 3.5 Lateness is associated with lower satisfaction (revised 2026-11-20)
 
-**The most important finding in the project.**
+> **Revised.** The table below uses all reviews. Issue Q19 later showed that
+> 4,795 reviews were answered before the parcel arrived, concentrated in late
+> orders. The "cliff" reading is superseded; see the sensitivity table below
+> and `notebooks/04_data_quality_investigation.ipynb` §C.
 
 | Delivery vs promise | Orders | Avg review | 1-star % |
 |---|---|---|---|
@@ -166,17 +192,28 @@ buyer?" That is onboarding and follow-up, not VIP perks.
 | 16–30 days late | 992 | 1.62 | 70.4% |
 | 30+ days late | 343 | 2.02 | 64.1% |
 
-Slipping just **1–7 days costs 1.02 stars** and multiplies one-star reviews
-**4.2×**. Slipping 8–15 days multiplies them **9.7×**.
+Across all reviews, 1–7 days late scores 1.02 stars below on time and 8–15
+days late has 9.7× the one-star share. **Counting only reviews answered after
+arrival**, those gaps shrink sharply:
+
+| Delivery vs promise | All reviews: avg / 1-star | After arrival only: orders, avg / 1-star |
+|---|---|---|
+| On time (0–7 early) | 4.201 / 7.0% | 17,193 · 4.202 / 7.0% |
+| 1–7 days late | 3.184 / 29.5% | 3,055 · **3.860 / 11.1%** |
+| 8–15 days late | 1.733 / 68.5% | 106 · **3.660 / 17.9%** |
+| Over 15 days late | 1.726 / 68.8% | 19 · 2.895 / 31.6% |
+
+The association survives; its size does not. Beyond 7 days late the
+after-arrival samples are small (106 and 19 orders).
 
 Two consequences that are easy to miss:
 
 1. **Arriving very early buys nothing.** 15+ days early scores 4.318 against
    4.316 for 7–15 days early — indistinguishable. All padding produces zero
    satisfaction upside; it only protects against downside.
-2. **The damage is front-loaded.** Most harm occurs in the first week of
-   lateness, so preventing a small slip matters far more than rescuing an
-   already very late order.
+2. **Prevention still matters most.** Once the promised date passes, a
+   waiting customer is surveyed within about two days. Preventing the slip
+   avoids both the pre-arrival review and the lower after-arrival rating.
 
 > **Correlation, not causation.** A late delivery may share a root cause with
 > a bad experience (an unreliable seller) rather than directly causing the low
@@ -253,11 +290,18 @@ Combined with 3.5, the conclusion is consistent from three angles:
 **fulfilment, not product quality, is the dominant driver of satisfaction in
 this marketplace.**
 
-### 3.10 Category risk is low, but 60% of rated revenue sits below average
+### 3.10 Category risk is low, but below-average ratings reach the revenue core
 
-Of categories with 300+ items sold, those rated below the 4.09 overall average
-account for **7.45M BRL — 60% of rated revenue**, including four of the five
-largest:
+> **Revised 2026-11-20.** The figures below were computed by repeating each
+> order's rating once per item (item-weighted). At review grain, the project
+> convention, **15 of 34 categories holding 45.1% of rated revenue** score
+> below average, not 60%. The four categories shown remain below average
+> (review-grain scores 4.07, 3.97, 4.03, 4.01). See `business_insights.md`
+> Insight 14. Chart F2 has not been regenerated.
+
+Item-weighted (superseded): of categories with 300+ items sold, those rated
+below the 4.09 overall average account for **7.45M BRL — 60% of rated
+revenue**, including four of the six largest:
 
 | Category | Revenue | Avg score | 1-star % |
 |---|---|---|---|

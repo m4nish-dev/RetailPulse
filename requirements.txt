@@ -1,38 +1,37 @@
 # RetailPulse — Python dependencies
 #
-# Verified on macOS (Apple Silicon) with Python 3.14.3 on 2026-11-12.
-# All installed from prebuilt wheels — no compiler required.
+# Verified on macOS (Apple Silicon) with Python 3.14.3.
+# All install from prebuilt wheels — no compiler required.
 #
 #   python3.14 -m venv venv
 #   source venv/bin/activate
 #   pip install -r requirements.txt
 #
-# Versions below are the ones this project was actually built and tested
-# against. Phase 1 packages are pinned; later-phase packages are listed but
-# commented out until their phase, so a fresh install stays small and fast.
+# Only DIRECT dependencies are listed: every package below is imported by a
+# script or notebook, or is needed to execute the notebooks. Transitive
+# dependencies (e.g. python-dateutil, pulled in by pandas) are left to pip.
+# Versions are the exact ones the project was built and tested against.
 
-# --- Core data manipulation ---
-pandas==3.1.1
-numpy==2.5.4
+# --- Core data manipulation -------------------------------------------------
+pandas==3.1.1                 # all notebooks and scripts
+numpy==2.5.4                  # notebooks 01-03
 
-# --- Visualisation ---
-matplotlib==3.11.2
-seaborn==0.13.2
+# --- Visualisation ----------------------------------------------------------
+matplotlib==3.11.2            # notebooks 01 and 03 (all charts)
 
-# --- Notebooks ---
-jupyterlab==4.6.6
-ipykernel==7.4.0
-nbformat==5.11.1
-nbconvert==7.17.2
+# --- Notebooks --------------------------------------------------------------
+jupyterlab==4.6.6             # interactive use
+ipykernel==7.4.0              # kernel the notebooks run on
+nbformat==5.11.1              # notebook read/write
+nbconvert==7.17.2             # headless execution: jupyter nbconvert --execute
 
-# --- Utilities ---
-tabulate==0.10.0
-python-dateutil==4.0.0
+# --- Excel workbook (Phase 2) -----------------------------------------------
+openpyxl==3.1.5               # scripts/build_phase2_workbook.py, recalc_workbook.py
 
-# --- Phase 2: Excel / spreadsheet I/O (uncomment when Phase 2 starts) ---
-# openpyxl
-# xlsxwriter
+# --- MySQL connectivity (Phases 4-6) ----------------------------------------
+mysql-connector-python==26.10.0   # notebook 03 §G, export_powerbi_data.py,
+                                  # validate_dax_logic.py
 
-# --- Phase 4: MySQL connectivity (uncomment when Phase 4 starts) ---
-# mysql-connector-python
-# sqlalchemy
+# Removed after an import audit (no file references them):
+#   seaborn, tabulate, python-dateutil (direct pin), xlsxwriter, sqlalchemy
+# Re-add a package only when code actually imports it.

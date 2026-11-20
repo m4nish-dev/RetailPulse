@@ -260,12 +260,23 @@ Like-for-like January–August (the only honest year-over-year comparison, since
 
 | | 2017 Jan–Aug | 2018 Jan–Aug | Change |
 |---|---|---|---|
-| Revenue | 3,080,850.81 | 7,341,037.41 | **+138.3%** |
-| Orders | 22,968 | 53,991 | **+135.1%** |
-| AOV | 134.14 | 135.97 | **+1.4%** |
+| Revenue (revenue-eligible) | 3,080,850.81 | 7,341,037.41 | **+138.3%** |
+| Orders placed (all statuses) | 22,968 | 53,991 | **+135.1%** |
+| Orders in the AOV denominator (eligible, with items) | 22,562 | 53,530 | **+137.3%** |
+| **AOV** (eligible revenue ÷ eligible orders with items) | **136.55** | **137.14** | **+0.4%** |
 
 Revenue more than doubled, and almost all of it came from **more orders, not
-bigger ones**. AOV barely moved. The growth engine is acquisition; basket size
+bigger ones**. AOV did not move.
+
+> **Correction (2026-11-20).** This table originally reported AOV as
+> 134.14 → 135.97 (+1.4%). Those figures divided **revenue-eligible** revenue
+> by **all-status** order counts, so the numerator excluded canceled and
+> unavailable orders while the denominator included them. Numerator and
+> denominator must describe the same orders; on the KPI definition AOV is
+> 136.55 → 137.14 (+0.4%). The all-status order count is kept above because it
+> is a legitimate "orders placed" volume measure — it is simply not the AOV
+> denominator. The workbook itself was not affected: sheet
+> `05_Revenue_By_Month` already uses the correct denominator. The growth engine is acquisition; basket size
 has not been worked on. That is a strategic observation with an obvious
 follow-up question for Module 2.
 

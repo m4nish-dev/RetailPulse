@@ -162,7 +162,8 @@ IGNORE 1 ROWS
  @order_revenue, @order_freight, @n_sellers, @review_avg, @review_count,
  @payment_total, @payment_count, @max_inst, @order_date, @order_month,
  @order_year, @is_delivered, @rev_eligible, @has_items, @has_review,
- @delivery_days, @delay_days, @is_late, @deliv_measurable, @deliv_anom)
+ @delivery_days, @delay_days, @is_late, @deliv_measurable, @deliv_anom,
+ @carrier_before_approval, @stage_timing_valid)
 SET order_id                      = @order_id,
     customer_id                   = @customer_id,
     order_status                  = @order_status,
@@ -183,7 +184,9 @@ SET order_id                      = @order_id,
     in_stable_window     = CASE @stable           WHEN 'True' THEN 1 ELSE 0 END,
     has_date_anomaly     = CASE @date_anom        WHEN 'True' THEN 1 ELSE 0 END,
     has_delivery_anomaly = CASE @deliv_anom       WHEN 'True' THEN 1 ELSE 0 END,
-    date_anomaly_note    = IF(CHAR_LENGTH(@anom_note) = 0, NULL, @anom_note);
+    date_anomaly_note    = IF(CHAR_LENGTH(@anom_note) = 0, NULL, @anom_note),
+    carrier_before_approval = CASE @carrier_before_approval WHEN 'True' THEN 1 ELSE 0 END,
+    stage_timing_valid      = CASE @stage_timing_valid      WHEN 'True' THEN 1 ELSE 0 END;
 
 
 -- =============================================================================
@@ -240,7 +243,7 @@ INTO TABLE order_reviews
 FIELDS TERMINATED BY ',' ENCLOSED BY '"' ESCAPED BY ''
 LINES  TERMINATED BY '\n'
 IGNORE 1 ROWS
-(@review_id, @order_id, @score, @title, @message, @created, @answered)
+(@review_id, @order_id, @score, @title, @message, @created, @answered, @before_delivery)
 SET review_id               = @review_id,
     order_id                = @order_id,
     review_score            = @score,
@@ -254,7 +257,10 @@ SET review_id               = @review_id,
     review_comment_title    = IF(CHAR_LENGTH(@title)   = 0, NULL, @title),
     review_comment_message  = IF(CHAR_LENGTH(@message) = 0, NULL, @message),
     review_creation_date    = @created,
-    review_answer_timestamp = @answered;
+    review_answer_timestamp = @answered,
+    -- nullable boolean: '' (no delivery date) must become NULL, not 0
+    review_before_delivery  = CASE @before_delivery WHEN 'True' THEN 1
+                                                    WHEN 'False' THEN 0 ELSE NULL END;
 
 
 -- =============================================================================

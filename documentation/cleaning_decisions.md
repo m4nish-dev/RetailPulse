@@ -1,6 +1,7 @@
 # Cleaning Decisions — Definitive Issue Register
 
-**Version 2.0** · 2026-11-13 · supersedes the register in `data_quality_report.md`
+**Version 2.1** · 2026-11-20 · supersedes the register in `data_quality_report.md`
+(2.1 adds Q18 and Q19 from the fix-Phase 2 data-quality investigation)
 **Implemented by:** `notebooks/02_data_cleaning.ipynb`
 
 ---
@@ -16,13 +17,19 @@ independently recomputed from `dataset/raw/`** by
 **Result: 17 issues, all 17 counts verified, 0 mismatches.** The numbers below
 are measured, not inherited.
 
+**Version 2.1 (fix-Phase 2):** the final project audit found two timestamp issues the
+original register missed. They were investigated in
+`notebooks/04_data_quality_investigation.ipynb` before any treatment was chosen and
+added as **Q18** and **Q19**. The register is now **19 issues, 19/19 verified from
+`dataset/raw/`, 0 mismatches.**
+
 | Severity | Count |
 |---|---|
 | 🔴 High | 4 |
-| 🟠 Medium | 3 |
+| 🟠 Medium | 4 |
 | 🟡 Low | 9 |
-| ⚪ Info | 1 |
-| **Total** | **17** |
+| ⚪ Info | 2 |
+| **Total** | **19** |
 
 Re-run the verification at any time:
 
@@ -100,7 +107,7 @@ behind it, and any exclusion can be explained and reversed.
 | **Records affected** | **329** orders in 2016 (vs 45,101 in 2017) |
 | **Decision** | Report YoY only as 2018 Jan–Aug vs 2017 Jan–Aug. |
 | **Reason** | Full-year 2017-vs-2016 growth computes to roughly +13,600% — arithmetically correct, completely misleading. |
-| **Validation** | Like-for-like Jan–Aug: revenue **+138.3%**, orders **+135.1%**. |
+| **Validation** | Like-for-like Jan–Aug: revenue **+138.3%** (revenue-eligible), orders **+135.1%** (all statuses) or **+137.3%** (eligible with items — the AOV population). |
 
 ---
 
@@ -133,6 +140,20 @@ behind it, and any exclusion can be explained and reversed.
 | **Reason** | By status: `unavailable` 603, `canceled` 164, `created` 5, `invoiced` 2, `shipped` 1. Orders that never completed, so the absence is correct — but they would deflate AOV if counted. |
 | **Validation** | AOV denominator = 98,199 eligible orders with items. |
 
+### Q18 — Carrier handoff recorded before payment approval
+| | |
+|---|---|
+| **Table / column** | `orders.order_delivered_carrier_date` vs `orders.order_approved_at` |
+| **Records affected** | **1,359** orders (verified): 1,350 delivered, 9 shipped. 1.40% of the 96,461 delivered orders with both timestamps |
+| **Decision** | New flag `carrier_before_approval`. New flag `stage_timing_valid` (all four timestamps present and purchase ≤ approval ≤ carrier ≤ customer). Delivery-**stage** metrics use `stage_timing_valid = 1` only. **No row deleted, no timestamp altered.** |
+| **Reason** | Both timestamps have full time precision, so this is not a rounding artefact. 61% of the flagged orders fall on two approval dates (2018-04-24 and 2018-07-05). On each, 3–4× a normal day's approvals were recorded within 7–9 hours, covering a week of earlier purchases. This is consistent with approvals being **recorded late in bulk**. It is not boleto (21% of flagged vs 20% of other orders) and not concentrated by seller (584 sellers) or state. A subset of 166 has the carrier handoff before the *purchase*, which a late approval cannot explain; those point to carrier-timestamp errors. The root cause cannot be proven from the data, so the timestamps are flagged, not "fixed". |
+| **Scope of impact** | Overall delivery time (purchase → delivery), on-time rate and delay are **unaffected**: they do not use these two timestamps. Only the stage breakdown is affected. On the corrected population (95,088 orders) the last mile is **74.2%** of delivery time, versus 74.1% before, so Insight 12 stands. |
+| **Validation** | 1,359 flagged; flag equals the recomputed condition; `stage_timing_valid` population has zero negative stage intervals and excludes every Q18 and Q08 row; original timestamps identical to raw. Asserted in notebook 02 and `08_validation.sql` §13. |
+
+> **Disclosure.** The Phase 3 notebook printed a related count ("carrier handoff
+> before purchase: 166") but it was never entered in the register. Later summaries
+> wrongly implied that Q08's 23 rows were the only sequence failures. Q18 corrects that.
+
 ---
 
 ## 🟡 Low severity
@@ -164,6 +185,17 @@ behind it, and any exclusion can be explained and reversed.
 > **Relevant again in Phase 4.** MySQL `LOAD DATA INFILE` must be given the
 > correct `ENCLOSED BY '"'` clause or these 3,852 records will break the import.
 
+### Q19 — Reviews answered before the order was delivered
+| | |
+|---|---|
+| **Table / column** | `order_reviews.review_answer_timestamp` vs `orders.order_delivered_customer_date` |
+| **Records affected** | **4,795** reviews (verified), 4.98% of reviews on delivered orders |
+| **Decision** | New flag `review_before_delivery`, at **review grain**. NULL when the order has no delivery date. **No review removed.** Satisfaction results are reported both with all reviews and with after-arrival reviews only. |
+| **Reason** | Not invalid data. It is an **analytical limitation** created by the survey process. The survey is sent the day after delivery, or about **two days after the estimated date** if the parcel hasn't arrived. 94% of these reviews belong to late orders, so late customers are often surveyed while still waiting. |
+| **Why 4,795 and not 8,320** | The audit compared `review_creation_date` with the delivery time. That field is the date the survey was *sent*, stored as a date (99.91% at 00:00:00), so a survey sent on the morning of a 15:00 delivery counted as "before". 3,193 of the 8,320 were same-day cases like this. The question that matters is when the customer *answered*: `review_answer_timestamp`. |
+| **Scope of impact** | Pre-arrival reviews average **1.80** stars (67% one-star) vs **4.28** after arrival. The late-delivery association weakens sharply once they are excluded: for orders 8–15 days late the average goes from 1.73 to 3.66 (n = 106). See Insights 9 and 13. |
+| **Validation** | 4,795 flagged; flag equals the recomputed condition; NULL exactly where the order has no delivery date; review (review_id, order_id) pairs identical to raw. |
+
 ---
 
 ## Decisions not tied to a logged issue
@@ -185,11 +217,11 @@ behind it, and any exclusion can be explained and reversed.
 
 | | |
 |---|---|
-| Issues in register | **17** (all counts independently verified) |
-| Issues resolved in Phase 3 | **17** |
+| Issues in register | **19** (all counts independently verified) |
+| Issues resolved in Phase 3 | **17** (Q18 and Q19 added and treated in fix-Phase 2) |
 | Rows deleted | **0** |
 | Values imputed or invented | **0** |
 | Original columns overwritten | **0** |
-| Validation checks in the notebook | **34, all passing** |
+| Validation checks in the notebook | **46, all passing** |
 | Rows intentionally aggregated | 981,148 geolocation readings → 19,015 zip prefixes (Q12) |
 | Rows intentionally added | 2 category translations (Q03) |
