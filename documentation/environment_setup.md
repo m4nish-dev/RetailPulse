@@ -104,6 +104,13 @@ Listing Excel on your resume is fair; the transferable skill is real.
 
 Two sensible routes:
 
+> **Phase 5 update.** The project uses Homebrew **`mysql@8.4`** (see
+> `mysql_setup.md`). Application code never connects as root: it uses the
+> read-only `retailpulse_app` account (`sql/10_app_user.sql`) with credentials
+> in a git-ignored `.env` copied from `.env.example`. `python scripts/rp_db.py`
+> tests the connection; `python scripts/run_all_validations.py` runs every check.
+> The commands below are the original planning notes.
+
 ### Option A — Homebrew (simpler)
 
 ```bash

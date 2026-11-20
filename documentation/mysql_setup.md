@@ -44,52 +44,37 @@ source ~/.zshrc
 
 ---
 
-## 2. ⚠ Security: your MySQL currently has NO root password
+## 2. Security: two accounts, least privilege (updated in Phase 5)
 
-A fresh Homebrew MySQL install creates `root@localhost` **with an empty
-password**. That is how this project connected — no password was guessed, set,
-invented or written into any file.
+| Account | Used for | Privileges |
+|---|---|---|
+| `retailpulse_app` | **every script, validator and notebook** (via `scripts/rp_db.py` and `.env`) | `SELECT` on `retailpulse.*` only. No writes, no DDL, no other schemas, no `FILE`, no `GRANT` |
+| an administrator (`root` locally) | the one-off rebuild in §3 and creating the app account | full |
 
-**I deliberately did not run `mysql_secure_installation`**, because it sets a
-root password and that is your decision, not something to be done to your
-machine without asking.
+The application account was tested (Phase 5): reads succeed; `INSERT`,
+`UPDATE`, `DELETE`, `CREATE TABLE`, `DROP VIEW`, `DROP DATABASE`, reading
+`mysql.user`, `SELECT ... INTO OUTFILE` and `CREATE USER` are all refused.
+`scripts/rp_db.py` refuses `MYSQL_USER=root` outright and marks every session
+`READ ONLY` as a second barrier.
 
-### What this means
+**Credentials live only in `.env`** (git-ignored, mode 600), copied from
+`.env.example`. No password appears in any SQL file, script, notebook or log;
+`sql/10_app_user.sql` holds a placeholder only.
 
-The server only listens on `localhost`, so it is not reachable from the
-network. For a local analytics project on your own laptop this is normal and
-low risk.
+### ⚠ `root` still has no password
 
-### If you want to secure it (recommended if this machine is shared)
+A fresh Homebrew MySQL creates `root@localhost` **with an empty password**.
+Application code no longer uses it, but the account itself is unchanged:
+setting a root password is your decision. The server listens on `127.0.0.1`
+only, so the risk is limited to other users of this machine. To secure it:
 
 ```bash
 /opt/homebrew/opt/mysql@8.4/bin/mysql_secure_installation
 ```
 
-It will ask you to set a root password and answer a few yes/no prompts. **If
-you do this, every command in this guide needs `-p` added**, which will then
-prompt you for the password:
-
-```bash
-/opt/homebrew/opt/mysql@8.4/bin/mysql -u root -p retailpulse
-```
-
-### Never commit credentials
-
-`.gitignore` already excludes `.env`, `*.cnf`, `.my.cnf`, `credentials.json`
-and `*.pem`. If you set a password and want to avoid typing it, put it in
-`~/.my.cnf` **outside this repository**:
-
-```ini
-[client]
-user = root
-password = your_password
-```
-```bash
-chmod 600 ~/.my.cnf
-```
-
-No password appears anywhere in this project's files, and none should.
+After that, the admin commands in §3 need `-p`. For convenience you can keep
+admin credentials in `~/.my.cnf` **outside this repository** (`chmod 600`).
+Application scripts are unaffected: they use `.env`.
 
 ---
 
@@ -111,8 +96,16 @@ $MYSQL --local-infile=1 -u root retailpulse < sql/02_import.sql
 # 3. Create the 7 reusable views
 $MYSQL -u root retailpulse < sql/07_business_analysis.sql
 
-# 4. Verify everything against the Python reference
-$MYSQL -u root retailpulse < sql/08_validation.sql
+# 4. Create the read-only application account (once). Edit a COPY of
+#    sql/10_app_user.sql in your session, or paste its statements into
+#    `$MYSQL -u root`, replacing REPLACE_WITH_PASSWORD with a long random
+#    password. Never save the real password into the file.
+#    python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# 5. Put that password in .env (from .env.example), then verify as the app account
+cp .env.example .env && chmod 600 .env       # edit MYSQL_PASSWORD
+python scripts/rp_db.py                      # connection self-test
+python scripts/run_all_validations.py        # includes sql/08_validation.sql (71 checks)
 ```
 
 **Prerequisite:** `dataset/cleaned/` must contain the 9 cleaned CSVs. They are
@@ -201,17 +194,17 @@ maps that no KPI depends on, so a constraint would add friction for no benefit.
 ```bash
 MYSQL=/opt/homebrew/opt/mysql@8.4/bin/mysql
 
-# interactive session
-$MYSQL -u root retailpulse
+# interactive, read-only session as the app account (prompts for the .env password)
+$MYSQL -u retailpulse_app -p -h 127.0.0.1 retailpulse
 
 # one-off query
-$MYSQL -u root retailpulse -e "SELECT COUNT(*) FROM orders;"
-
-# readable column output for wide results
-$MYSQL -u root retailpulse --table -e "SELECT * FROM vw_monthly_revenue LIMIT 5;"
+$MYSQL -u retailpulse_app -p -h 127.0.0.1 retailpulse -e "SELECT COUNT(*) FROM orders;"
 
 # run an analysis file
-$MYSQL -u root retailpulse --table < sql/05_advanced_sql.sql
+$MYSQL -u retailpulse_app -p -h 127.0.0.1 retailpulse --table < sql/05_advanced_sql.sql
+
+# admin only (rebuild, account management)
+$MYSQL -u root
 
 # service control
 brew services start   mysql@8.4
@@ -227,8 +220,8 @@ brew install --cask mysqlworkbench
 ```
 
 MySQL Workbench is the standard GUI and is what most SQL job postings assume
-familiarity with. Connect to `127.0.0.1:3306`, user `root`, password blank
-(unless you set one in section 2).
+familiarity with. Connect to `127.0.0.1:3306` as `retailpulse_app` with the
+password from `.env` for read-only exploration.
 
 ---
 
@@ -239,7 +232,11 @@ familiarity with. Connect to `127.0.0.1:3306`, user `root`, password blank
 | `command not found: mysql` | `mysql@8.4` is keg-only | Use the full path, or add it to `PATH` (section 1) |
 | `ERROR 3948 ... local data is disabled` | `local_infile` off | Add `--local-infile=1` to the client command |
 | `ERROR 2002 ... Can't connect ... socket` | Server not running | `brew services start mysql@8.4` |
-| `ERROR 1045 Access denied for user 'root'` | A password was set | Add `-p` and enter it |
+| `ERROR 1045 Access denied for user 'root'` | A root password was set | Add `-p` and enter it (admin commands only) |
+| `CONFIG ERROR: Missing required MySQL setting(s)` | No `.env`, or a value is empty | `cp .env.example .env` and fill it in |
+| `CONFIG ERROR: MYSQL_USER is 'root'` | `.env` points at root | Use `retailpulse_app` (§2) |
+| `CONFIG ERROR: Cannot connect ... error 1045` | Wrong password in `.env` | Fix `MYSQL_PASSWORD`, or reset it with `ALTER USER` (see `sql/10_app_user.sql`) |
+| `ERROR 1142 ... command denied to user 'retailpulse_app'` | A write attempted with the read-only account | Expected: writes are admin-only |
 | `File 'dataset/cleaned/...' not found` | Wrong working directory | `cd` to the project root first |
 | Row counts short after import | Usually an unquoted newline | Confirm `FIELDS ENCLOSED BY '"'` is present |
 | `Data truncated for column ...` warning | Float string into an INT column | Already handled by `ROUND(NULLIF(...))` |

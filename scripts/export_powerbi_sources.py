@@ -9,8 +9,9 @@ SAFETY
     checked before it runs: it must start with SELECT or WITH and must not
     contain any data-definition or data-modification keyword. Anything else
     aborts the export before touching the database.
-  * The connection is opened READ ONLY (SET SESSION TRANSACTION READ ONLY), so
-    even a statement that slipped past the check could not write.
+  * The connection uses the read-only application account (scripts/rp_db.py,
+    credentials from .env) in a READ ONLY session, so even a statement that
+    slipped past the check could not write.
   * Output goes only to powerbi/data/analytical/. Existing files there are
     overwritten (they are generated artefacts); nothing else is touched.
 
@@ -27,10 +28,8 @@ import sys
 
 import pandas as pd
 
-try:
-    import mysql.connector
-except ImportError:
-    sys.exit("mysql-connector-python not installed:  pip install mysql-connector-python")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from rp_db import ConfigError, get_connection                 # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SQL_FILE = ROOT / "sql" / "09_powerbi_sources.sql"
@@ -82,13 +81,10 @@ def run(conn, sql: str) -> pd.DataFrame:
 def main() -> None:
     sources = load_sources()
     try:
-        conn = mysql.connector.connect(host="127.0.0.1", user="root",
-                                       database="retailpulse")
-    except Exception as e:                                   # noqa: BLE001
-        sys.exit(f"Cannot reach MySQL ({type(e).__name__}). "
-                 "Start it with:  brew services start mysql@8.4")
+        conn = get_connection(read_only=True)                 # app account from .env
+    except ConfigError as e:
+        sys.exit(f"CONFIG ERROR: {e}")
     cur = conn.cursor()
-    cur.execute("SET SESSION TRANSACTION READ ONLY")
     cur.execute("SET SESSION cte_max_recursion_depth = 100")
     cur.close()
 

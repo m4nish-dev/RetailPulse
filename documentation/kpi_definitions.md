@@ -185,12 +185,17 @@ exist). **State-level analysis is reliable; city-level needs cleaning first.**
 often) and Monetary value (how much), then act differently on each group.
 
 **Method:**
-- **R** = days from the customer's last order to the dataset's maximum date
-  (2018-10-17), scored 1–5 by quintile (lower days = better score)
+- **Population:** people with revenue-eligible orders that have items (94,983)
+- **R** = days from the customer's last eligible order to the dataset's maximum
+  date (2018-10-17), scored 1–5 by quintile (lower days = better score)
 - **F** = order count. ⚠ **Not quintiles** — with 96.88% of customers at
   exactly 1 order, quintile scoring is impossible (most customers tie). F is
   scored as a small ordinal: **1 order = 1, 2 orders = 3, 3+ orders = 5**
 - **M** = total historical revenue, scored 1–5 by quintile
+- **Quintiles are tie-consistent** (2026-11-20): `score = 1 + floor(5 × (rank − 1) / N)`
+  with tied values sharing the lowest rank, so identical customers always get
+  the same score. Used identically by SQL Q32, notebook 03 §B2 and
+  `rfm_customer_segments.csv`.
 
 **Segments:** Champions · Loyal Customers · Potential Loyalists · At Risk · Lost
 (exact score boundaries defined and justified in Phase 5).
@@ -211,7 +216,10 @@ often) and Monetary value (how much), then act differently on each group.
 
 ### KPI 13 — Cohort Retention
 **Method:** group customers by first-purchase month, then measure the share
-active in each following month.
+active in each following month. Offsets are **calendar months** (February after
+a January first order = 1), only activity up to 2018-08 counts, and months a
+cohort could not yet reach are **blank, never 0**. Used identically by SQL Q33,
+notebook 03 §B3 and `cohort_retention.csv` (2026-11-20).
 **Limitations:** retention will be very low and the curves nearly flat — that is
 the honest answer, not a broken chart. Later cohorts have fewer months to be
 observed in (right-censoring) and must not be compared directly with earlier ones.

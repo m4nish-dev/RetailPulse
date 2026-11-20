@@ -127,10 +127,18 @@ LIMIT 20;
 --
 -- METHOD, AND ONE DELIBERATE DEPARTURE FROM THE TEXTBOOK
 -- ------------------------------------------------------
---   R = days since the person's last order, measured against the dataset's
---       maximum date (2018-10-17), NOT today. Scored 1-5 by quintile with
---       NTILE; fewer days = better score, so the order is reversed.
+--   R = days since the person's last revenue-eligible order, measured against
+--       the dataset's maximum date (2018-10-17), NOT today. Scored 1-5 by
+--       quintile; fewer days = better score, so the order is reversed.
 --   M = total historical revenue, scored 1-5 by quintile.
+--
+--   TIE-CONSISTENT QUINTILES (changed 2026-11-20). R and M are scored as
+--       score = 1 + FLOOR(5 * (RANK() - 1) / N)
+--   so customers with IDENTICAL recency or spend always share a score. The
+--   earlier NTILE(5) split tied groups across two scores arbitrarily, and its
+--   counts were not even stable between runs (21,917 Potential Loyalists when
+--   first run, 22,072 on 2026-11-20). This now reproduces the validated Power
+--   BI source powerbi/data/analytical/rfm_customer_segments.csv exactly.
 --   F = order count. *** NOT quintiles. ***
 --
 --       Why: 96.88% of people have exactly ONE order. NTILE(5) on that column
@@ -140,7 +148,7 @@ LIMIT 20;
 --       This limitation must be stated wherever RFM appears. Pretending the
 --       F dimension is informative here would be fabrication.
 --
--- Concepts: multiple CTEs, NTILE, CASE segmentation, date arithmetic.
+-- Concepts: multiple CTEs, RANK window function, CASE segmentation, date arithmetic.
 -- -----------------------------------------------------------------------------
 WITH dataset_end AS (
     SELECT MAX(order_purchase_timestamp) AS max_date FROM orders
@@ -158,16 +166,24 @@ customer_rfm AS (
     WHERE o.revenue_eligible = 1
     GROUP BY c.customer_unique_id
 ),
+ranked AS (
+    SELECT
+        customer_rfm.*,
+        COUNT(*) OVER ()                           AS n,
+        -- fewer days since last order = better, so DESC puts recent buyers in bucket 5
+        RANK() OVER (ORDER BY recency_days DESC)   AS r_rank,
+        RANK() OVER (ORDER BY monetary ASC)        AS m_rank
+    FROM customer_rfm
+),
 scored AS (
     SELECT
         customer_unique_id, recency_days, frequency, monetary,
-        -- fewer days since last order = better, so DESC puts recent buyers in bucket 5
-        NTILE(5) OVER (ORDER BY recency_days DESC) AS r_score,
+        1 + FLOOR(5 * (r_rank - 1) / n)            AS r_score,   -- ties share a score
         CASE WHEN frequency >= 3 THEN 5
              WHEN frequency  = 2 THEN 3
              ELSE 1 END                            AS f_score,
-        NTILE(5) OVER (ORDER BY monetary ASC)      AS m_score
-    FROM customer_rfm
+        1 + FLOOR(5 * (m_rank - 1) / n)            AS m_score
+    FROM ranked
 ),
 segmented AS (
     SELECT *,
@@ -208,6 +224,20 @@ ORDER BY segment_revenue DESC;
 -- Also note RIGHT-CENSORING: a customer acquired in 2018-08 has had almost no
 -- time to return before the data ends, so later cohorts are not comparable
 -- with earlier ones.
+--
+-- METHOD (calendar months, changed 2026-11-20 to match notebook 03 §B3 and
+-- powerbi/data/analytical/cohort_retention.csv):
+--   * cohort = calendar month of the person's first order (any status)
+--   * offset = CALENDAR-month difference (Feb vs Jan = 1), via PERIOD_DIFF.
+--     The earlier TIMESTAMPDIFF(MONTH ...) counted elapsed whole months, so
+--     31 Jan -> 1 Feb was month 0; month-1 returns were 348 instead of 453.
+--   * only activity up to 2018-08 counts: 2018-09/10 hold 20 orders in total
+--     and mark the end of the extract, not customer behaviour
+--   * a column is NULL (blank), never 0, when the cohort has not been observed
+--     for that long: m1..m3 need that offset <= max_observed_offset; the
+--     grouped columns need the WHOLE range observable
+--   * returned_by_2018_08_pct = returned at any offset up to 2018-08, so it
+--     is right-censored: younger cohorts have had less time
 -- -----------------------------------------------------------------------------
 WITH first_order AS (
     SELECT
@@ -219,28 +249,43 @@ WITH first_order AS (
     GROUP BY c.customer_unique_id
 ),
 activity AS (
-    SELECT
+    SELECT DISTINCT
         f.cohort_month,
         f.customer_unique_id,
-        TIMESTAMPDIFF(MONTH, f.first_purchase, o.order_purchase_timestamp) AS months_since_first
+        PERIOD_DIFF(DATE_FORMAT(o.order_purchase_timestamp, '%Y%m'),
+                    DATE_FORMAT(f.first_purchase, '%Y%m'))     AS months_since_first
     FROM orders o
     JOIN customers  c ON c.customer_id       = o.customer_id
     JOIN first_order f ON f.customer_unique_id = c.customer_unique_id
+    WHERE o.order_purchase_timestamp < '2018-09-01'            -- last fully observed month: 2018-08
+),
+per_cohort AS (
+    SELECT
+        cohort_month,
+        PERIOD_DIFF(201808, CAST(REPLACE(cohort_month, '-', '') AS UNSIGNED))       AS max_observed_offset,
+        COUNT(DISTINCT CASE WHEN months_since_first = 0 THEN customer_unique_id END) AS cohort_size,
+        COUNT(DISTINCT CASE WHEN months_since_first = 1 THEN customer_unique_id END) AS c1,
+        COUNT(DISTINCT CASE WHEN months_since_first = 2 THEN customer_unique_id END) AS c2,
+        COUNT(DISTINCT CASE WHEN months_since_first = 3 THEN customer_unique_id END) AS c3,
+        COUNT(DISTINCT CASE WHEN months_since_first BETWEEN 4 AND 6  THEN customer_unique_id END) AS c4_6,
+        COUNT(DISTINCT CASE WHEN months_since_first BETWEEN 7 AND 12 THEN customer_unique_id END) AS c7_12,
+        COUNT(DISTINCT CASE WHEN months_since_first >= 1 THEN customer_unique_id END) AS returned
+    FROM activity
+    WHERE cohort_month BETWEEN '2017-01' AND '2018-08'
+    GROUP BY cohort_month
 )
 SELECT
     cohort_month,
-    COUNT(DISTINCT CASE WHEN months_since_first = 0 THEN customer_unique_id END) AS cohort_size,
-    COUNT(DISTINCT CASE WHEN months_since_first = 1 THEN customer_unique_id END) AS m1,
-    COUNT(DISTINCT CASE WHEN months_since_first = 2 THEN customer_unique_id END) AS m2,
-    COUNT(DISTINCT CASE WHEN months_since_first = 3 THEN customer_unique_id END) AS m3,
-    COUNT(DISTINCT CASE WHEN months_since_first BETWEEN 4 AND 6  THEN customer_unique_id END) AS m4_6,
-    COUNT(DISTINCT CASE WHEN months_since_first BETWEEN 7 AND 12 THEN customer_unique_id END) AS m7_12,
-    ROUND(100.0 * COUNT(DISTINCT CASE WHEN months_since_first >= 1 THEN customer_unique_id END)
-          / NULLIF(COUNT(DISTINCT CASE WHEN months_since_first = 0 THEN customer_unique_id END), 0), 2)
-                                                                                 AS ever_returned_pct
-FROM activity
-WHERE cohort_month BETWEEN '2017-01' AND '2018-08'
-GROUP BY cohort_month
+    max_observed_offset,
+    cohort_size,
+    CASE WHEN max_observed_offset >= 1  THEN c1    END                AS m1,
+    CASE WHEN max_observed_offset >= 2  THEN c2    END                AS m2,
+    CASE WHEN max_observed_offset >= 3  THEN c3    END                AS m3,
+    CASE WHEN max_observed_offset >= 6  THEN c4_6  END                AS m4_6,
+    CASE WHEN max_observed_offset >= 12 THEN c7_12 END                AS m7_12,
+    CASE WHEN max_observed_offset >= 1
+         THEN ROUND(100.0 * returned / cohort_size, 2) END            AS returned_by_2018_08_pct
+FROM per_cohort
 ORDER BY cohort_month;
 
 

@@ -285,14 +285,16 @@ Source: [`sql/06_customer_analytics.sql`](../sql/06_customer_analytics.sql) Q28�
 | Most orders by one person | 17 |
 
 Cohort analysis confirms it independently: of customers acquired in each 2017
-month, the share who **ever** returned ranges from **1.5% to 4.32%**, with a
-mean of **3.07%** across 2017 cohorts. Every cell in the monthly retention
+month, the share who returned (by 2018-08) ranges from **1.75% to 4.32%**,
+with a mean of **3.07%** across 2017 cohorts. Every cell in the monthly retention
 matrix is below 1.5%.
 Chart: [`B3_cohort_retention_heatmap.png`](eda_charts/B3_cohort_retention_heatmap.png)
 
-> *Method note:* cohorts are bucketed by calendar month (the standard
-> convention). A stricter "complete elapsed months" definition gives 3.93%
-> rather than 4.32% for the best cohort. The conclusion is identical either way.
+> *Method note:* cohorts and offsets use **calendar months**, the project
+> convention since 2026-11-20 in SQL Q33, notebook 03 and the Power BI source
+> `cohort_retention.csv` (all three agree). Only activity up to 2018-08 counts,
+> and months a cohort could not yet reach are blank, not 0. (Historical: Q33
+> once used elapsed whole months, which gave 3.93% for the best cohort.)
 >
 > *Right-censoring:* customers acquired in mid-2018 had only weeks before the
 > data ends, so later cohorts look worse than they are. Compare cohorts of
@@ -365,39 +367,31 @@ Target the behaviour (large basket), not the person (who has left).
 
 ---
 
-## Insight 6 — "Potential Loyalists" hold 34% of revenue; Champions hold 2.4%
+## Insight 6 — "Potential Loyalists" hold 34% of revenue; Champions hold 2.3%
 
 **1. Business question**
 Which customer segment is actually worth a marketing budget?
 
 **2. Analysis method**
-RFM segmentation on `vw_customer_summary`. Recency measured against the
-dataset end date (2018-10-17), **not today**. R and M scored in quintiles via
-`NTILE(5)`.
+RFM segmentation of the 94,983 people with revenue-eligible orders. Recency
+measured from the person's last eligible order to the dataset end date
+(2018-10-17), **not today**. R and M scored in **tie-consistent quintiles**:
+customers with identical recency or spend always share a score.
 Source: [`sql/06_customer_analytics.sql`](../sql/06_customer_analytics.sql) Q32 ·
 [`notebooks/03_exploratory_data_analysis.ipynb`](../notebooks/03_exploratory_data_analysis.ipynb) §B2 ·
+`powerbi/data/analytical/rfm_customer_segments.csv` (all three agree customer by customer) ·
 chart [`B2_rfm_segments_customers_vs_revenue.png`](eda_charts/B2_rfm_segments_customers_vs_revenue.png)
 
-> **Dependency (2026-11-20, DAX audit).** The project convention is now
-> **tie-consistent** scoring: customers with identical recency or spend always
-> share a score. The validated Power BI source `rfm_customer_segments` and the
-> DAX measures use it: Potential Loyalists **21,427** (33.61% of revenue), At
-> Risk 14,792 (30.75%), Needs Attention 33,498, Lost 23,420, Champions **951**
-> (2.31%), Loyal 895. The table below still shows the original `NTILE` counts,
-> which split tied customers arbitrarily and are not reproducible (re-running
-> the same query on 2026-11-20 gives 22,072 Potential Loyalists). **The finding
-> is unchanged** (about a third of revenue vs about 2%). `sql/06` Q32 and
-> notebook 03 §B2 have not yet been moved to the new scoring.
->
-> **Segment counts differ slightly between implementations.** The figures
-> below come from the SQL `NTILE(5)` implementation. The Python version in
-> `notebooks/03_...ipynb` §B2 uses `qcut` and reports 21,989 Potential
-> Loyalists and 979 Champions rather than 21,917 and 982 — a ~0.3% difference
-> caused by how each tool breaks ties at a quintile boundary. **The revenue
-> shares are identical (33.9% and 2.4%)** and no conclusion depends on the gap.
+> **Corrected 2026-11-20.** The first version of this insight used `NTILE(5)`,
+> which splits customers with identical values across two scores arbitrarily.
+> Its counts (21,917 Potential Loyalists, 982 Champions; the notebook's `qcut`
+> gave 21,989 / 979) were not reproducible: the same query later returned
+> 22,072. SQL Q32, notebook 03 and the Power BI source now share one
+> tie-consistent method and give identical results. **The finding did not
+> change** (34% vs 2% of revenue).
 >
 > **Methodology caveat — a deliberate departure from the textbook.**
-> Frequency is **not** scored in quintiles. With 96.88% of customers at
+> Frequency is **not** scored in quintiles. With 96.96% of scored customers at
 > exactly one order, quintile scoring would split a near-constant column into
 > five arbitrary buckets and invent distinctions that do not exist. F is
 > scored as an honest ordinal: 1 order → 1, 2 orders → 3, 3+ orders → 5.
@@ -408,21 +402,21 @@ chart [`B2_rfm_segments_customers_vs_revenue.png`](eda_charts/B2_rfm_segments_cu
 
 | Segment | Customers | % of customers | Avg value | Revenue | **% of revenue** |
 |---|---|---|---|---|---|
-| **Potential Loyalists** | 21,917 | 23.1% | 208.66 | 4,573,292 | **33.9%** |
-| At Risk | 14,752 | 15.5% | 279.90 | 4,129,126 | 30.6% |
-| Needs Attention | 33,141 | 34.9% | 89.91 | 2,979,630 | 22.1% |
-| Lost | 23,242 | 24.5% | 56.04 | 1,302,475 | 9.7% |
-| **Champions** | **982** | **1.0%** | 328.99 | 323,064 | **2.4%** |
-| Loyal Customers | 949 | 1.0% | 196.85 | 186,814 | 1.4% |
+| **Potential Loyalists** | 21,427 | 22.6% | 211.69 | 4,535,822 | **33.6%** |
+| At Risk | 14,792 | 15.6% | 280.49 | 4,149,075 | 30.7% |
+| Needs Attention | 33,498 | 35.3% | 89.71 | 3,004,951 | 22.3% |
+| Lost | 23,420 | 24.7% | 56.15 | 1,315,083 | 9.7% |
+| **Champions** | **951** | **1.0%** | 327.44 | 311,400 | **2.3%** |
+| Loyal Customers | 895 | 0.9% | 198.96 | 178,069 | 1.3% |
 
 **4. Business implication**
 The standard RFM playbook — *protect your Champions* — would direct effort at
-982 people holding 2.4% of revenue. That is close to worthless here.
+951 people holding 2.3% of revenue. That is close to worthless here.
 
 **Potential Loyalists are the only segment large enough to matter**: recent,
-decent spend, exactly one order. They are 23% of customers and the single
-largest revenue block, and critically **they have not yet been lost**. The
-*At Risk* group (30.6% of revenue) is similar but older — the same people a
+decent spend, exactly one order. They are 23% of scored customers and the
+single largest revenue block, and critically **they have not yet been lost**.
+The *At Risk* group (30.7% of revenue) is similar but older — the same people a
 few months later.
 
 **5. Recommended action**
@@ -901,12 +895,11 @@ settles it, and the answer changes who owns the fix.
 
 ### ✅ RESOLVED — follow-up analysis, 2026-11-13
 
-> **Method note (2026-11-20).** The gaps in this follow-up were computed with
-> the superseded item-weighted scoring. The category verdicts below have
-> **not** been re-tested at review grain. The direction for the largest
-> categories (`bed_bath_table`, `furniture_decor` below average when on time)
-> agrees with the review-grain table above, where both stay below average
-> (3.97 and 4.01), but treat the exact gaps as provisional.
+> **Re-computed 2026-11-20 at review grain** (each review once per category;
+> notebook 03 §F2 follow-up cell). The first version weighted each order's
+> rating by its item count; its figures (baselines 4.0820 / 4.2115 / 2.5489,
+> `office_furniture` −0.569 → −0.598) are superseded. **The conclusions held**,
+> except `audio`, which now only partly recovers on time.
 
 The query above was run. This section answers the question the original
 insight left open.
@@ -914,40 +907,49 @@ insight left open.
 **Method.** Hold delivery constant by comparing each category's average
 review score **using on-time orders only**. If a category's deficit vanishes
 once lateness is removed, it was a logistics problem. If it persists, it is
-a product problem. Baselines across all delivered, revenue-eligible orders:
+a product problem. Reviews on delivered, revenue-eligible orders, review grain:
 
 | Baseline | Avg review |
 |---|---|
-| All delivered orders | 4.0820 |
-| On-time orders only | **4.2115** |
-| Late orders only | **2.5489** |
+| All delivered orders | 4.1557 |
+| On-time orders only | **4.2937** |
+| Late orders only | **2.5665** |
 
-**The answer is category-specific, not one global story:**
+**The answer is category-specific, not one global story** (categories with
+300+ items that score below the overall baseline; verdict: on-time gap ≥ −0.02
+→ delivery; shrinks by more than half → mostly delivery; otherwise product):
 
 | Category | Items | Gap overall | Gap when on-time only | Verdict |
 |---|---|---|---|---|
-| `office_furniture` | 1,654 | −0.569 | **−0.598** | **Product** — deficit *widens* |
-| `home_confort` | 427 | −0.227 | −0.201 | Product |
-| **`bed_bath_table`** | **10,831** | −0.158 | **−0.160** | **Product** |
-| `furniture_living_room` | 490 | −0.147 | −0.143 | Product |
-| **`furniture_decor`** | **8,080** | −0.128 | **−0.131** | **Product** |
-| `computers_accessories` | 7,607 | −0.095 | −0.106 | Product |
-| `audio` | 358 | −0.245 | −0.104 | Mostly delivery |
-| `electronics` | 2,710 | −0.015 | −0.001 | **Delivery** — gap vanishes |
-| `watches_gifts` | 5,813 | −0.011 | **+0.009** | **Delivery** — gap vanishes |
+| `office_furniture` | 1,676 | −0.51 | **−0.54** | **Product** — deficit *widens* |
+| `home_confort` | 432 | −0.27 | −0.25 | Product |
+| `home_construction` | 599 | −0.17 | −0.20 | Product |
+| `audio` | 359 | −0.32 | −0.19 | Product, partly delivery (deficit shrinks 40%) |
+| **`bed_bath_table`** | **10,964** | −0.16 | **−0.16** | **Product** |
+| `market_place` | 308 | −0.07 | −0.14 | Product |
+| `unknown` | 1,575 | −0.14 | −0.13 | Product |
+| `telephony` | 4,496 | −0.10 | −0.12 | Product |
+| **`furniture_decor`** | **8,215** | −0.10 | **−0.10** | **Product** |
+| `computers_accessories` | 7,738 | −0.07 | −0.09 | Product |
+| `furniture_living_room` | 496 | −0.09 | −0.08 | Product |
+| `electronics` | 2,736 | −0.03 | −0.02 | **Delivery** — gap vanishes |
+| `construction_tools_construction` | 922 | −0.03 | −0.02 | **Delivery** — gap vanishes |
+| `watches_gifts` | 5,920 | −0.04 | **−0.02** | **Delivery** — gap vanishes |
+| `baby` | 3,018 | −0.05 | −0.01 | **Delivery** — gap vanishes |
+| `auto` | 4,161 | −0.01 | −0.00 | **Delivery** — gap vanishes |
 
 **Finding: for the largest affected categories, delivery does NOT explain the
-deficit.** `bed_bath_table` (1.01M BRL) and `furniture_decor` (706k BRL) keep
-essentially their entire gap once only on-time orders are counted. These are
-genuine product or merchandising problems.
+deficit.** `bed_bath_table` (1.03M BRL) and `furniture_decor` (721k BRL) keep
+their entire gap once only on-time orders are counted. These are genuine
+product or merchandising problems.
 
-`office_furniture` is the clearest case and the worst: a −0.569 deficit that
-**widens to −0.598** when delivery is held constant, despite also having the
+`office_furniture` is the clearest case and the worst: a −0.51 deficit that
+**widens to −0.54** when delivery is held constant, despite also having the
 slowest average delivery in the dataset at 20.8 days. It is both slow *and*
 intrinsically poorly rated — two separate problems in one category.
 
-Conversely `watches_gifts` and `electronics` were delivery victims all along:
-remove late orders and they rate at or above baseline.
+Conversely `watches_gifts`, `electronics`, `baby` and `auto` were delivery
+victims: remove late orders and they rate at baseline.
 
 **Revised action.** Split the fix by owner:
 
@@ -955,8 +957,9 @@ remove late orders and they rate at or above baseline.
   `furniture_decor`, `office_furniture` and `home_confort`. Investigate
   listing accuracy, product descriptions, dimensions and damage in transit
   for bulky goods.
-- **Logistics** owns `watches_gifts`, `electronics` and `audio` — these need
+- **Logistics** owns `watches_gifts`, `electronics` and `baby`: these need
   no product intervention, only the delivery work in Insights 9 and 12.
+  `audio` is mixed and needs both.
 - **`office_furniture` needs both**, and given it is the largest single
   deficit in the dataset it is the obvious place to start.
 
@@ -983,9 +986,9 @@ survey until delivery, and carrier accountability for the last mile, which is
 74.2% of delivery time.
 
 ### 2. Build a first-to-second purchase programme aimed at Potential Loyalists
-**From Insights 4, 5, 6.** 21,917 customers holding 33.9% of revenue, recent,
+**From Insights 4, 5, 6.** 21,427 customers holding 33.6% of revenue, recent,
 one order each, not yet lost. The 3.12% baseline repeat rate is the bar to
-beat. **Do not** build a VIP tier — Champions are 982 people and 2.4% of
+beat. **Do not** build a VIP tier — Champions are 951 people and 2.3% of
 revenue.
 
 ### 3. Make average order value an owned KPI with a target
@@ -1034,6 +1037,14 @@ Stated plainly, because every one of them bounds a conclusion above.
 ---
 
 # Verification
+
+**2026-11-20 consistency cleanup** — SQL Q32, notebook 03 §B2 and Insight 6
+now use tie-consistent RFM scoring (identical to `rfm_customer_segments.csv`);
+SQL Q33 and notebook 03 §B3 use calendar-month cohorts with blank unobserved
+cells (identical to `cohort_retention.csv`); notebook 03 §F2, chart F2 and the
+Insight 14 follow-up use review-grain category scores (identical to
+`category_satisfaction.csv`). Insight 6's conclusion and the follow-up verdicts
+held, except `audio`.
 
 **2026-11-20 DAX audit (fix-Phase 4)** — Insight 14 re-tested at review grain
 (each review once per category, the project convention): **15 of 34 categories,

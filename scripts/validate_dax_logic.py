@@ -39,10 +39,8 @@ import sys
 import numpy as np
 import pandas as pd
 
-try:
-    import mysql.connector
-except ImportError:
-    sys.exit("pip install mysql-connector-python")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from rp_db import ConfigError, get_connection                 # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 D = ROOT / "powerbi" / "data"
@@ -50,10 +48,9 @@ A = D / "analytical"
 STABLE = (pd.Period("2017-01", "M"), pd.Period("2018-08", "M"))
 
 try:
-    CONN = mysql.connector.connect(host="127.0.0.1", user="root", database="retailpulse")
-except Exception as e:                                      # noqa: BLE001
-    sys.exit(f"Cannot reach MySQL ({type(e).__name__}). brew services start mysql@8.4")
-_c = CONN.cursor(); _c.execute("SET SESSION TRANSACTION READ ONLY"); _c.close()
+    CONN = get_connection(read_only=True)                     # app account from .env
+except ConfigError as e:
+    sys.exit(f"CONFIG ERROR: {e}")
 
 
 def sql(query):

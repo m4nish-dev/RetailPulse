@@ -143,8 +143,10 @@ returned**. They exhibited no loyalty behaviour to reward.
 
 ### 3.4 Retention is effectively zero, and RFM proves it twice
 
-Cohort analysis: **every cell in the retention matrix is below 1.5%.** The
-mean ever-returned rate across 2017 cohorts is **3.07%**, best cohort 4.32%.
+Cohort analysis (calendar months, activity to 2018-08, unobserved cells
+blank): **every observed cell in the retention matrix is below 1.5%.** The
+mean returned-by-2018-08 rate across 2017 cohorts is **3.07%** (range 1.75%
+to 4.32%).
 Later cohorts look worse only because of right-censoring — someone acquired
 in August 2018 had almost no time to return.
 
@@ -152,15 +154,18 @@ RFM segmentation reaches the same conclusion independently:
 
 | Segment | Customers | % of customers | % of revenue |
 |---|---|---|---|
-| **Potential Loyalists** | 21,989 | 23.2% | **33.9%** |
-| At Risk | ~14,700 | 15.5% | 30.6% |
-| Needs Attention | ~33,100 | 34.8% | 22.0% |
-| Lost | ~23,300 | 24.5% | 9.7% |
-| **Champions** | **979** | **1.0%** | **2.4%** |
-| Loyal Customers | ~900 | 0.9% | 1.4% |
+| **Potential Loyalists** | 21,427 | 22.6% | **33.6%** |
+| At Risk | 14,792 | 15.6% | 30.7% |
+| Needs Attention | 33,498 | 35.3% | 22.3% |
+| Lost | 23,420 | 24.7% | 9.7% |
+| **Champions** | **951** | **1.0%** | **2.3%** |
+| Loyal Customers | 895 | 0.9% | 1.3% |
+
+(Tie-consistent scoring, corrected 2026-11-20; the first run's `qcut` version
+reported 21,989 Potential Loyalists and 979 Champions.)
 
 The standard RFM playbook says *protect your Champions*. Here that advice is
-close to worthless: Champions are 979 people holding 2.4% of revenue.
+close to worthless: Champions are 951 people holding 2.3% of revenue.
 
 **The segment that matters is Potential Loyalists** — recent, decent spend,
 exactly one order. 23% of customers, **34% of revenue**, the largest block in
@@ -168,8 +173,8 @@ the business, and every one of them is a first-purchase customer not yet lost.
 
 > **Methodology caveat, stated wherever RFM appears.** With 96.9% of customers
 > at exactly one order, the Frequency dimension is nearly degenerate. It is
-> scored as a 1/3/5 ordinal, not quintiles, because `qcut` on a near-constant
-> column invents distinctions that do not exist.
+> scored as a 1/3/5 ordinal, not quintiles, because quintiles on a near-constant
+> column invent distinctions that do not exist.
 
 **Implication.** The retention question is not "how do we keep our best
 customers?" but "how do we get a second order out of a recent first-time
@@ -292,23 +297,22 @@ this marketplace.**
 
 ### 3.10 Category risk is low, but below-average ratings reach the revenue core
 
-> **Revised 2026-11-20.** The figures below were computed by repeating each
-> order's rating once per item (item-weighted). At review grain, the project
-> convention, **15 of 34 categories holding 45.1% of rated revenue** score
-> below average, not 60%. The four categories shown remain below average
-> (review-grain scores 4.07, 3.97, 4.03, 4.01). See `business_insights.md`
-> Insight 14. Chart F2 has not been regenerated.
+Category scores count **each review once per category** in its order (review
+grain, corrected 2026-11-20; identical to `category_satisfaction.csv`). Of 34
+categories with 300+ items sold, **15 score below the 4.09 overall average,
+holding 5.59M BRL — 45.1% of rated revenue**, including three of the five
+largest:
 
-Item-weighted (superseded): of categories with 300+ items sold, those rated
-below the 4.09 overall average account for **7.45M BRL — 60% of rated
-revenue**, including four of the six largest:
-
-| Category | Revenue | Avg score | 1-star % |
+| Category | Rated revenue | Avg score | 1-star % |
 |---|---|---|---|
-| watches_gifts | 1,189,934 | 4.03 | 12.4% |
-| bed_bath_table | 1,025,168 | **3.90** | 14.2% |
-| computers_accessories | 899,479 | 3.95 | 14.4% |
-| furniture_decor | 721,187 | **3.92** | 14.5% |
+| watches_gifts | 1,189,934 | 4.07 | 11.7% |
+| bed_bath_table | 1,025,168 | **3.97** | 12.7% |
+| computers_accessories | 899,479 | 4.03 | 12.7% |
+| furniture_decor | 721,187 | **4.01** | 12.9% |
+
+(Historical: the first version repeated each order's rating once per item and
+reported 20 categories and 60% of rated revenue. Chart F2 has been regenerated
+with the corrected method.)
 
 Of 24 categories meeting the volume floor in both comparison periods, **22
 grew and 2 shrank**. Fastest growth: `housewares` **+532%**.

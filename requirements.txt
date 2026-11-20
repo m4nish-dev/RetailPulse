@@ -29,8 +29,9 @@ nbconvert==7.17.2             # headless execution: jupyter nbconvert --execute
 openpyxl==3.1.5               # scripts/build_phase2_workbook.py, recalc_workbook.py
 
 # --- MySQL connectivity (Phases 4-6) ----------------------------------------
-mysql-connector-python==26.10.0   # notebook 03 §G, export_powerbi_data.py,
-                                  # validate_dax_logic.py
+mysql-connector-python==26.10.0   # scripts/rp_db.py (all DB access: exports,
+                                  # validators, notebooks 03 §G and 04 §D)
+python-dotenv==1.2.4              # scripts/rp_db.py reads credentials from .env
 
 # Removed after an import audit (no file references them):
 #   seaborn, tabulate, python-dateutil (direct pin), xlsxwriter, sqlalchemy

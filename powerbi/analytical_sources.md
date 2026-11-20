@@ -117,8 +117,9 @@ M: 17,724–19,735).
 | Loyal Customers | 899 | 895 | −4 | 1.35% → 1.32% |
 
 Insight 6's conclusion is unchanged: Potential Loyalists hold about a third of
-revenue and Champions about 2%. Its exact counts, though, came from a
-non-reproducible split; see *Unresolved inconsistencies*.
+revenue and Champions about 2%. **Resolved 2026-11-20:** SQL Q32, notebook 03
+§B2 and Insight 6 now use this tie-consistent method and match this source
+customer by customer. The table above is kept as the historical reconciliation.
 
 ---
 
@@ -151,10 +152,11 @@ the usual triangle.
 **Definitions, and one existing inconsistency.** Cohort month matches
 `vw_customer_summary.cohort_month` (validated: all 20 cohort sizes equal).
 Offsets use the calendar-month difference, as in notebook 03 §B3 (Insight 4).
-`sql/06` Q33 instead uses `TIMESTAMPDIFF(MONTH …)` (elapsed whole months), so
-an order on 31 Jan followed by 1 Feb counts as month 0 there and month 1 here.
-Cohort sizes agree, but month-1 returns differ: 348 (Q33) vs 453 (here),
-summed over cohorts. Q33 itself is unchanged; see *Unresolved inconsistencies*.
+`sql/06` Q33 originally used `TIMESTAMPDIFF(MONTH …)` (elapsed whole months),
+so an order on 31 Jan followed by 1 Feb counted as month 0 there and month 1
+here; month-1 returns were 348 vs 453. **Resolved 2026-11-20:** Q33 now uses
+calendar months, counts activity only to 2018-08 and returns NULL for
+unobservable months. Its m1–m3 match this source cell for cell, blanks included.
 
 **Use in Power BI.** Matrix visual: rows `cohort_month`, columns
 `months_since_acquisition`, values `retention_pct` (Don't summarize / Max),
@@ -443,9 +445,9 @@ such as 129.86625.
 | # | Where | Issue | Status |
 |---|---|---|---|
 | 1 | `documentation/data_quality_report.md` Q05 | Says AOV uses **98,666** orders (all orders with items). The validated denominator is **98,199** eligible orders with items (`kpi_definitions.md` KPI 4) | Correction note added beside the original text on 2026-11-20; original wording preserved |
-| 2 | `reports/business_insights.md` Insight 6 | Counts (21,917 Potential Loyalists, 982 Champions) came from `NTILE`, which splits ties arbitrarily; the same query now returns 22,072 / 957. Shares and conclusion hold | **Dependency noted (fix-Phase 4).** Insight 6 carries a note with the tie-consistent figures; its table, `sql/06` Q32 and notebook 03 §B2 still use the old scoring |
-| 3 | `sql/06` Q33 vs notebook 03 §B3 | Elapsed months vs calendar months for cohort offsets; month-1 returns 348 vs 453 | **Open.** This source follows notebook 03 / Insight 4; Q33 unchanged |
-| 4 | Insight 14 / notebook 03 §F2 | Category ratings item-weighted and eligible-only; review-grain scores move 5 categories across the average line, so the "60% of rated revenue below average" figure depends on the method | **Re-tested (fix-Phase 4): the finding changes** (15 of 34 categories, 45.1% of rated revenue). Insight 14 revised; notebook 03 §F2, chart F2 and the follow-up gap table still use item weighting |
+| 2 | `reports/business_insights.md` Insight 6 | Counts came from `NTILE`, which splits ties arbitrarily (21,917 / 982; later 22,072 / 957) | **Resolved 2026-11-20.** Q32, notebook 03 §B2 and Insight 6 use tie-consistent scoring; identical to this source |
+| 3 | `sql/06` Q33 vs notebook 03 §B3 | Elapsed months vs calendar months; month-1 returns 348 vs 453 | **Resolved 2026-11-20.** Q33 uses calendar months with NULL for unobservable months; notebook 03 §B3 now also leaves unobserved cells blank; both match `cohort_retention.csv` |
+| 4 | Insight 14 / notebook 03 §F2 | Category ratings were item-weighted (20 categories / 60.0%) | **Resolved 2026-11-20.** Notebook 03 §F2, chart F2, Insight 14 and its follow-up gap table use review grain (15 / 45.1%); identical to `category_satisfaction.csv` |
 | 5 | `dashboard_specification.md` | Listed the superseded stage figures (0.41 / 2.78 / 9.31, 74%) and the all-review "cliff" table | **Corrected** on 2026-11-20 to the Phase 2 figures |
 | 6 | KPI 19 vs stage total | 12.56 days (96,476 orders) vs 12.62 days (95,088): different populations, both correct | Documented above; label both |
 | 7 | `scripts/export_powerbi_data.py` under pandas 3 | Wrote `review_creation_date` in two formats in one column (5,882 date-only values) | **Fixed** (explicit timestamp format); every existing extract re-verified byte-identical to the 13 Nov export apart from the three new Phase 2 columns |

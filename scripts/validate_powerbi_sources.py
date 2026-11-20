@@ -29,7 +29,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 from export_powerbi_sources import load_sources, run          # noqa: E402
 
-import mysql.connector                                          # noqa: E402
+from rp_db import ConfigError, get_connection                   # noqa: E402
 
 CLEAN = ROOT / "dataset" / "cleaned"
 EXP = ROOT / "powerbi" / "data" / "analytical"
@@ -106,8 +106,10 @@ assert len(items) == 112_650, "item join multiplied rows"
 elig_items = items[items.revenue_eligible]
 TOTAL_REVENUE_CENTS = int(cents(elig_items.price).sum())
 
-conn = mysql.connector.connect(host="127.0.0.1", user="root", database="retailpulse")
-_c = conn.cursor(); _c.execute("SET SESSION TRANSACTION READ ONLY"); _c.close()
+try:
+    conn = get_connection(read_only=True)                       # app account from .env
+except ConfigError as e:
+    sys.exit(f"CONFIG ERROR: {e}")
 q = lambda sql: run(conn, sql)
 SOURCES = load_sources()
 exp = {n: pd.read_csv(EXP / f"{n}.csv", keep_default_na=True, low_memory=False) for n in SOURCES}

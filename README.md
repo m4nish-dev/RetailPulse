@@ -202,8 +202,8 @@ facts the analysis must respect:
 - **74.2% of delivery time is last-mile carriage** (9.36 of 12.62 days, on the
   95,088 orders whose timestamps are in a valid sequence). Payment approval
   takes 0.40 days — the bottleneck is logistics, not process.
-- **Champions hold only 2.4% of revenue.** RFM finds just 979 of them. The
-  21,989 "Potential Loyalists" carry **34%** — first-to-second purchase
+- **Champions hold only 2.3% of revenue.** RFM finds just 951 of them. The
+  21,427 "Potential Loyalists" carry **34%** — first-to-second purchase
   conversion matters far more than a loyalty programme.
 - **The best customers are not loyal.** The top 10% of spenders hold 41% of
   revenue, yet **93% of the top 1% placed exactly one order**. They are
@@ -221,9 +221,9 @@ Full detail in [`reports/business_insights.md`](reports/business_insights.md)
    review survey until delivery.** Late orders are associated with lower
    ratings, and waiting customers who get surveyed average 1.8 stars;
    earliness is worth nothing.
-2. **Build a first-to-second purchase programme** aimed at the 21,917
-   "Potential Loyalists" holding 33.9% of revenue — not a VIP tier for the
-   982 Champions holding 2.4%.
+2. **Build a first-to-second purchase programme** aimed at the 21,427
+   "Potential Loyalists" holding 33.6% of revenue — not a VIP tier for the
+   951 Champions holding 2.3%.
 3. **Make average order value an owned KPI.** It has been flat (+0.4%,
    Jan–Aug like-for-like) while orders more than doubled — basket size is an
    untouched lever.
@@ -251,20 +251,55 @@ required to finish.
 
 ## Setup
 
-Full instructions in [`documentation/environment_setup.md`](documentation/environment_setup.md)
-and [`documentation/dataset_setup.md`](documentation/dataset_setup.md).
+Detail: [`environment_setup.md`](documentation/environment_setup.md) ·
+[`dataset_setup.md`](documentation/dataset_setup.md) ·
+[`mysql_setup.md`](documentation/mysql_setup.md).
+
+**Requirements:** Python **3.14** (verified on 3.14.3; the code uses no
+3.14-only features, but the pinned versions were tested only there) and
+**MySQL 8.4** (Homebrew `mysql@8.4` on macOS). The Olist dataset from Kaggle
+(9 CSV files) is needed for the raw and cleaning steps.
 
 ```bash
-git clone <repository-url>
-cd RetailPulse
-
-python3.14 -m venv venv           # Python 3.14.3 verified; 3.11+ should work
+# 1. Python environment
+git clone <repository-url> && cd RetailPulse
+python3.14 -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# Place the Olist CSV files in dataset/raw/ — see dataset_setup.md
+# 2. Data: put the 9 Olist CSVs in dataset/raw/ (dataset_setup.md), then build
+#    dataset/cleaned/ by running notebooks/02_data_cleaning.ipynb once.
+
+# 3. MySQL (admin, once): build the database, then create the read-only
+#    application account. See documentation/mysql_setup.md §3.
+#      mysql -u root < sql/01_schema.sql
+#      mysql --local-infile=1 -u root retailpulse < sql/02_import.sql
+#      mysql -u root retailpulse < sql/07_business_analysis.sql
+#      sql/10_app_user.sql   (with your own password; never saved in the file)
+
+# 4. Credentials: copy the template and fill in the app account's password.
+cp .env.example .env              # .env is git-ignored; never commit it
+chmod 600 .env
+
+# 5. Validate everything (read-only; exit code 1 on any failure)
+python scripts/run_all_validations.py            # ~3 minutes incl. notebooks
+python scripts/run_all_validations.py --skip-notebooks
+
+# 6. Notebooks: interactive, or headless
 jupyter lab
+jupyter nbconvert --to notebook --execute --inplace notebooks/03_exploratory_data_analysis.ipynb
 ```
+
+All database access goes through [`scripts/rp_db.py`](scripts/rp_db.py), which
+reads `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER` and
+`MYSQL_PASSWORD` from the environment or `.env`, refuses `root`, and opens
+read-only sessions. Check the connection with `python scripts/rp_db.py`.
+
+**What the validation runner checks:** the issue register (19), MySQL
+validation (71), SQL files 03–06 and 09, Power BI sources (90), DAX logic
+(230), and notebooks 03 (15 MySQL checks) and 04 (10). It never runs the
+schema rebuild, the import, the view script, the cleaning notebook or the
+exports.
 
 ---
 

@@ -156,8 +156,9 @@ All executed against the real database.
 **Aggregation:** COUNT · SUM · AVG · MIN · MAX · STDDEV_SAMP · GROUP BY · HAVING · WITH ROLLUP
 **Joins:** INNER · LEFT · multi-table · correct grain handling
 **Advanced:** subqueries · CTEs · ROW_NUMBER · RANK · DENSE_RANK · LAG · LEAD ·
-running totals · moving averages · PARTITION BY · NTILE · conditional
-aggregation · date functions (DATEDIFF, TIMESTAMPDIFF, DATE_FORMAT, MONTH)
+running totals · moving averages · PARTITION BY · tie-consistent quintiles
+(RANK) · conditional aggregation · date functions (DATEDIFF, TIMESTAMPDIFF,
+PERIOD_DIFF, DATE_FORMAT, MONTH)
 
 Concept-to-query map: [`documentation/sql_analysis_guide.md`](../documentation/sql_analysis_guide.md) §6.
 
@@ -348,22 +349,28 @@ investment belongs in last-mile, not internal process.
 ### 7.5 Only 3.12% of customers ever return
 
 96,096 distinct people; **93,099 (96.88%) ordered exactly once**. Cohort
-analysis confirms it: ever-returned rates run **1.05%–3.93%** per cohort, with
-later cohorts lower purely because they had less time (right-censoring).
+analysis (Q33, calendar months, corrected 2026-11-20) confirms it: the share
+returning by 2018-08 runs **1.75%–4.32%** across 2017 cohorts, and lower for
+2018 cohorts purely because they had less time (right-censoring). Months a
+cohort could not yet reach are NULL, not 0. (The first Q33 used elapsed whole
+months and reported 1.05%–3.93%.)
 
 RFM segmentation is correspondingly skewed:
 
 | Segment | Customers | % | Revenue share |
 |---|---|---|---|
-| Potential Loyalists | 22,072 | 23.2% | **34.0%** |
-| At Risk | 14,696 | 15.5% | 30.6% |
-| Needs Attention | 33,061 | 34.8% | 22.0% |
-| Lost | 23,298 | 24.5% | 9.7% |
-| **Champions** | **957** | **1.0%** | 2.3% |
-| Loyal Customers | 899 | 0.9% | 1.4% |
+| Potential Loyalists | 21,427 | 22.6% | **33.6%** |
+| At Risk | 14,792 | 15.6% | 30.7% |
+| Needs Attention | 33,498 | 35.3% | 22.3% |
+| Lost | 23,420 | 24.7% | 9.7% |
+| **Champions** | **951** | **1.0%** | 2.3% |
+| Loyal Customers | 895 | 0.9% | 1.3% |
+
+(Q32 now uses tie-consistent quintiles, corrected 2026-11-20, and matches the
+Power BI source exactly; the earlier `NTILE` run gave 22,072 / 957.)
 
 **Champions hold just 2.3% of revenue.** A VIP retention programme has almost
-nothing to work with. The 22,072 Potential Loyalists — recent, high-value,
+nothing to work with. The 21,427 Potential Loyalists — recent, high-value,
 single-purchase — carry **34% of revenue** and are the only segment large
 enough to matter.
 
@@ -371,8 +378,8 @@ enough to matter.
 
 > **Methodology caveat, stated wherever RFM appears:** with 96.88% of
 > customers at exactly one order, the Frequency dimension is nearly
-> degenerate. It is scored as a 1/3/5 ordinal, not quintiles, because `NTILE(5)`
-> on a near-constant column invents differences that do not exist.
+> degenerate. It is scored as a 1/3/5 ordinal, not quintiles, because quintiles
+> on a near-constant column invent differences that do not exist.
 
 ### 7.6 Repeat buyers had a measurably better first experience
 

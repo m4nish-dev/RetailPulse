@@ -169,14 +169,13 @@ them.
 | Subqueries | Q14, Q15, Q32 |
 | **CTEs** (`WITH`) | Q3, Q13, Q21–Q26, Q29–Q34 |
 | `ROW_NUMBER` | Q23, Q24 |
-| `RANK` / `DENSE_RANK` | Q23 |
+| `RANK` / `DENSE_RANK` | Q23, Q32 (tie-consistent quintiles) |
 | `LAG` / `LEAD` | Q21, Q25 |
 | Running totals | Q21, Q23, Q30 |
 | Moving averages | Q21, Q25 |
 | `PARTITION BY` | Q8, Q24 |
-| `NTILE` (quintiles) | Q32 |
 | Conditional aggregation | Q2, Q13, Q22, Q33 |
-| Date functions | Q7, Q20, Q22, Q31, Q33 |
+| Date functions | Q7, Q20, Q22, Q31, Q33 (`PERIOD_DIFF` calendar months) |
 | `WITH ROLLUP` | Q22 |
 
 ---
@@ -215,10 +214,15 @@ shows all three side by side on the same data.
 
 ## 8. RFM: one deliberate departure from the textbook
 
-Q32 scores Recency and Monetary with `NTILE(5)` quintiles, as usual. **Frequency
-is not scored that way**, and the reason matters:
+Q32 scores Recency and Monetary in quintiles, but **tie-consistently**
+(changed 2026-11-20): `score = 1 + FLOOR(5 * (RANK() - 1) / N)`, so customers
+with identical recency or spend always share a score. Plain `NTILE(5)` splits
+a tied group across two buckets arbitrarily, and its counts even changed
+between runs. The result matches the Power BI source `rfm_customer_segments.csv`
+exactly. **Frequency is not scored in quintiles at all**, and the reason
+matters:
 
-96.88% of customers have exactly **one** order. `NTILE(5)` on a near-constant
+96.88% of customers have exactly **one** order. Quintiles on a near-constant
 column would split it into five arbitrary buckets and invent differences that
 do not exist. Frequency is therefore a small honest ordinal:
 
