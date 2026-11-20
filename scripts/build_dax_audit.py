@@ -1,5 +1,5 @@
 """
-RetailPulse - build powerbi/dax_measure_audit.md (fix-Phase 4).
+RetailPulse - build powerbi/dax_measure_audit.md and powerbi/dax_implementation_checklist.md.
 
 The audit report is GENERATED so it cannot drift from its evidence:
   * DAX formulas      <- powerbi/dax_measures.md (blocks tagged "-- [ID] Name")
@@ -8,6 +8,9 @@ The audit report is GENERATED so it cannot drift from its evidence:
 
 Run validate_dax_logic.py first, then:
     ./venv/bin/python scripts/build_dax_audit.py
+
+The implementation checklist (Power BI build on Windows) adds entry order
+(dependencies first), a format string and the expected filter behaviour.
 """
 from pathlib import Path
 import re
@@ -218,5 +221,137 @@ def main():
     print(f"wrote {out} ({len(df)} measures, {n_pass}/{n_all} checks)")
 
 
+# ---------------------------------------------------------------------------
+# Implementation checklist (Windows build)
+# ---------------------------------------------------------------------------
+FILTER_BY_TABLE = [
+    ("vw_customer_summary", "Lifetime per person: date slicers do NOT filter it; vw_customer_summary[customer_state] does"),
+    ("rfm_customer_segments", "Responds to rfm_segment and, via vw_customer_summary, to customer state; not to dates"),
+    ("cohort_retention", "Matrix context (cohort_month x months_since_acquisition); not related to other tables"),
+    ("seller_scorecard", "Weighted; filtered through vw_seller_performance (seller, state); one seller = its published rate; no date filter"),
+    ("vw_seller_performance", "Responds to seller filters (seller_id, seller_state); no date filter"),
+    ("seller_category_performance", "Responds to dim_category and its own seller columns; no date filter"),
+    ("product_performance", "Responds to dim_category; no date filter"),
+    ("category_satisfaction", "BLANK unless exactly one category in context (not additive); responds to dim_category"),
+    ("vw_category_performance", "Responds to dim_category and vw_category_performance[order_month]; NOT to dim_date"),
+    ("delivery_stage_orders", "Responds via vw_order_summary (dim_date, state, status); 95,088-order population"),
+    ("vw_review_summary", "Review grain; responds via vw_order_summary (dim_date, state); delivery_bucket axis"),
+    ("vw_order_summary", "Responds to dim_date and vw_order_summary slicers (state, status)"),
+]
+FILTER_OVERRIDE = {
+    "M09": "BLANK unless one YearMonth; removes date filters to read MonthIndex - 1; non-date slicers kept",
+    "M10": "BLANK unless current and previous month are both in the stable window; non-date slicers kept",
+    "M11": "BLANK unless one YearMonth and all 3 window months are in the stable window (first value 2017-03)",
+    "M12": "Accumulates to the current date within page date slicers (ALLSELECTED(dim_date))",
+    "M13": "Ignores all date filters (REMOVEFILTERS(dim_date)); non-date slicers apply",
+    "M14": "Ignores all date filters (REMOVEFILTERS(dim_date)); non-date slicers apply",
+    "M15": "Ignores all date filters; non-date slicers apply",
+    "M23": "Denominator removes only the segment filter; state and other filters kept",
+    "M27": "Denominator removes dim_category and vw_category_performance[category]; order_month kept",
+    "M28": "BLANK unless one dim_category[category]; ranks against all categories",
+    "M34": "Denominator ignores all seller filters (share of platform revenue)",
+    "M40": "BLANK where there are no measurable deliveries (not 100%)",
+    "N01": "Ignores the segment filter: scored people in the current non-segment context",
+    "N04": "Ignores the offset filter (reads offset 0)",
+    "N05": "BLANK unless one offset; denominator counts only cohorts observed at that offset; unobserved cells BLANK",
+    "N06": "BLANK at offset 0 and in unobserved cells",
+    "N07": "Largest category within the current filters (dim_category)",
+    "N34": "Order grain, after-arrival reviews only; use on a delivery_bucket axis",
+    "N35": "Order grain from the review table; use on a delivery_bucket axis; unfiltered equals M49",
+}
+
+
+FORMAT_OVERRIDE = {"M30": "#,##0", "N01": "#,##0", "M28": "0"}
+
+
+def format_string(name, mid):
+    if mid in FORMAT_OVERRIDE:
+        return FORMAT_OVERRIDE[mid]
+    n = name.lower()
+    if mid in {"M09", "M12", "M13", "M14"} or any(k in n for k in ("revenue", "freight", "value", "price", "aov")) \
+            and "share" not in n and "%" not in n and "rank" not in n and "denominator" not in n:
+        return "R$ #,##0.00 (BRL)"
+    if "%" in name or any(k in n for k in ("rate", "share")):
+        return "0.00%"
+    if "days" in n:
+        return "0.00"
+    if any(k in n for k in ("score", "rating")):
+        return "0.000"
+    if "per customer" in n:
+        return "0.0000"
+    return "#,##0"
+
+
+def filter_behaviour(mid, dax):
+    if mid in FILTER_OVERRIDE:
+        return FILTER_OVERRIDE[mid]
+    for table, text in FILTER_BY_TABLE:
+        if f"{table}[" in dax or f"( {table} )" in dax:
+            return text
+    return "Inherits the filter behaviour of the measures it references"
+
+
+def entry_order(F, names):
+    """Topological order: a measure comes after every measure it references."""
+    by_name = {v: k for k, v in names.items()}
+    deps = {mid: {by_name[r] for r in re.findall(r"(?<![\w\]])\[([^\]]+)\]", F[mid]) if r in by_name and by_name[r] != mid}
+            for mid in F}
+    order, done = [], set()
+    def visit(m):
+        if m in done:
+            return
+        for d in sorted(deps[m]):
+            visit(d)
+        done.add(m); order.append(m)
+    for m in sorted(F, key=lambda x: (x[0] != "M", x)):
+        visit(m)
+    return order, deps
+
+
+def build_checklist():
+    F = formulas()
+    meas = RES[RES.kind == "measure"]
+    names = {mid: meas[meas.id == mid].iloc[0].measure for mid in F}
+    order, deps = entry_order(F, names)
+    L = ["# RetailPulse — DAX Implementation Checklist (Power BI Desktop, Windows)\n",
+         "**Generated by** `scripts/build_dax_audit.py` from `dax_measures.md` and `dax_validation_results.csv`. "
+         "Do not edit by hand. Copy the formatted DAX from [`dax_measures.md`](dax_measures.md); the one-line "
+         "form below is also valid DAX.\n",
+         f"**{len(F)} measures**, listed in **entry order**: every measure appears after the measures it "
+         "references, so each one can be committed without errors as you go.\n",
+         "> **Logic validated, runtime not.** `scripts/validate_dax_logic.py` passes 230/230 checks comparing "
+         "each measure's logic with independent SQL. That does **not** prove the DAX parses or evaluates "
+         "identically in Power BI. Tick *Syntax OK* and *Value OK* only after checking in Power BI Desktop.\n",
+         "**How to test a value:** put the measure on a card with no slicers applied (or the stated context) "
+         "and compare with *Test value*. All test values and contexts are in "
+         "[`dax_validation_results.csv`](dax_validation_results.csv) (column `expected`).\n",
+         "| # | ID | Measure | DAX | Purpose | Expected filter behaviour | Format | Test value (context) | Validation ref | Entered | Syntax OK | Value OK |",
+         "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    def cfmt(v):
+        if pd.isna(v):
+            return "BLANK"
+        return f"{v:,.0f}" if float(v).is_integer() else fmt(v)
+
+    for i, mid in enumerate(order, 1):
+        m = meas[meas.id == mid]
+        nonblank = m[m.expected.notna()]
+        first = nonblank.iloc[0] if len(nonblank) else m.iloc[0]
+        blanks = m[m.expected.isna()]
+        bnote = (f"; BLANK by design at {', '.join(c.split(' (')[0] for c in blanks.context)}"
+                 if len(blanks) else "")
+        dax = F[mid].replace("|", "\\|")
+        dep = f" (needs {', '.join(sorted(deps[mid]))})" if deps[mid] else ""
+        L.append(f"| {i} | {mid} | {names[mid]} | `{dax}` | {AUDIT[mid][0]}{dep} | {filter_behaviour(mid, F[mid])} | "
+                 f"{format_string(names[mid], mid)} | {cfmt(first.expected)} ({first.context}){bnote} | "
+                 f"{mid}: {len(m)} check(s), all pass | ☐ | ☐ | ☐ |")
+    L.append("")
+    L.append(f"**Count check:** {len(order)} rows = {len(set(order))} distinct IDs "
+             f"({sum(i.startswith('M') for i in order)} M + {sum(i.startswith('N') for i in order)} N).\n")
+    out = ROOT / "powerbi" / "dax_implementation_checklist.md"
+    out.write_text("\n".join(L) + "\n", encoding="utf-8")
+    print(f"wrote {out} ({len(order)} measures in entry order)")
+
+
 if __name__ == "__main__":
     main()
+    build_checklist()

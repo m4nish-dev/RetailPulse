@@ -57,8 +57,11 @@ Legend: ✅ done · 🔲 outstanding · ⚠ done with a documented limitation
 
 ## 4. Remaining Power BI work (Windows required)
 
+Detailed procedure and acceptance list: [`powerbi/windows_implementation_guide.md`](../powerbi/windows_implementation_guide.md) · [`powerbi/powerbi_completion_checklist.md`](../powerbi/powerbi_completion_checklist.md) · [`powerbi/dax_implementation_checklist.md`](../powerbi/dax_implementation_checklist.md).
+
 | Item | Status |
 |---|---|
+| Data readiness for Power BI re-verified on macOS (30/30) | ✅ 2026-11-20 |
 | Windows environment with Power BI Desktop | 🔲 |
 | Load `powerbi/data/` and `powerbi/data/analytical/`; build the model per `powerbi/data_model.md` (one-to-many, single direction for the analytical tables) | 🔲 |
 | Mark `dim_date` as the date table | 🔲 |
