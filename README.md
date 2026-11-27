@@ -314,7 +314,7 @@ compared with a recorded baseline:
 | Tableau analytical sources (vs live SQL and a pandas rebuild) | 90 / 90 |
 | Tableau data readiness (files, MD5, keys, 8 relationships, blanks) | 24 / 24 |
 | Tableau calculated fields (90 measures in Tableau semantics vs independent SQL) | 264 / 264 |
-| Generated Tableau workbook (official XSD 2026.3, relationships, captions, formulas) | 15 / 15 |
+| Generated Tableau workbook (official XSD 2026.3, relationships, captions, formulas, sort format) | 16 / 16 |
 | Insight evidence (`sql/11` vs pandas) | 78 / 78 |
 | Notebook 03 (30 code cells) · notebook 04 | 15 / 15 · 10 / 10 |
 | Repository: links, paths, references, secrets, ignores | all pass |

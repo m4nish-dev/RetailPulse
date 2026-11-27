@@ -286,7 +286,7 @@ late 3.66. See Insight 9.)*
 | `tableau/calculated_fields.md` (generated) | ✅ 90 measures, logic 264/264 vs SQL; Tableau runtime pending |
 | `tableau/dashboard_specification.md` | ✅ 8 dashboards, 47 sheets |
 | `tableau/mac_implementation_guide.md`, `tableau/tableau_completion_checklist.md` | ✅ |
-| `tableau/RetailPulse.twb` (generated) | ✅ XSD-valid, 15/15 checks; not yet opened in Tableau |
+| `tableau/RetailPulse.twb` (generated) | ✅ XSD-valid, 16/16 checks; not yet opened in Tableau |
 | Chart sheets, dashboards, Tableau Public link, screenshots | 🔲 Manual |
 
 <details><summary>HISTORICAL RECORD — first dashboard attempt (retired 2026-11-27)</summary>

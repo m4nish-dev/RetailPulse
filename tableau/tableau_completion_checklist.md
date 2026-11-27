@@ -27,7 +27,7 @@ Legend: ✅ done by Claude on macOS (evidence given) · 🔲 manual, to do in Ta
 | Beginner Mac guide (install → publish → screenshots, with glossary) | ✅ | `mac_implementation_guide.md` |
 | Publishing workflow and privacy researched (Tableau help pages) | ✅ | guide §11–12; `README.md` § Sources |
 | **Workbook generated**: `tableau/RetailPulse.twb` with 6 data sources, 2 folder connections, 8 relationships, captions (incl. 28 renames), data types and roles, 2 parameters, 100 calculated fields with formats, 8 KPI check sheets; plus `RetailPulse_model_only.twb` as fallback | ✅ | `scripts/build_tableau_workbook.py` |
-| Workbook valid against Tableau's official 2026.3 XSD; formulas identical to the validated registry; types hold for every CSV value; relationships and captions as documented; deterministic | ✅ | `scripts/validate_tableau_workbook.py` **15/15** (structure; not a Tableau runtime test) |
+| Workbook valid against Tableau's official 2026.3 XSD; formulas identical to the validated registry; types hold for every CSV value; relationships and captions as documented; deterministic | ✅ | `scripts/validate_tableau_workbook.py` **16/16** (structure; not a Tableau runtime test) |
 | Data, extracts, workbooks git-ignored; repository checks pass | ✅ | `.gitignore`; `scripts/check_repository.py` |
 
 ## 2. Install and open the generated workbook
@@ -36,7 +36,8 @@ Legend: ✅ done by Claude on macOS (evidence given) · 🔲 manual, to do in Ta
 |---|---|---|
 | ✅ Tableau Desktop Public Edition 2026.3.2 installed (Apple silicon) | ☑ | owner, 2026-11-27 |
 | 🔲 Tableau Public account created | ☐ | |
-| 🔲 `tableau/RetailPulse.twb` opens without an error (guide §1A). If not: error text, and whether `RetailPulse_model_only.twb` opens | ☐ | |
+| ✗ first `tableau/RetailPulse.twb` failed to open (error D2E8DA72, see §5); repaired 2026-11-27 | — | `reports/tableau_workbook_repair_report.md` |
+| 🔲 `tableau/RetailPulse_repaired.twb` opens without an error (guide §1A). If not: error text, and whether `RetailPulse_model_only.twb` opens | ☐ | |
 | 🔲 Data Source tab: six data sources `RP Orders`, `RP Customers`, `RP Cohorts`, `RP Categories`, `RP Sellers`, `RP Stage Summary`, with the relationships of `data_model.md` §3 | ☐ | |
 | 🔲 Row counts in the data preview equal the manifests: 99,441 · 99,224 · 95,088 · 96,096 · 96,096 · 400 · 74 · 1,282 · 32,951 · 74 · 3,053 · 3,053 · 6,545 · 4 | ☐ | |
 | 🔲 Saved as `tableau/RetailPulse_build.twbx` (git-ignored) | ☐ | |
@@ -100,6 +101,7 @@ Legend: ✅ done by Claude on macOS (evidence given) · 🔲 manual, to do in Ta
 
 | Field ID | Error message or wrong value | Cause found | Fix applied (and validator re-run?) |
 |---|---|---|---|
+| workbook (8 KPI sheets) | Tableau 2026.3.2, error D2E8DA72: "No declaration found for element 'manual-sort'" (16 messages, 2 per KPI sheet) | manifest lacked `<SortTagCleanup />`, so Tableau read sorts in the older format | `scripts/repair_tableau_workbook.py` → `tableau/RetailPulse_repaired.twb` (one line added; sorts preserved); generator fixed; validator check added. **Re-open pending** |
 | | | | |
 
 ## 6. Worksheets, dashboards and interactions

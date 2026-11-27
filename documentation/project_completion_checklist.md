@@ -26,7 +26,7 @@ Legend: ✅ done · 🔲 outstanding (manual) · ⚠ done with a documented limi
 | Analytical sources equal live SQL and a pandas rebuild | ✅ | `sql/09_dashboard_sources.sql`, `scripts/validate_tableau_sources.py` (90/90) |
 | Tableau data model: 6 data sources, 8 relationships, keys, types, filter rules | ✅ | `tableau/data_model.md` |
 | 90 measures as Tableau calculated fields (+10 helpers, 2 parameters), logic validated against independent SQL | ⚠ | `tableau/calculated_fields.md`, `scripts/validate_tableau_calcs.py` (264/264). Tableau syntax and runtime: pending the manual build |
-| Tableau workbook generated from code (model, relationships, 100 calculated fields, parameters, 8 KPI check sheets) | ⚠ | `scripts/build_tableau_workbook.py`; `scripts/validate_tableau_workbook.py` (15/15, official XSD 2026.3). Not yet opened in Tableau |
+| Tableau workbook generated from code (model, relationships, 100 calculated fields, parameters, 8 KPI check sheets) | ⚠ | `scripts/build_tableau_workbook.py`; `scripts/validate_tableau_workbook.py` (16/16, official XSD 2026.3). Not yet opened in Tableau |
 | Read-only MySQL account `retailpulse_app` | ✅ | `sql/10_app_user.sql` (template), permission tests in Phase 5 |
 | Environment-based configuration | ✅ | `.env.example`, `scripts/rp_db.py`, `.env` git-ignored |
 | Evidence for recommendations (second-purchase timing, freight bands, free-shipping threshold impact, regional freight) | ✅ | `sql/11_insight_evidence.sql`, `scripts/validate_insight_evidence.py` (78/78) |

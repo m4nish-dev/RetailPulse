@@ -13,7 +13,7 @@ connection needed inside Tableau.
 > - the logic of all 90 formulas (264 checks against SQL)
 > - a **generated workbook** with all six data sources, relationships, field names, types,
 >   100 calculated fields, 2 parameters and 8 KPI check sheets, checked against Tableau's official
->   2026.3 schema (15/15)
+>   2026.3 schema (16/16)
 >
 > **Nobody has opened that workbook in Tableau yet.** Opening it (§1A) is the first real test.
 > If Tableau reports a problem, use the manual route (§2–§6) and note what happened in the
@@ -47,7 +47,7 @@ cd ~/Desktop/RetailPulse
 ./venv/bin/python scripts/check_tableau_data.py         # expect: checks: 24 PASS: 24 FAIL: 0
 ./venv/bin/python scripts/validate_tableau_calcs.py     # expect: checks: 264 PASS: 264 FAIL: 0
 ./venv/bin/python scripts/build_tableau_workbook.py     # writes tableau/RetailPulse.twb (+ _model_only)
-./venv/bin/python scripts/validate_tableau_workbook.py  # expect: checks: 15 PASS: 15 FAIL: 0
+./venv/bin/python scripts/validate_tableau_workbook.py  # expect: checks: 16 PASS: 16 FAIL: 0
 ```
 
 The workbook stores the full path of the data folder on this Mac. If you move or rename the
@@ -115,7 +115,10 @@ What the free edition can and cannot do *(Tableau help, feature comparison)*:
    **File ▸ Close** and click **Don't Save**. If Tableau offers to recover an unsaved workbook
    when it starts, decline: the generated workbook replaces that draft.
 2. **Open the workbook.** **File ▸ Open…**, go to `~/Desktop/RetailPulse/tableau/`, choose
-   **`RetailPulse.twb`**, click **Open**. (Double-clicking the file in Finder also works.)
+   **`RetailPulse_repaired.twb`**, click **Open**. (Double-clicking the file in Finder also works.)
+   The first generated `RetailPulse.twb` failed with error **D2E8DA72** ("No declaration found for
+   element 'manual-sort'"). The repaired file declares the sort format Tableau needs; see
+   `reports/tableau_workbook_repair_report.md`. Workbooks generated from now on include the fix.
 3. **If Tableau cannot find the data:** a dialog names a missing file. Click **Browse** (or
    **Edit Connection**), go to `~/Desktop/RetailPulse/tableau/data/` (or `…/data/analytical/`)
    and select the file it names. This only happens if the project folder moved; re-running

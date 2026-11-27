@@ -224,6 +224,6 @@ After loading, the row counts at the bottom of the Data Source preview must equa
 | CSVs, row counts, MD5, keys, orphans, blanks | ✅ `check_tableau_data.py` 24/24 · `validate_tableau_sources.py` 90/90 |
 | Every formula field reference exists after renames | ✅ `validate_tableau_calcs.py` static checks |
 | 90 measures in Tableau semantics vs SQL (223 reference contexts) | ✅ `validate_tableau_calcs.py` 264/264 (logic only) |
-| Generated workbook: XSD 2026.3, 8 relationships, captions, types, 100 formulas identical to the validated registry | ✅ `validate_tableau_workbook.py` 15/15 (structure only) |
+| Generated workbook: XSD 2026.3, 8 relationships, captions, types, 100 formulas identical to the validated registry | ✅ `validate_tableau_workbook.py` 16/16 (structure only) |
 | Workbook opens in Tableau Desktop and shows the expected KPI values | 🔲 in Tableau (**runtime test pending**) |
 | Card values equal `tableau_completion_checklist.md` §4 | 🔲 in Tableau (**runtime test pending**) |

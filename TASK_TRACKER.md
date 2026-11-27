@@ -10,7 +10,7 @@ dashboard data lives in `tableau/data/` (byte-identical re-export, MD5 manifests
 The 90 measures are Tableau calculated fields whose logic is validated against
 independent SQL (**264/264**). A Tableau workbook with the full model, all 100
 calculated fields and KPI check sheets is **generated from code** and validated against
-Tableau's official 2026.3 schema (15/15); it has not been opened in Tableau yet, and the
+Tableau's official 2026.3 schema (16/16). The first version failed to open (error D2E8DA72) and was repaired; the repaired file has not been opened yet, and the
 chart sheets and dashboards are not built. **Nothing is published.** Outstanding manual work: MT-01 Excel chart (optional), the Tableau
 build, publication and screenshots (MT-03–MT-07), the final GitHub push. Live
 checklist: `documentation/project_completion_checklist.md`.
@@ -213,6 +213,7 @@ Rows below record each phase as it was completed; superseded figures are marked.
 | F12 | Migration to Tableau Public (2026-11-27) | [x] | `tableau/` documentation set; `scripts/validate_tableau_calcs.py` added to the runner; Power BI docs marked archived (nothing deleted); `MANUAL_TASKS.md` MT-03–MT-07 replaced with Mac steps; extracts and `.twbx` git-ignored |
 | F13 | Tableau-only cleanup (2026-11-27) | [x] | Data moved to `tableau/data/`; scripts renamed (`export_tableau_*`, `validate_tableau_sources`, `check_tableau_data`); SQL reference values kept in `scripts/sql_reference.py`; retired-tool scripts and the `powerbi/` folder removed; `scripts/check_repository.py` (links, references, secrets) added; validation 16 PASS / 0 FAIL / 6 SKIP |
 | F14 | Tableau workbook automation (2026-11-27) | [x] | Registry split into `scripts/tableau_registry.py`; workbook generator and validator; Tableau's official XSD vendored in `tableau/schema/`; relationship specification with measured cardinality and rejected candidates; guide reorganised around the generated workbook; validation 17 PASS / 0 FAIL / 6 SKIP |
+| F15 | Workbook repair: Tableau error D2E8DA72 (2026-11-27) | [x] | Tableau rejected the 8 `<manual-sort>` elements because the manifest lacked `<SortTagCleanup />` (evidence: Superstore sample of 2026.3.2). `scripts/repair_tableau_workbook.py` adds the one line (sorts preserved, 18/18 checks) → `tableau/RetailPulse_repaired.twb`; generator fixed (output byte-identical to the repair); validator check added (16 checks). **Re-open in Tableau pending** |
 | F10 | Licence (2026-11-27) | [x] | `LICENSE` added: MIT for the original code, © 2026 Manish Kumar (holder confirmed by the owner). README states the Olist dataset keeps CC BY-NC-SA 4.0 and is not covered by MIT |
 | F9 | Re-verification of T01/T03/T07–T10a (2026-11-27) | [x] | All six confirmed in the files; four leftovers fixed: `data_model.md` "not related" text now matches the 11 relationships; `sql/04` Q13 column `revenue_2018_q3` → `revenue_jun_aug_2018`; chart C2 axis label "2018 Q3" → "Jun–Aug 2018" (data unchanged); plan's architecture deliverable marked superseded |
 | F7 | Documentation audit | [x] | README rewritten, inconsistencies corrected, B3 chart clarified; `reports/phase6_documentation_audit.md` |

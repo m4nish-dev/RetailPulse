@@ -58,6 +58,10 @@ SOURCE_BUILD = "2026.3.2 (20263.26.1120.1648)"     # the installed Tableau Deskt
 VERSION = "18.1"                                   # the document version that build writes
 MANIFEST = ["AnimationOnByDefault", "MarkAnimation", "ObjectModelEncapsulateLegacy", "ObjectModelTableType",
             "SchemaViewerObjectModel", "SheetIdentifierTracking", "WindowsPersistSimpleIdentifiers"]
+# Declared only when the workbook contains <manual-sort>/<computed-sort>: without it Tableau
+# 2026.3.2 reads sorts in the older format and rejects <manual-sort> (error D2E8DA72). The
+# Superstore sample shipped with that build declares it alongside its 14 <manual-sort> elements.
+SORT_FLAG = "SortTagCleanup"
 REMOTE_TYPE = {"string": "129", "integer": "20", "real": "5", "date": "133", "datetime": "135"}
 AGGREGATION = {"string": "Count", "integer": "Sum", "real": "Sum", "date": "Year", "datetime": "Year"}
 # numeric columns used as discrete axes (dimension), as the dashboard specification requires
@@ -402,7 +406,7 @@ def build(data_dir: Path, with_kpi_sheets: bool) -> ET.ElementTree:
     wb = ET.Element("workbook", {"original-version": VERSION, "source-build": SOURCE_BUILD, "source-platform": "mac",
                                  "version": VERSION, "xmlns:user": "http://www.tableausoftware.com/xml/user"})
     man = sub(wb, "document-format-change-manifest")
-    for f in MANIFEST:
+    for f in sorted(MANIFEST + ([SORT_FLAG] if with_kpi_sheets else [])):
         sub(man, f)
     prefs = sub(wb, "preferences")
     sub(prefs, "preference", name="ui.encoding.shelf.height", value="24")

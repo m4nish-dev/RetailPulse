@@ -49,7 +49,7 @@ EXPECTED = {
     "tableau_sources": 90,         # scripts/validate_tableau_sources.py (analytical CSVs vs SQL and pandas)
     "tableau_data": 24,            # scripts/check_tableau_data.py (files, MD5, keys, 8 relationships)
     "tableau_calcs": 264,          # scripts/validate_tableau_calcs.py (90 measures vs SQL, Tableau semantics)
-    "tableau_workbook": 15,        # scripts/validate_tableau_workbook.py (generated .twb: XSD + registry)
+    "tableau_workbook": 16,        # scripts/validate_tableau_workbook.py (generated .twb: XSD + registry)
     "insight_evidence": 78,        # scripts/validate_insight_evidence.py
     "repository": 18,              # scripts/check_repository.py (structure, links, references, security)
     "nb03_code_cells": 30,         # notebooks/03 code cells executed

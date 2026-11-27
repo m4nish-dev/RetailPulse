@@ -27,6 +27,7 @@ project's only BI tool.
 | [`tableau_completion_checklist.md`](tableau_completion_checklist.md) | What is done (with evidence) and every manual item with its expected value |
 | `RetailPulse.twb` | **Generated** by `scripts/build_tableau_workbook.py`: 6 data sources, 8 relationships, captions, types, 2 parameters, 100 calculated fields, 8 KPI check sheets. Git-ignored (stores this Mac's data path); regenerate any time |
 | `RetailPulse_model_only.twb` | **Generated** fallback: the same model with one empty sheet |
+| `RetailPulse_repaired.twb` | **Open this one.** The first generated workbook with the sort-format declaration Tableau 2026.3.2 needs (error D2E8DA72 fixed; `scripts/repair_tableau_workbook.py`, report in `reports/tableau_workbook_repair_report.md`). `RetailPulse.twb.backup` is the untouched original. Git-ignored |
 | `schema/` | Tableau's official workbook schema 2026.3 (Apache 2.0), used by `scripts/validate_tableau_workbook.py` |
 | `tableau_calc_validation_results.csv` | One row per validator check (264) |
 | `data/` | 5 view extracts (**git-ignored**; regenerate with `scripts/export_tableau_data.py`) + `_manifest.csv` (rows, columns, MD5; committed) |
@@ -41,7 +42,8 @@ project's only BI tool.
 ./venv/bin/python scripts/validate_tableau_calcs.py    # 264 checks: 90 measures in Tableau semantics vs SQL
 ./venv/bin/python scripts/validate_tableau_calcs.py --write-docs   # regenerate calculated_fields.md
 ./venv/bin/python scripts/build_tableau_workbook.py    # (re)generate RetailPulse.twb from the registry
-./venv/bin/python scripts/validate_tableau_workbook.py # 15 checks: Tableau's XSD, model, captions, formulas, sheets
+./venv/bin/python scripts/validate_tableau_workbook.py # 16 checks: Tableau's XSD, model, captions, formulas, sheets, sort format
+./venv/bin/python scripts/repair_tableau_workbook.py   # repair an older generated .twb (adds the sort-format declaration)
 ```
 
 All Tableau definitions live in one place, `scripts/tableau_registry.py`. The documentation,

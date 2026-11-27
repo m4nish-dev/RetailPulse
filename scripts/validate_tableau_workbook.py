@@ -83,6 +83,15 @@ def xsd_errors(path: Path) -> tuple[list[str], list[str]]:
     return [e for e in errors if e not in waived], waived
 
 
+def sort_flag_ok(path: Path) -> bool:
+    """<manual-sort>/<computed-sort>/<natural-sort> are only read by Tableau when the manifest declares
+    SortTagCleanup (otherwise: error D2E8DA72, 'No declaration found for element manual-sort')."""
+    root = ET.parse(path).getroot()
+    uses = any(True for tag in ("manual-sort", "computed-sort", "natural-sort") for _ in root.iter(tag))
+    declared = any(c.tag.split("...")[-1] == "SortTagCleanup" for c in root.find("document-format-change-manifest"))
+    return declared or not uses
+
+
 def holds(series: pd.Series, dtype: str) -> bool:
     v = series.dropna()
     if dtype == "integer":
@@ -249,6 +258,8 @@ def main():
                 sh_bad.append(f"{ws.get('name')}: no window")
         ck("sheets", f"{len(sheets)} KPI check sheets: dependencies declared, members resolve, windows present",
            not sh_bad and len(sheets) == len(B.KPI_SHEETS), "; ".join(sh_bad[:5]) or ", ".join(w.get("name") for w in sheets))
+        ck("sheets", "sort elements are declared in the manifest (<SortTagCleanup />), as Tableau 2026.3.2 requires",
+           all(sort_flag_ok(p) for p in files.values()))
         text = files["RetailPulse.twb"].read_text(encoding="utf-8")
         ck("other", "no credentials in the workbook (empty password attributes only)",
            not re.search(r"password='[^']+'", text) and "MYSQL" not in text)
