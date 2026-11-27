@@ -101,7 +101,7 @@ WITH quarter_revenue AS (
 SELECT
     category,
     ROUND(first_q, 2)                                        AS revenue_2017_q1,
-    ROUND(last_q, 2)                                         AS revenue_2018_q3,
+    ROUND(last_q, 2)                                         AS revenue_jun_aug_2018,  -- last 3 complete months, not calendar Q3 (renamed 2026-11-27)
     ROUND(last_q - first_q, 2)                               AS change_brl,
     ROUND(100.0 * (last_q - first_q) / NULLIF(first_q, 0), 1) AS change_pct,
     CASE

@@ -103,14 +103,22 @@ whereas relating the aggregate to the order fact could.
 
 | Table | Why no relationship |
 |---|---|
-| `vw_category_performance` | Pre-aggregated to category × month. Relating it to the order fact would double-count. Page 3 is filtered by its own slicers |
-| `vw_seller_performance` | Pre-aggregated per seller. Same reason |
-| `vw_delivery_performance` | Pre-aggregated to state × month. Same reason |
+| `vw_category_performance` | Pre-aggregated to category × month. Relating it to the **order fact** would double-count. Page 3 is filtered by its own slicers |
+| `vw_seller_performance` | Pre-aggregated per seller. Same reason: never related to the **order fact** |
+| `vw_delivery_performance` | Pre-aggregated to state × month. Not related to anything |
 
-> These three are **independent aggregate tables**, each powering one page.
-> That is a deliberate choice: relating them would reintroduce exactly the
-> fan-out the views were built to prevent. The cost is that Page 1 slicers do
-> not cross-filter Pages 3–5; each page carries its own.
+> These three are **not related to the order fact** (`vw_order_summary`) or
+> to `dim_date`. That is deliberate: relating them would reintroduce exactly
+> the fan-out the views were built to prevent. The cost is that Page 1 slicers
+> do not cross-filter Pages 3–5; each page carries its own.
+>
+> **Updated 2026-11-27.** Two of them do have relationships, on their own
+> side of the model, and these are intended: `dim_category` filters
+> `vw_category_performance`, and `vw_seller_performance` filters
+> `seller_scorecard` and `seller_category_performance` (the seller
+> drill-through needs the latter). None of these touch the order fact, so no
+> fan-out or ambiguous path is created. Full list: 11 relationships in
+> `windows_implementation_guide.md` §2.
 
 ### Cardinality notes
 

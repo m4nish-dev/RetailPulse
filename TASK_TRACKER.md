@@ -187,6 +187,7 @@ Rows below record each phase as it was completed; superseded figures are marked.
 | F5 | Consistency cleanup | [x] | RFM, cohort and category methods aligned across SQL, notebook 03, reports and sources |
 | F6 | Security & reproducibility | [x] | read-only `retailpulse_app`, `.env`, `scripts/rp_db.py`, `scripts/run_all_validations.py` |
 | F8 | Remaining Mac-side work (2026-11-27) | [x] | 11th Power BI relationship (seller drill-through); N36–N41 for four spec visuals (251/251); `sql/11` evidence for Insights 4/6 and priority 3 (38/38); priorities labelled decision-ready/hypothesis; business-question answer map; readiness script (27/27); `local_infile` reset in `sql/02`; doc fixes |
+| F9 | Re-verification of T01/T03/T07–T10a (2026-11-27) | [x] | All six confirmed in the files; four leftovers fixed: `data_model.md` "not related" text now matches the 11 relationships; `sql/04` Q13 column `revenue_2018_q3` → `revenue_jun_aug_2018`; chart C2 axis label "2018 Q3" → "Jun–Aug 2018" (data unchanged); plan's architecture deliverable marked superseded |
 | F7 | Documentation audit | [x] | README rewritten, inconsistencies corrected, B3 chart clarified; `reports/phase6_documentation_audit.md` |
 
 ---

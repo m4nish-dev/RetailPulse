@@ -124,7 +124,7 @@ to what a Data Analyst job description actually asks for.
 
 **Deliverables:** ✅ folder structure · ✅ data dictionary · ✅ data quality
 report · ✅ relationship validation · ✅ business questions · ✅ KPI definitions ·
-⏭ architecture (Phase 3)
+~~⏭ architecture (Phase 3)~~ superseded: architecture is documented in `README.md` § Architecture
 
 ### Key decisions locked in Phase 1
 
