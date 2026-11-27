@@ -89,6 +89,7 @@ Detailed procedure and acceptance list: [`powerbi/windows_implementation_guide.m
 | Final commit and push (author: you only; no co-author lines) | 🔲 |
 | After the dashboard: commit screenshots and the `.pbix` (or document why the `.pbix` is excluded) | 🔲 |
 | Confirm `.env`, raw and cleaned data are not tracked | ✅ verified 2026-11-20 |
+| `LICENSE` added: MIT for the original code (© 2026 Manish Kumar); dataset stays CC BY-NC-SA 4.0 (README § Licence) | ✅ 2026-11-27 |
 
 ## 7. Final project quality checks
 

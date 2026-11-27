@@ -115,6 +115,7 @@ RetailPulse/
 ├── documentation/    KPI definitions, data dictionary, cleaning decisions, data quality,
 │                     schema, setup guides, completion checklist
 ├── .env.example      connection template (copy to .env)
+├── LICENSE           MIT, for the project code only (dataset: CC BY-NC-SA 4.0)
 └── requirements.txt
 ```
 
@@ -324,7 +325,20 @@ Build guide: [`powerbi/README.md`](powerbi/README.md).
 
 ## Licence & attribution
 
-Analysis code is available for reference and learning. The dataset belongs to
-Olist and is used under its Kaggle licence (CC BY-NC-SA 4.0).
+This repository contains two kinds of material under **two separate licences**:
 
-**Author:** Manish
+| Material | Licence |
+|---|---|
+| **Original project code**: Python scripts, notebook code, SQL files, DAX definitions | **MIT License**, © 2026 Manish Kumar. See [`LICENSE`](LICENSE) |
+| **The Olist dataset**: *Brazilian E-Commerce Public Dataset by Olist* ([Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)) | **CC BY-NC-SA 4.0**, owned by Olist. **Not covered by the MIT License** |
+
+- The raw and cleaned CSVs are **not redistributed** in this repository. Download
+  the dataset from Kaggle under its own terms (see
+  [`dataset_setup.md`](documentation/dataset_setup.md)).
+- Figures, charts and reported results are derived from the Olist data. If you
+  reuse them, follow the dataset's CC BY-NC-SA 4.0 terms: attribution,
+  non-commercial use, share-alike.
+- Dataset attribution: Olist, *Brazilian E-Commerce Public Dataset by Olist*,
+  Kaggle, CC BY-NC-SA 4.0.
+
+**Author:** Manish Kumar

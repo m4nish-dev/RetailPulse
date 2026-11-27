@@ -28,6 +28,10 @@ portfolio project with attribution. The raw CSVs are excluded from this
 repository by `.gitignore` — the licence and file size both favour documenting
 the download instead of redistributing the data.
 
+The project's own code is under the **MIT License** (see `LICENSE`). That
+licence covers the code only: **the dataset keeps its separate CC BY-NC-SA 4.0
+licence** and is not relicensed by this repository.
+
 ---
 
 ## 2. How to download
