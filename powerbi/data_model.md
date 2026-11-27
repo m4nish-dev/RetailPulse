@@ -85,6 +85,7 @@ Built by `sql/09_powerbi_sources.sql` → `data/analytical/`; full definitions i
 | `vw_customer_summary` | `rfm_customer_segments` | `customer_unique_id` | 1 : many (set manually; unique in practice) | Single |
 | `vw_order_summary` | `delivery_stage_orders` | `order_id` | 1 : many (set manually; 95,088 of 99,441) | Single |
 | `vw_seller_performance` | `seller_scorecard` | `seller_id` | 1 : many (set manually; unique in practice) | Single |
+| `vw_seller_performance` | `seller_category_performance` | `seller_id` | 1 : many | Single (added 2026-11-27: needed by the seller drill-through) |
 
 > **Set these to one-to-many, single direction, by hand.** Power BI detects
 > them as one-to-one because both key columns are unique, and **a one-to-one

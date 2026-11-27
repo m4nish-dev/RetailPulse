@@ -14,7 +14,7 @@ The files must run in this order the first time. Parents before children,
 tables before views.
 
 ```bash
-cd /Users/manish/Desktop/RetailPulse
+cd /path/to/RetailPulse      # the project root
 MYSQL=/opt/homebrew/opt/mysql@8.4/bin/mysql
 
 $MYSQL -u root                      < sql/01_schema.sql            # tables

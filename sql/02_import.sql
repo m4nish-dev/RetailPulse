@@ -289,3 +289,13 @@ UNION ALL SELECT 'orders',        COUNT(*),  99441   FROM orders
 UNION ALL SELECT 'order_items',   COUNT(*), 112650   FROM order_items
 UNION ALL SELECT 'order_payments',COUNT(*), 103886   FROM order_payments
 UNION ALL SELECT 'order_reviews', COUNT(*),  99224   FROM order_reviews;
+
+
+-- =============================================================================
+--  Switch local_infile back off (added 2026-11-27)
+-- =============================================================================
+--  LOAD DATA LOCAL is only needed during this import. Leaving it on lets any
+--  client with LOCAL enabled ask the server to read files, so it is disabled
+--  again here. Requires the same administrator privilege as the SET above.
+SET GLOBAL local_infile = 0;
+SELECT @@global.local_infile AS local_infile_now_off;

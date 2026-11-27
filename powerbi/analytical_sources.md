@@ -379,7 +379,7 @@ Ratings are inherited order ratings, not seller ratings.
 | — | `cohort_retention` | none | self-contained matrix; do not relate |
 | — | `delivery_stage_summary` | none | pre-aggregated; do not relate |
 
-`seller_category_performance` may also relate many : 1 to `vw_seller_performance`
+`seller_category_performance` **must** also relate many : 1 to `vw_seller_performance`
 on `seller_id` (one seller row, many categories). All relationships are
 single-direction, as in the existing model.
 

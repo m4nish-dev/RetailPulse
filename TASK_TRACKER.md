@@ -2,11 +2,11 @@
 
 **Legend:** `[ ]` pending · `[~]` in progress · `[x]` done · `[!]` blocked
 
-**Last updated:** 2026-11-20
+**Last updated:** 2026-11-27
 **Current phase:** ✅ Phases 1–5 + 7 COMPLETE · ✅ corrective fix phases complete (see below) · 🚧 Power BI dashboard PREPARED but NOT BUILT (needs Windows)
 **Overall progress:** All analysis is complete and validated by one command
-(`scripts/run_all_validations.py`: 12 PASS, 0 FAIL). Power BI assets are
-built and logic-validated as far as macOS allows (**84 DAX measures, 230/230
+(`scripts/run_all_validations.py`: 15 PASS, 0 FAIL). Power BI assets are
+built and logic-validated as far as macOS allows (**90 DAX measures, 251/251
 checks**; 9 analytical sources, 90/90), but **no .pbix exists**. Outstanding
 manual work: MT-01 Excel chart, the Power BI build and screenshots, the final
 GitHub push. Live checklist: `documentation/project_completion_checklist.md`.
@@ -35,7 +35,7 @@ Rows below record each phase as it was completed; superseded figures are marked.
 | 1.15 | Write `documentation/data_dictionary.md` | [x] | All 9 tables, measured values only |
 | 1.16 | Write `documentation/business_questions.md` | [x] | 26 questions (15 P1), plus 9 the data cannot answer |
 | 1.17 | Write `documentation/kpi_definitions.md` | [x] | 25 KPIs with formula, columns, validation, limitations |
-| 1.18 | Write `documentation/architecture.md` | [ ] | Deferred to Phase 8 — most of the flow is now documented in mysql_schema.md; the full diagram belongs with the final README |
+| 1.18 | Write a separate architecture document | [x] | Superseded: the architecture diagram and folder map are in `README.md` (Architecture); the data flow is in `documentation/mysql_schema.md`. No separate file |
 | 1.19 | Initialise git repository | [x] | Branch `main`; .gitignore hardened (removed over-broad `*.cfg`) |
 | 1.20 | Phase 1 review gate | [x] | Notebook executes end-to-end, 0 errors, 26/26 cells |
 | 1.21 | Write `documentation/data_quality_report.md` | [x] | 17 issues: 4 High, 3 Medium, 9 Low, 1 Info |
@@ -141,12 +141,12 @@ Rows below record each phase as it was completed; superseded figures are marked.
 | 6.1 | Install Power BI Desktop | [!] | **BLOCKED.** Environment checked 2026-11-13: no Power BI, Parallels, VMware, UTM, VirtualBox, CrossOver, wine, Docker or QEMU. macOS cannot run Power BI Desktop |
 | 6.1a | Export validated views for Power BI | [x] | `scripts/export_powerbi_data.py` — 11 CSVs + generated dim_date, 335,797 rows |
 | 6.1b | Build + validate Power BI theme | [x] | `powerbi/RetailPulse_Theme.json` — valid JSON, palette passes CVD checks on dark surface |
-| 6.1c | Write + verify 37 DAX measures | [x] | `powerbi/dax_measures.md`; **37/37 logic verified** via `scripts/validate_dax_logic.py`. Caught 1 fabricated expected value. *Superseded by fix-phase F4: 84 measures, 15 corrected, 230/230 checks* |
+| 6.1c | Write + verify 37 DAX measures | [x] | `powerbi/dax_measures.md`; **37/37 logic verified** via `scripts/validate_dax_logic.py`. Caught 1 fabricated expected value. *Superseded by fix-phase F4 (84 measures, 15 corrected, 230/230) and F8 (90 measures, 251/251)* |
 | 6.1d | Specify data model | [x] | `powerbi/data_model.md` — 3 relationships, cardinality, Import rationale, 3 aggregate tables deliberately unrelated |
 | 6.1e | Specify all 6 dashboard pages | [x] | `powerbi/dashboard_specification.md` — visual by visual, with mandatory caveat captions |
 | 6.2 | Load data, build model + date table | [!] | Blocked — needs Windows. Spec ready in `powerbi/data_model.md` |
 | 6.3 | Power Query transformations | [!] | Blocked. Views are pre-shaped, so minimal transformation needed |
-| 6.4 | DAX measures | [~] | Written and logic-verified (84 measures, 230/230 after the audit). **Not executed** — needs Power BI |
+| 6.4 | DAX measures | [~] | Written and logic-verified (90 measures, 251/251). **Not executed** — needs Power BI |
 | 6.5 | Page 1 Executive Overview | [!] | Blocked — fully specified |
 | 6.6 | Page 2 Customer Intelligence | [!] | Blocked — fully specified |
 | 6.7 | Page 3 Product Analytics | [!] | Blocked — fully specified |
@@ -186,6 +186,7 @@ Rows below record each phase as it was completed; superseded figures are marked.
 | F4 | DAX audit | [x] | 49 audited, 15 corrected, 35 added; validator rewritten, 230/230; Insight 14 revised |
 | F5 | Consistency cleanup | [x] | RFM, cohort and category methods aligned across SQL, notebook 03, reports and sources |
 | F6 | Security & reproducibility | [x] | read-only `retailpulse_app`, `.env`, `scripts/rp_db.py`, `scripts/run_all_validations.py` |
+| F8 | Remaining Mac-side work (2026-11-27) | [x] | 11th Power BI relationship (seller drill-through); N36–N41 for four spec visuals (251/251); `sql/11` evidence for Insights 4/6 and priority 3 (38/38); priorities labelled decision-ready/hypothesis; business-question answer map; readiness script (27/27); `local_infile` reset in `sql/02`; doc fixes |
 | F7 | Documentation audit | [x] | README rewritten, inconsistencies corrected, B3 chart clarified; `reports/phase6_documentation_audit.md` |
 
 ---
@@ -292,7 +293,7 @@ None.
 | 23 orders show delivery before carrier handoff | 3 | Flag only; cause unknowable from the data |
 | Are delivery estimates deliberately padded? | 5 | Orders arrive ~11 days early on average. A finding, not a defect — needs Q19 to confirm |
 | Portuguese review text | 5 | Sentiment analysis needs a multilingual model. Optional |
-| `documentation/architecture.md` | 3 | Deferred — the data flow diagram is more accurate once cleaning rules are final |
+| ~~Separate architecture document~~ | 3 | ✅ Resolved 2026-11-27: covered by `README.md` § Architecture; no separate file |
 | ~~Git repository not initialised~~ | 1 | ✅ Done — branch `main` |
 | MT-01 monthly revenue chart | 2 | 🔲 Manual, deferred by your request. Blocks nothing |
 | MySQL root has no password | 4 | Deliberate — fresh Homebrew default. Application code no longer uses root (F6); `mysql_secure_installation` is your call |

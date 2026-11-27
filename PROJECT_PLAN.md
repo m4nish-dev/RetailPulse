@@ -7,7 +7,7 @@
 
 > **Current status (2026-11-20).** Phases 1–5 and 7 are complete. The original
 > Phase 6 (Power BI) is **prepared but not built**: data sources, data model,
-> 84 logic-validated DAX measures and the page specification exist; the
+> 90 logic-validated DAX measures and the page specification exist; the
 > `.pbix` needs Windows. After the final audit, corrective work was done in
 > addition to this plan: metric fixes, a data-quality investigation (issues
 > Q18–Q19), Power BI analytical sources, a DAX audit, a consistency cleanup,
@@ -119,7 +119,7 @@ to what a Data Analyst job description actually asks for.
 - [x] Write `documentation/table_relationships.md`
 - [x] Write `documentation/business_questions.md` — 26 questions
 - [x] Write `documentation/kpi_definitions.md` — 25 KPIs
-- [ ] Write `documentation/architecture.md` — **deferred to Phase 3**, where the
+- [x] ~~Write a separate architecture document~~ — superseded: the architecture diagram is in `README.md` (2026-11-27). Originally **deferred to Phase 3**, where the
       data flow can be drawn against final cleaning rules rather than guessed
 
 **Deliverables:** ✅ folder structure · ✅ data dictionary · ✅ data quality
@@ -275,7 +275,7 @@ late 3.66. See Insight 9.)*
 | Deliverable | Status |
 |---|---|
 | `powerbi/RetailPulse_Theme.json` | ✅ Built and validated (JSON + CVD checks) |
-| `powerbi/dax_measures.md` (37 measures at the time; **84** after the 2026-11-20 audit) | ✅ Logic verified 37/37 then; now **230/230** checks, 15 original measures corrected |
+| `powerbi/dax_measures.md` (37 measures at the time; **84** after the 2026-11-20 audit, **90** on 2026-11-27) | ✅ Logic verified 37/37 then; now **251/251** checks, 15 original measures corrected |
 | `powerbi/data_model.md` | ✅ Complete |
 | `powerbi/dashboard_specification.md` | ✅ All 6 pages specified |
 | `powerbi/data/` (11 CSV extracts) | ✅ Generated, 335,797 rows |
@@ -290,7 +290,7 @@ No `.pbix` was fabricated and no substitute tool was used.
 **Verified as far as macOS permits:** every measure's filter context, grain,
 denominator and arithmetic were checked by expressing them as SQL over the
 same views Power BI will import — 37/37 agree. *(Since superseded by the
-2026-11-20 DAX audit: 84 measures, 230/230 checks against independent SQL.)*
+2026-11-20 DAX audit: 84 measures, 230/230 checks against independent SQL; 90 measures, 251/251 since 2026-11-27.)*
 DAX *execution* remains untested.
 
 **To finish:** one Windows environment. See `powerbi/README.md`.

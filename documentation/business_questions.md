@@ -1,8 +1,45 @@
 # Business Questions
 
-**Version 1.0** · 2026-11-12
-**Status:** questions defined and confirmed answerable. **No answers yet** —
-those come from Phases 4, 5 and 7.
+**Version 1.0** · 2026-11-12 · **answer map added 2026-11-27**
+**Status:** the questions below were defined in Phase 1. Where each is now
+answered is in the **answer map** directly below; the original question text
+is unchanged.
+
+## Answer map (2026-11-27)
+
+✅ answered · ◐ partly answered (limit stated) · ✖ not answered
+
+| Q | Status | Where |
+|---|---|---|
+| Q1 Monthly revenue trend | ✅ | Insight 1 · `sql/05` Q21 · chart A1 |
+| Q2 2018 vs 2017 like-for-like | ✅ | Insights 1–2 · `sql/05` Q22 |
+| Q3 States/cities; under-served vs population | ◐ | Insights 3, 11 · `sql/03` Q6, `sql/04` Q18, `sql/05` Q23 · chart A3. State level only: no population data, and city names are unnormalised |
+| Q4 AOV trend | ✅ | Insight 2 · `sql/03` Q3 · chart A2 |
+| Q5 Seasonality | ◐ | Insight 1 (November 2017 Black Friday peak) · `sql/03` Q7 · chart A1. Only 20 complete months, so seasonality cannot be established |
+| Q6 Share buying a second time | ✅ | Insight 4 · `sql/06` Q28–Q30 · `sql/11` E1 (time to second order) |
+| Q7 Returners vs one-time buyers | ✅ | `sql/06` Q34 · `reports/sql_analysis_report.md` §7.6 |
+| Q8 RFM segments | ✅ | Insight 6 · `sql/06` Q32 · chart B2 |
+| Q9 Cohort retention | ✅ | Insight 4 · `sql/06` Q33 · chart B3 |
+| Q10 Highest-value customers, concentration | ✅ | Insight 5 · `sql/06` Q31 · chart B1 |
+| Q11 Payment method vs order value / repeat | ◐ | `sql/03` Q5 gives the payment mix only; its relation to order value and repeat buying was not analysed |
+| Q12 Category revenue, concentration | ✅ | Insight 7 · `sql/04` Q11 · chart C1 |
+| Q13 Growing vs declining categories | ✅ | Insight 7 · `sql/04` Q13 · chart C2 (2017 Q1 vs Jun–Aug 2018) |
+| Q14 Frequent-cheap vs rare-expensive products | ◐ | `sql/04` Q12, `sql/05` Q24 (best sellers); `powerbi/data/analytical/product_performance.csv` holds units and average price per product, but no volume-vs-price analysis was written |
+| Q15 Categories with poor reviews | ✅ | Insight 14 and follow-up · chart F2 |
+| Q16 Dependence on largest sellers | ✅ | Insight 8 · `sql/04` Q14 · chart D1 |
+| Q17 High-volume sellers with poor delivery or ratings | ✅ | Insight 8 · `sql/04` Q15–Q16 · chart D2 |
+| Q18 Does seller location explain delivery? | ✖ | Not analysed: needs seller→customer distance from `geolocation` (optional extension) |
+| Q19 Accuracy of delivery estimates | ✅ | Insight 10 · `sql/05` Q27 · chart E1 |
+| Q20 Where and when late deliveries concentrate | ✅ | Insights 10–11 · `sql/04` Q18 · chart E2 |
+| Q21 Which stage takes the most time | ✅ | Insight 12 · `sql/04` Q20 (95,088 valid orders) |
+| Q22 Freight by region or order value | ✅ | `sql/04` Q19 (by state) · `sql/11` E2 (by order value) |
+| Q23 Cost of late delivery in satisfaction | ✅ | Insight 9 · `sql/05` Q26, Q26b · chart F1 · notebook 04 |
+| Q24 Drivers of one-star reviews beyond delivery | ◐ | Insight 13 (order status), Insight 14 follow-up (categories whose deficit persists on on-time orders). No review-text analysis |
+| Q25 Satisfaction over time | ✅ | `sql/05` Q25 (monthly score with LAG/LEAD) |
+| Q26 Review comment themes *(optional)* | ✖ | Not done: comments are Portuguese free text (optional extension) |
+
+**Totals:** 19 answered, 5 partly answered, 2 not answered (both flagged as
+optional or needing data the project does not use).
 
 Each question below was checked against the profiled data: the columns exist,
 the joins work, and the result will be meaningful. Questions the data *cannot*

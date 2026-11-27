@@ -174,6 +174,11 @@ exist). **State-level analysis is reliable; city-level needs cleaning first.**
 - ⚠ Must use `customer_unique_id`. With `customer_id` the answer is always 0%.
 - The 25-month window truncates behaviour: someone who bought in August 2018
   had little chance to return before the data ends.
+- **Same-day second orders (added 2026-11-27, `sql/11` E1).** 897 of the 2,997
+  repeat customers (29.9%) placed their second order on the same day as the
+  first, 863 within an hour, which looks like a split checkout. The stricter
+  "came back on a later day" rate is **2.19%** (2,100 people; median gap 72
+  days). Report 3.12% as the KPI and state the 2.19% beside it.
 
 ### KPI 10 — Customer Purchase Frequency
 **Formula:** `COUNT(DISTINCT order_id) / COUNT(DISTINCT customer_unique_id)`

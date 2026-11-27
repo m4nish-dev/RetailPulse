@@ -208,6 +208,15 @@ frequently-bought-together recommendations in the top categories from
 Insight 7. Report median order value alongside the mean so the target
 reflects typical customers rather than the tail.
 
+> **Evidence for the free-shipping test** (added 2026-11-27, `sql/11` E2,
+> checked in pandas). Freight is a heavy share of small orders and falls with
+> order value: **48.5%** of product value under 50 BRL, **27.5%** at 50–86.90
+> BRL, **21.2%** at 86.90–120 BRL and **6.2%** above 500 BRL. In the band just
+> above the median, freight averages **21.81 BRL per order**: the per-order
+> cost a threshold there would absorb. The dataset has no cost or margin
+> data, so whether bigger baskets would pay for it **cannot be judged here**.
+> It is a hypothesis for an A/B test, not a decision.
+
 ---
 
 ## Insight 3 — Geographic concentration, not seller or category risk, is the structural exposure
@@ -283,6 +292,15 @@ Source: [`sql/06_customer_analytics.sql`](../sql/06_customer_analytics.sql) Q28�
 | Placed two or more | **2,997 (3.12%)** |
 | Mean orders per person | 1.0348 |
 | Most orders by one person | 17 |
+
+**Time to the second order** (added 2026-11-27, `sql/11_insight_evidence.sql`
+E1, checked in pandas): **897 of the 2,997 repeat customers (29.9%) placed
+their second order on the same day as the first, 863 of them within an
+hour.** Those look like a split checkout rather than a return visit. Counting
+only second orders on a later day, **2,100 people (2.19%) came back**; their
+median gap was **72 days** (interquartile range 23–177), 55.3% returned within
+90 days and 75.7% within 180. The 3.12% headline keeps the project's
+definition (2+ orders); 2.19% is the stricter "came back another day" view.
 
 Cohort analysis confirms it independently: of customers acquired in each 2017
 month, the share who returned (by 2018-08) ranges from **1.75% to 4.32%**,
@@ -422,7 +440,10 @@ few months later.
 **5. Recommended action**
 Point retention spend at Potential Loyalists with a **first-to-second purchase**
 programme: a time-boxed follow-up within the window where At Risk customers
-are still Potential Loyalists. Treat Champions as a reporting curiosity, not a
+are still Potential Loyalists. The evidence sets that window (Insight 4,
+`sql/11` E1): genuine returners came back after a median **72 days**, and
+55% within 90 days, so the follow-up should run inside the first **~3 months**
+after a first order. Treat Champions as a reporting curiosity, not a
 target. Set the success bar at beating the 3.12% baseline repeat rate
 (Insight 4) on a holdout group — anything less is noise.
 
@@ -974,9 +995,12 @@ victims: remove late orders and they rate at baseline.
 
 # Top five strategic priorities
 
-Ranked by evidence strength × size of the opportunity.
+Ranked by evidence strength × size of the opportunity. Each priority is
+labelled **decision-ready** (supported by the data as it stands) or
+**hypothesis to test** (plausible, but the data cannot prove the payoff).
 
 ### 1. Make "never miss the promised date" the primary operational goal
+*Decision-ready for the alert and the survey timing; the rating gain is an association, so measure it.*
 **From Insights 9, 10, 12, 13.** Late orders are associated with lower ratings
 (3.86 vs 4.20 stars for 1–7 days late, reviews answered after arrival), and a
 missed date also triggers a survey to a customer still waiting, which averages
@@ -986,30 +1010,39 @@ survey until delivery, and carrier accountability for the last mile, which is
 74.2% of delivery time.
 
 ### 2. Build a first-to-second purchase programme aimed at Potential Loyalists
+*Hypothesis to test on a holdout group: the target segment and the ~3-month window are evidenced; the uplift is not.*
 **From Insights 4, 5, 6.** 21,427 customers holding 33.6% of revenue, recent,
 one order each, not yet lost. The 3.12% baseline repeat rate is the bar to
-beat. **Do not** build a VIP tier — Champions are 951 people and 2.3% of
+beat. Genuine returners come back after a median 72 days (55% within 90), so
+time the follow-up inside the first three months. **Do not** build a VIP tier — Champions are 951 people and 2.3% of
 revenue.
 
 ### 3. Make average order value an owned KPI with a target
+*Decision-ready as a KPI; the free-shipping threshold is a hypothesis to A/B test (no cost data).*
 **From Insights 1, 2, 5.** Growth has stalled (−1.5% compound monthly in
 2018) and AOV has been flat (+0.4%, Jan–Aug like-for-like) while orders more
 than doubled. With retention structurally near zero, basket size is the
-only lever that does not depend on customers returning. **Start with:** a
-free-shipping threshold just above the 86.90 BRL median order value.
+only lever that does not depend on customers returning. **Start with:** an
+A/B test of a free-shipping threshold just above the 86.90 BRL median order
+value; freight there averages 21.81 BRL per order (21% of product value), the
+cost the test must recover.
 
 ### 4. Treat geographic concentration as the top business risk
+*Decision-ready as a risk statement; whether better delivery creates volume is a hypothesis (the bounded experiment tests it).*
 **From Insights 3, 11.** Three states hold 63.4% of revenue while the largest
 seller holds 1.70%. The under-served states are also the worst-served on
 delivery. **Start with:** one bounded regional delivery experiment to test
 whether service improvement generates volume.
 
 ### 5. Report the 1-star rate, not just the average review score
+*Decision-ready (a reporting change).*
 **From Insights 13, 14.** The 4.09 mean hides a J-shaped distribution with
 11.51% one-star reviews, and 45% of rated revenue sits in below-average
 categories, including three of the five largest (review grain; the earlier 60%
-used item weighting). **Start with:** splitting category scores by on-time versus late
-delivery to establish whether the problem is product or logistics.
+used item weighting). **Start with:** the categories whose deficit persists on
+on-time orders (Insight 14 follow-up): `office_furniture`, `bed_bath_table` and
+`furniture_decor` for merchandising; `watches_gifts`, `electronics` and `baby`
+for logistics.
 
 ---
 
@@ -1037,6 +1070,14 @@ Stated plainly, because every one of them bounds a conclusion above.
 ---
 
 # Verification
+
+**2026-11-27 evidence update** — Two recommendations gained evidence from
+`sql/11_insight_evidence.sql`, reproduced in pandas
+(`scripts/validate_insight_evidence.py`, 38/38): time to the second order
+(Insights 4 and 6; 29.9% of second orders are same-day, so 2.19% returned on a
+later day, median 72 days) and freight share by order value (Insight 2,
+priority 3). The free-shipping threshold is now labelled a hypothesis, and
+each priority is labelled decision-ready or hypothesis to test.
 
 **2026-11-20 consistency cleanup** — SQL Q32, notebook 03 §B2 and Insight 6
 now use tie-consistent RFM scoring (identical to `rfm_customer_segments.csv`);

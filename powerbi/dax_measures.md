@@ -1,8 +1,8 @@
 # RetailPulse — DAX Measures
 
-**Target:** Power BI Desktop (Windows) · Import mode · **84 measures**: the original 49 (M01–M49), audited and corrected, plus 35 for the analytical sources (N01–N35)
-**Logic validation:** `scripts/validate_dax_logic.py`: **227 / 227 checks pass**, covering every measure ID (2026-11-20)
-**Audit report:** [`dax_measure_audit.md`](dax_measure_audit.md): all 84 measures, what changed and the evidence
+**Target:** Power BI Desktop (Windows) · Import mode · **90 measures**: the original 49 (M01–M49), audited and corrected, plus 41 added (N01–N35 for the analytical sources; N36–N41 on 2026-11-27 for four specification visuals that had no measure)
+**Logic validation:** `scripts/validate_dax_logic.py`: **251 / 251 checks pass**, covering every measure ID (2026-11-27)
+**Audit report:** [`dax_measure_audit.md`](dax_measure_audit.md): all 90 measures, what changed and the evidence
 **Theme:** `RetailPulse_Theme.json`
 
 ---
@@ -306,6 +306,39 @@ Top Category Revenue = MAXX ( VALUES ( dim_category[category] ), [Category Reven
 -- 1,255,695.13 (health_beauty)
 ```
 
+### Pareto and growth — added 2026-11-27 (specification visuals 2 and 4 on Page 3)
+
+```dax
+-- [N36] Category Cumulative Share
+Category Cumulative Share =
+VAR CurRev = [Category Revenue]
+VAR AllCats = ADDCOLUMNS ( ALL ( dim_category[category] ), "@rev", [Category Revenue] )
+RETURN
+    IF ( HASONEVALUE ( dim_category[category] ),
+         DIVIDE ( SUMX ( FILTER ( AllCats, [@rev] >= CurRev ), [@rev] ), SUMX ( AllCats, [@rev] ) ) )
+-- Pareto: share of revenue held by this category and every larger one.
+-- health_beauty 9.31%; 10th category 62.4%; 18 categories reach 80%
+
+-- [N37] Category Revenue 2017 Q1
+Category Revenue 2017 Q1 =
+CALCULATE ( [Category Revenue], vw_category_performance[order_month] IN { "2017-01", "2017-02", "2017-03" } )
+
+-- [N38] Category Revenue Jun-Aug 2018
+Category Revenue Jun-Aug 2018 =
+CALCULATE ( [Category Revenue], vw_category_performance[order_month] IN { "2018-06", "2018-07", "2018-08" } )
+-- the last three complete months (not calendar Q3: September 2018 holds 16 orders)
+
+-- [N39] Category Growth Q1 2017 to Jun-Aug 2018
+Category Growth Q1 2017 to Jun-Aug 2018 =
+VAR Items1 = CALCULATE ( [Category Items Sold], vw_category_performance[order_month] IN { "2017-01", "2017-02", "2017-03" } )
+VAR Items2 = CALCULATE ( [Category Items Sold], vw_category_performance[order_month] IN { "2018-06", "2018-07", "2018-08" } )
+RETURN
+    IF ( Items1 >= 50 && Items2 >= 50,
+         DIVIDE ( [Category Revenue Jun-Aug 2018] - [Category Revenue 2017 Q1], [Category Revenue 2017 Q1] ) )
+-- BLANK unless 50+ items in both periods (sql/04 Q13, Insight 7): 24 categories, 22 grew,
+-- housewares +532.2%
+```
+
 ### Category drill-through — new
 
 ```dax
@@ -393,6 +426,16 @@ DIVIDE ( MAXX ( VALUES ( vw_seller_performance[seller_id] ), [Seller Revenue] ),
          CALCULATE ( [Seller Revenue], ALL ( vw_seller_performance ) ) )
 -- 1.70% of PLATFORM revenue (denominator ignores slicers by design)
 
+-- [N40] Seller Cumulative Share
+Seller Cumulative Share =
+VAR CurRev = [Seller Revenue]
+VAR AllSellers = ADDCOLUMNS ( ALL ( vw_seller_performance[seller_id] ), "@rev", [Seller Revenue] )
+RETURN
+    IF ( HASONEVALUE ( vw_seller_performance[seller_id] ),
+         DIVIDE ( SUMX ( FILTER ( AllSellers, [@rev] >= CurRev ), [@rev] ), SUMX ( AllSellers, [@rev] ) ) )
+-- concentration curve (added 2026-11-27): largest seller 1.70%; the 305th seller 67.43%,
+-- the 306th 67.50% (10% of 3,053 sellers = 305.3)
+
 -- [M35] Seller Inherited Order Rating
 Seller Inherited Order Rating =
 DIVIDE ( SUM ( seller_scorecard[review_score_sum] ), SUM ( seller_scorecard[reviewed_orders] ) )
@@ -444,6 +487,13 @@ CALCULATE ( AVERAGE ( vw_order_summary[delivery_days] ), vw_order_summary[delive
 Avg Delay Days =
 CALCULATE ( AVERAGE ( vw_order_summary[delay_days] ), vw_order_summary[delivery_measurable] = 1 )
 -- -11.18 (negative = early)
+
+-- [N41] Avg Promised Days
+Avg Promised Days =
+CALCULATE ( AVERAGEX ( vw_order_summary, vw_order_summary[delivery_days] - vw_order_summary[delay_days] ),
+            vw_order_summary[delivery_measurable] = 1 )
+-- purchase -> promised (estimated) date, delivered orders; plot beside [Avg Delivery Days]
+-- (added 2026-11-27). 2017-01: 39.51 vs 12.65 actual; 2018-08: 15.19 vs 7.73
 
 -- [M43] Cancelled Orders
 Cancelled Orders = CALCULATE ( COUNTROWS ( vw_order_summary ), vw_order_summary[order_status] = "canceled" )

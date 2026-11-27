@@ -1,6 +1,6 @@
 # RetailPulse — Project Completion Checklist
 
-**Updated:** 2026-11-20 (documentation audit) · **Overall status: NOT complete.**
+**Updated:** 2026-11-27 (remaining Mac-side work completed) · **Overall status: NOT complete.**
 The analysis is complete and validated; the Power BI dashboard, its
 screenshots, one manual Excel chart and the final GitHub push are outstanding.
 
@@ -21,10 +21,12 @@ Legend: ✅ done · 🔲 outstanding · ⚠ done with a documented limitation
 | 34 analytical SQL queries | ✅ | `sql/03`–`06` |
 | EDA, 15 charts | ✅ | `notebooks/03_exploratory_data_analysis.ipynb` (15/15 MySQL checks) |
 | Power BI analytical sources (9) | ✅ | `sql/09_powerbi_sources.sql`, `scripts/validate_powerbi_sources.py` (90/90) |
-| DAX measures (84) with logic validation | ⚠ | `powerbi/dax_measures.md`, `scripts/validate_dax_logic.py` (230/230). DAX syntax and runtime untested (needs Power BI) |
+| DAX measures (90) with logic validation | ⚠ | `powerbi/dax_measures.md`, `scripts/validate_dax_logic.py` (251/251; N36–N41 added 2026-11-27 for four spec visuals). DAX syntax and runtime untested (needs Power BI) |
 | Read-only MySQL account `retailpulse_app` | ✅ | `sql/10_app_user.sql` (template), permission tests in Phase 5 |
 | Environment-based configuration | ✅ | `.env.example`, `scripts/rp_db.py`, `.env` git-ignored |
-| One-command validation | ✅ | `scripts/run_all_validations.py` (12 PASS, 0 FAIL, 6 deliberate SKIP) |
+| Evidence for two recommendations | ✅ | `sql/11_insight_evidence.sql`, `scripts/validate_insight_evidence.py` (38/38) |
+| Power BI data readiness | ✅ | `scripts/check_powerbi_readiness.py` (27/27, incl. 11 relationships) |
+| One-command validation | ✅ | `scripts/run_all_validations.py` (15 PASS, 0 FAIL, 6 deliberate SKIP; 2026-11-27) |
 
 ## 2. Validated analytical outputs
 
@@ -40,7 +42,8 @@ Legend: ✅ done · 🔲 outstanding · ⚠ done with a documented limitation
 | Category satisfaction | each review once per category | ✅ |
 | Delivery-stage shares | 3.19% / 22.60% / 74.21% (95,088 orders) | ✅ |
 | On-time delivery | 91.8871% of 96,476 orders with a delivery date | ✅ |
-| 14 business insights, 5 priorities | `reports/business_insights.md` | ✅ |
+| 14 business insights, 5 priorities (each labelled decision-ready or hypothesis) | `reports/business_insights.md` | ✅ |
+| Business-question answer map (19 answered, 5 partly, 2 not) | `documentation/business_questions.md` | ✅ |
 
 ## 3. Documentation completed
 
@@ -61,11 +64,11 @@ Detailed procedure and acceptance list: [`powerbi/windows_implementation_guide.m
 
 | Item | Status |
 |---|---|
-| Data readiness for Power BI re-verified on macOS (30/30) | ✅ 2026-11-20 |
+| Data readiness for Power BI re-verified on macOS (`scripts/check_powerbi_readiness.py` 27/27) | ✅ 2026-11-27 |
 | Windows environment with Power BI Desktop | 🔲 |
 | Load `powerbi/data/` and `powerbi/data/analytical/`; build the model per `powerbi/data_model.md` (one-to-many, single direction for the analytical tables) | 🔲 |
 | Mark `dim_date` as the date table | 🔲 |
-| Enter the 84 measures from `powerbi/dax_measures.md`; confirm syntax | 🔲 |
+| Enter the 90 measures from `powerbi/dax_measures.md`; confirm syntax | 🔲 |
 | Build the six pages per `powerbi/dashboard_specification.md`, with mandatory captions | 🔲 |
 | Apply `powerbi/RetailPulse_Theme.json` | 🔲 |
 | Test card values against `powerbi/dax_validation_results.csv` and the checks in `powerbi/README.md` | 🔲 |

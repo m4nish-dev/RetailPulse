@@ -47,13 +47,15 @@ EXPECTED = {
     "issue_register": 19,          # scripts/verify_issue_register.py
     "mysql_validation": 71,        # sql/08_validation.sql PASS rows
     "powerbi_sources": 90,         # scripts/validate_powerbi_sources.py
-    "dax_logic": 230,              # scripts/validate_dax_logic.py
+    "dax_logic": 251,              # scripts/validate_dax_logic.py (90 measures)
+    "insight_evidence": 38,        # scripts/validate_insight_evidence.py
+    "powerbi_readiness": 27,       # scripts/check_powerbi_readiness.py
     "nb03_code_cells": 30,         # notebooks/03 code cells executed
     "nb03_mysql_checks": 15,       # notebooks/03 §G
     "nb04_checks": 10,             # notebooks/04 §D
 }
 READ_ONLY_SQL = ["03_basic_analysis.sql", "04_joins_and_aggregations.sql", "05_advanced_sql.sql",
-                 "06_customer_analytics.sql", "09_powerbi_sources.sql"]
+                 "06_customer_analytics.sql", "09_powerbi_sources.sql", "11_insight_evidence.sql"]
 NEVER_RUN = [("sql/01_schema.sql", "drops and recreates the database (admin rebuild only)"),
              ("sql/02_import.sql", "reloads all tables (admin rebuild only)"),
              ("sql/07_business_analysis.sql", "drops and recreates the views (admin only)"),
@@ -180,9 +182,11 @@ def main():
                    "no errors" if rc == 0 and not errs else (errs[0][:120] if errs else f"exit {rc}"), s, out)
 
     # 5-6 ---- Power BI sources and DAX logic ---------------------------------
-    print(f"\n{B}4. Power BI sources and DAX measure logic{X}")
+    print(f"\n{B}4. Power BI sources, DAX measure logic, insight evidence{X}")
     for script, key, label in [("validate_powerbi_sources.py", "powerbi_sources", "Power BI analytical sources"),
-                               ("validate_dax_logic.py", "dax_logic", "DAX measure logic (84 measures)")]:
+                               ("validate_dax_logic.py", "dax_logic", "DAX measure logic (90 measures)"),
+                               ("validate_insight_evidence.py", "insight_evidence", "Insight evidence (sql/11 vs pandas)"),
+                               ("check_powerbi_readiness.py", "powerbi_readiness", "Power BI data readiness (11 relationships)")]:
         rc, out, s = run([PY, f"scripts/{script}"])
         res = parse_checks(out)
         if res:

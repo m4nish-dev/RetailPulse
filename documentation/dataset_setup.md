@@ -44,7 +44,7 @@ the download instead of redistributing the data.
 In Terminal, adjusting the ZIP filename to match what you actually got:
 
 ```bash
-cd /Users/manish/Desktop/RetailPulse
+cd /path/to/RetailPulse      # the project root
 unzip ~/Downloads/archive.zip -d dataset/raw/
 ls -lh dataset/raw/
 ```
@@ -53,7 +53,7 @@ ls -lh dataset/raw/
 creates a nested subfolder instead of loose CSVs, flatten it:
 
 ```bash
-cd /Users/manish/Desktop/RetailPulse
+cd /path/to/RetailPulse      # the project root
 find dataset/raw -name "*.csv" -exec mv {} dataset/raw/ \;
 ```
 
@@ -79,7 +79,7 @@ run if the token is world-readable, because it is a credential. Note that
 Then:
 
 ```bash
-cd /Users/manish/Desktop/RetailPulse
+cd /path/to/RetailPulse      # the project root
 kaggle datasets download -d olistbr/brazilian-ecommerce -p dataset/raw --unzip
 ```
 
@@ -120,7 +120,7 @@ every notebook and script in this project resolves paths relative to
 Once extracted, run:
 
 ```bash
-cd /Users/manish/Desktop/RetailPulse
+cd /path/to/RetailPulse      # the project root
 ls -lh dataset/raw/*.csv
 wc -l dataset/raw/*.csv
 ```

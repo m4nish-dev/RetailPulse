@@ -787,6 +787,102 @@ bug("N30", "Category Avg Review Score", "item-weighted, eligible-only category s
     f"overall average {OVERALL:.4f}: {', '.join(FLIPS)}")
 
 # =============================================================================
+# SPECIFICATION-VISUAL MEASURES added 2026-11-27 (N36-N41)
+# =============================================================================
+# ---- N36 Category Cumulative Share (Pareto) ----------------------------------
+m_cat_rev = CAT.groupby("category").revenue.sum()
+
+
+def m_cum_share(rev, key):
+    cur = rev.get(key)
+    if cur is None or pd.isna(cur):
+        return None
+    return divide(float(rev[rev >= cur].sum()), float(rev.sum()))
+
+
+# '* 1e0' forces floating-point division: MySQL DECIMAL division keeps only ~6 decimals.
+E_CUM_CAT = sql("""WITH r AS (SELECT p.product_category_name_english cat, SUM(oi.price) rev
+                              FROM order_items oi JOIN orders o ON o.order_id=oi.order_id
+                              JOIN products p ON p.product_id=oi.product_id
+                              WHERE o.revenue_eligible=1 GROUP BY cat)
+                   SELECT cat, rev, SUM(rev) OVER (ORDER BY rev DESC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) * 1e0
+                                    / SUM(rev) OVER () cum FROM r""").set_index("cat")
+for c in ["health_beauty", E_CUM_CAT.sort_values("rev", ascending=False).index[9]]:
+    check("N36", "Category Cumulative Share", f"dim_category = {c}", lambda c=c: m_cum_share(m_cat_rev, c),
+          lambda c=c: float(E_CUM_CAT.cum[c]), RATE)
+check("N36", "Category Cumulative Share", "all 74 categories on a dim_category axis (74 in one)",
+      lambda: float(sum(abs(m_cum_share(m_cat_rev, c) - E_CUM_CAT.cum[c]) < 1e-9 for c in DC.category)),
+      lambda: float(len(DC)))
+check("N36", "Category Cumulative Share", "categories needed to reach 80%",
+      lambda: float(sum(m_cum_share(m_cat_rev, c) < 0.8 for c in m_cat_rev.index) + 1),
+      lambda: float((E_CUM_CAT.cum < 0.8).sum() + 1))
+
+# ---- N37-N39 category growth, 2017 Q1 vs Jun-Aug 2018 ------------------------
+Q1, JA = ["2017-01", "2017-02", "2017-03"], ["2018-06", "2018-07", "2018-08"]
+per = lambda months, col: CAT[CAT.order_month.isin(months)].groupby("category")[col].sum()
+m_r1, m_r2, m_i1, m_i2 = per(Q1, "revenue"), per(JA, "revenue"), per(Q1, "items_sold"), per(JA, "items_sold")
+
+
+def m_growth(c):
+    if m_i1.get(c, 0) < 50 or m_i2.get(c, 0) < 50:
+        return None
+    return divide(float(m_r2[c] - m_r1[c]), float(m_r1[c]))
+
+
+E_GROW = sql("""SELECT p.product_category_name_english cat,
+                  SUM(CASE WHEN DATE_FORMAT(o.order_purchase_timestamp,'%Y-%m') BETWEEN '2017-01' AND '2017-03' THEN oi.price ELSE 0 END) r1,
+                  SUM(CASE WHEN DATE_FORMAT(o.order_purchase_timestamp,'%Y-%m') BETWEEN '2018-06' AND '2018-08' THEN oi.price ELSE 0 END) r2,
+                  SUM(DATE_FORMAT(o.order_purchase_timestamp,'%Y-%m') BETWEEN '2017-01' AND '2017-03') i1,
+                  SUM(DATE_FORMAT(o.order_purchase_timestamp,'%Y-%m') BETWEEN '2018-06' AND '2018-08') i2
+                FROM order_items oi JOIN orders o ON o.order_id=oi.order_id JOIN products p ON p.product_id=oi.product_id
+                WHERE o.revenue_eligible=1 GROUP BY cat""").set_index("cat")
+E_GROW["g"] = np.where((E_GROW.i1 >= 50) & (E_GROW.i2 >= 50), (E_GROW.r2 - E_GROW.r1) / E_GROW.r1.replace(0, np.nan), np.nan)
+eg = lambda c: None if pd.isna(E_GROW.g.get(c, np.nan)) else float(E_GROW.g[c])
+check("N37", "Category Revenue 2017 Q1", "dim_category = housewares", lambda: dsum(CAT[(CAT.category == "housewares") & CAT.order_month.isin(Q1)].revenue),
+      lambda: float(E_GROW.r1["housewares"]), MONEY)
+check("N37", "Category Revenue 2017 Q1", "unfiltered", lambda: dsum(CAT[CAT.order_month.isin(Q1)].revenue), lambda: float(E_GROW.r1.sum()), MONEY)
+check("N38", "Category Revenue Jun-Aug 2018", "dim_category = housewares", lambda: dsum(CAT[(CAT.category == "housewares") & CAT.order_month.isin(JA)].revenue),
+      lambda: float(E_GROW.r2["housewares"]), MONEY)
+check("N38", "Category Revenue Jun-Aug 2018", "unfiltered", lambda: dsum(CAT[CAT.order_month.isin(JA)].revenue), lambda: float(E_GROW.r2.sum()), MONEY)
+for c in ["housewares", "health_beauty"]:
+    check("N39", "Category Growth Q1 2017 to Jun-Aug 2018", f"dim_category = {c}", lambda c=c: m_growth(c), lambda c=c: eg(c), RATE)
+small = E_GROW[(E_GROW.i1 < 50) | (E_GROW.i2 < 50)].index[0]
+check("N39", "Category Growth Q1 2017 to Jun-Aug 2018", f"dim_category = {small} (under 50 items -> BLANK)",
+      lambda: m_growth(small), lambda: eg(small))
+check("N39", "Category Growth Q1 2017 to Jun-Aug 2018", "categories meeting the floor that grew",
+      lambda: float(sum((m_growth(c) or 0) > 0 for c in DC.category)), lambda: float((E_GROW.g > 0).sum()))
+check("N39", "Category Growth Q1 2017 to Jun-Aug 2018", "every category matches (74 in one)",
+      lambda: float(sum((m_growth(c) is None and eg(c) is None) or (m_growth(c) is not None and eg(c) is not None
+                                                                  and abs(m_growth(c) - eg(c)) < 1e-9) for c in DC.category)),
+      lambda: float(len(DC)))
+
+# ---- N40 Seller Cumulative Share -------------------------------------------------
+m_sel_rev = SEL.set_index("seller_id").revenue
+E_CUM_SEL = sql("""WITH r AS (SELECT oi.seller_id, SUM(oi.price) rev FROM order_items oi JOIN orders o ON o.order_id=oi.order_id
+                              WHERE o.revenue_eligible=1 GROUP BY oi.seller_id)
+                   SELECT seller_id, rev, SUM(rev) OVER (ORDER BY rev DESC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) * 1e0
+                                          / SUM(rev) OVER () cum FROM r ORDER BY rev DESC""")
+for rank in (1, 305, 306):
+    sid = E_CUM_SEL.seller_id.iloc[rank - 1]
+    check("N40", "Seller Cumulative Share", f"seller ranked {rank} by revenue", lambda sid=sid: m_cum_share(m_sel_rev, sid),
+          lambda rank=rank: float(E_CUM_SEL.cum.iloc[rank - 1]), RATE)
+cs_map = E_CUM_SEL.set_index("seller_id").cum
+check("N40", "Seller Cumulative Share", "every seller matches (3,053 in one)",
+      lambda: float(sum(abs(v - cs_map[k]) < 1e-9 for k, v in
+                        ((k, m_cum_share(m_sel_rev, k)) for k in m_sel_rev.index))), lambda: float(len(E_CUM_SEL)))
+
+# ---- N41 Avg Promised Days -----------------------------------------------------------
+E_PROM = ("SELECT SUM(TIMESTAMPDIFF(SECOND,o.order_purchase_timestamp,o.order_estimated_delivery_date))/86400e0/COUNT(*) "
+          "FROM orders o JOIN customers c ON c.customer_id=o.customer_id WHERE o.order_delivered_customer_date IS NOT NULL {w}")
+for lab, kw, w in [("unfiltered", {}, ""),
+                   ("month = 2017-01", {"month": "2017-01"}, "AND DATE_FORMAT(o.order_purchase_timestamp,'%Y-%m')='2017-01'"),
+                   ("month = 2018-08", {"month": "2018-08"}, "AND DATE_FORMAT(o.order_purchase_timestamp,'%Y-%m')='2018-08'"),
+                   ("customer_state = SP", {"state": "SP"}, "AND c.customer_state='SP'")]:
+    check("N41", "Avg Promised Days", lab,
+          lambda kw=kw: davg(meas(o_ctx(**kw)).delivery_days - meas(o_ctx(**kw)).delay_days),
+          lambda w=w: sv(E_PROM.format(w=w)), 2 * HALF4)
+
+# =============================================================================
 # REVENUE-MULTIPLICATION DETECTION
 # =============================================================================
 TOTAL = sv(BASE_REV.format(j="", w=""))
@@ -861,7 +957,7 @@ meas_ids = res[res.kind == "measure"].groupby("id")["pass"].all()
 orig = meas_ids[meas_ids.index.str.startswith("M")]
 new = meas_ids[meas_ids.index.str.startswith("N")]
 print("\n" + "-" * 120)
-print(f"original measures (M01-M49): {int(orig.sum())}/{len(orig)} pass   |   new measures (N01-N{len(new):02d}): {int(new.sum())}/{len(new)} pass")
+print(f"original measures (M01-M49): {int(orig.sum())}/{len(orig)} pass   |   added measures (N01-N{len(new):02d}): {int(new.sum())}/{len(new)} pass")
 print(f"checks: {len(res)}   PASS: {int(res['pass'].sum())}   FAIL: {int((~res['pass']).sum())}")
 print("\nSCOPE: emulated DAX logic over the imported CSVs, compared with independent SQL on the base tables.")
 print("NOT verified: DAX syntax, Power BI engine evaluation, relationship settings, slicer interaction.")

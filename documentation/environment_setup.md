@@ -35,7 +35,7 @@ and project-local packages mean a future project needing a different pandas
 version cannot break this one.
 
 ```bash
-cd /Users/manish/Desktop/RetailPulse
+cd /path/to/RetailPulse      # the project root
 python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip

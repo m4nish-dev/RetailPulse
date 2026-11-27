@@ -84,7 +84,7 @@ Run these **from the project root**, in order. The import script uses relative
 paths, so your working directory matters.
 
 ```bash
-cd /Users/manish/Desktop/RetailPulse
+cd /path/to/RetailPulse      # the project root
 MYSQL=/opt/homebrew/opt/mysql@8.4/bin/mysql
 
 # 1. Create the database, 9 tables, keys and indexes
@@ -124,8 +124,15 @@ It must be enabled in **two** places:
 
 | Side | How |
 |---|---|
-| Server | `SET GLOBAL local_infile = 1;` — the first line of `02_import.sql` |
+| Server | `SET GLOBAL local_infile = 1;` — near the top of `02_import.sql` |
 | Client | the `--local-infile=1` flag on the `mysql` command |
+
+Since 2026-11-27, `02_import.sql` ends with `SET GLOBAL local_infile = 0;`, so
+the server setting is only on during the import. **On this machine it is still
+on from the earlier imports.** Turn it off once as an administrator:
+`mysql -u root -e "SET GLOBAL local_infile = 0;"` (add `SET PERSIST` instead of
+`SET GLOBAL` to keep it off across server restarts). Nothing in the project
+needs it outside an import.
 
 Miss either one and you get:
 

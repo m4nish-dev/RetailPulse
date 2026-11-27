@@ -112,6 +112,12 @@ AUDIT = {
  "N33": ("Category share of pre-arrival reviews", "category_satisfaction[pct_reviews_before_delivery]", NEW, "", ""),
  "N34": ("Order-grain rating, after-arrival reviews", "vw_review_summary, N35", NEW, "", "Small samples beyond 7 days late (106 and 19 orders)"),
  "N35": ("Order-grain rating from the review table", "vw_review_summary[order_id, review_score]", NEW, "", ""),
+ "N36": ("Pareto: share held by this category and every larger one", "vw_category_performance (via M24), dim_category", NEW, "Added 2026-11-27: the spec's Pareto curve had no measure", "BLANK unless one category"),
+ "N37": ("Category revenue, Jan-Mar 2017", "vw_category_performance[revenue, order_month]", NEW, "Added 2026-11-27 for the growth chart", ""),
+ "N38": ("Category revenue, Jun-Aug 2018 (last 3 complete months)", "vw_category_performance[revenue, order_month]", NEW, "Added 2026-11-27; spec label '2018 Q3' corrected", "Not calendar Q3"),
+ "N39": ("Category growth 2017 Q1 to Jun-Aug 2018", "N37, N38, M25", NEW, "Added 2026-11-27 for the growth chart (sql/04 Q13 method)", "BLANK under 50 items in either period"),
+ "N40": ("Concentration curve: share held by this seller and every larger one", "vw_seller_performance (via M29)", NEW, "Added 2026-11-27: the spec's concentration curve had no measure", "Top 10% = 67.43% (305 sellers) or 67.50% (306)"),
+ "N41": ("Average promised delivery days (purchase to estimated date)", "vw_order_summary[delivery_days, delay_days, delivery_measurable]", NEW, "Added 2026-11-27: 'promised vs actual' had no measure", "Delivered orders only; equals estimated - purchase"),
 }
 
 
@@ -194,9 +200,9 @@ def main():
     L.append("## Full inventory\n")
     for page, ids in [("Page 1 — Executive", [f"M{i:02d}" for i in range(1, 16)]),
                       ("Page 2 — Customers, RFM, cohorts", [f"M{i:02d}" for i in range(16, 24)] + [f"N{i:02d}" for i in range(1, 7)]),
-                      ("Page 3 — Category and drill-through", [f"M{i:02d}" for i in range(24, 29)] + [f"N{i:02d}" for i in range(7, 17)]),
-                      ("Page 4 — Sellers", [f"M{i:02d}" for i in range(29, 36)]),
-                      ("Page 5 — Delivery", [f"M{i:02d}" for i in range(36, 45)] + [f"N{i:02d}" for i in range(17, 25)]),
+                      ("Page 3 — Category and drill-through", [f"M{i:02d}" for i in range(24, 29)] + [f"N{i:02d}" for i in range(7, 17)] + ["N36", "N37", "N38", "N39"]),
+                      ("Page 4 — Sellers", [f"M{i:02d}" for i in range(29, 36)] + ["N40"]),
+                      ("Page 5 — Delivery", [f"M{i:02d}" for i in range(36, 45)] + [f"N{i:02d}" for i in range(17, 25)] + ["N41"]),
                       ("Page 6 — Satisfaction", [f"M{i:02d}" for i in range(45, 50)] + [f"N{i:02d}" for i in range(25, 36)])]:
         L.append(f"### {page}\n")
         L.append("| ID | Measure | Business meaning | DAX | Source | Independently computed (context) | Checks | Status | Issue found | Limitation |")
@@ -258,10 +264,16 @@ FILTER_OVERRIDE = {
     "N07": "Largest category within the current filters (dim_category)",
     "N34": "Order grain, after-arrival reviews only; use on a delivery_bucket axis",
     "N35": "Order grain from the review table; use on a delivery_bucket axis; unfiltered equals M49",
+    "N36": "BLANK unless one dim_category[category]; ranks against all categories within other filters (e.g. order_month)",
+    "N37": "Fixes order_month to Jan-Mar 2017; responds to dim_category",
+    "N38": "Fixes order_month to Jun-Aug 2018; responds to dim_category",
+    "N39": "BLANK unless 50+ items in both periods; responds to dim_category",
+    "N40": "BLANK unless one seller; cumulative within other seller filters (e.g. seller_state)",
+    "N41": "Responds to dim_date and vw_order_summary slicers; delivered orders only",
 }
 
 
-FORMAT_OVERRIDE = {"M30": "#,##0", "N01": "#,##0", "M28": "0"}
+FORMAT_OVERRIDE = {"M30": "#,##0", "N01": "#,##0", "M28": "0", "N36": "0.00%", "N39": "0.00%", "N40": "0.00%"}
 
 
 def format_string(name, mid):
@@ -319,7 +331,7 @@ def build_checklist():
          "form below is also valid DAX.\n",
          f"**{len(F)} measures**, listed in **entry order**: every measure appears after the measures it "
          "references, so each one can be committed without errors as you go.\n",
-         "> **Logic validated, runtime not.** `scripts/validate_dax_logic.py` passes 230/230 checks comparing "
+         f"> **Logic validated, runtime not.** `scripts/validate_dax_logic.py` passes {int(RES['pass'].sum())}/{len(RES)} checks comparing "
          "each measure's logic with independent SQL. That does **not** prove the DAX parses or evaluates "
          "identically in Power BI. Tick *Syntax OK* and *Value OK* only after checking in Power BI Desktop.\n",
          "**How to test a value:** put the measure on a card with no slicers applied (or the stated context) "

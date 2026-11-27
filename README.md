@@ -5,7 +5,7 @@
 An end-to-end analytics project on ~100,000 real Brazilian marketplace orders
 (Olist, 2016–2018). Raw CSVs are profiled in a spreadsheet, cleaned and
 validated in Python, modelled and analysed in MySQL, explored in pandas, and
-turned into business recommendations. A Power BI data model, 84 DAX measures
+turned into business recommendations. A Power BI data model, 90 DAX measures
 and a six-page dashboard specification are prepared and logic-validated. **The
 dashboard itself has not been built yet** (Power BI Desktop needs Windows).
 
@@ -103,7 +103,8 @@ RetailPulse/
 ├── dataset/          raw/ (not committed) · cleaned/ (generated, not committed) · interim/
 ├── notebooks/        01 profiling · 02 cleaning · 03 EDA · 04 data-quality investigation
 ├── sql/              01 schema · 02 import · 03–06 analysis (34 queries) · 07 views ·
-│                     08 validation · 09 Power BI sources · 10 app account (template)
+│                     08 validation · 09 Power BI sources · 10 app account (template) ·
+│                     11 evidence for two recommendations
 ├── scripts/          rp_db.py (DB config/connection) · run_all_validations.py ·
 │                     validators, exporters, workbook builders
 ├── excel/            spreadsheet exploration workbook
@@ -161,9 +162,10 @@ From [`reports/business_insights.md`](reports/business_insights.md) (14 insights
   and **−1.5%** across Jan–Aug 2018. Like-for-like Jan–Aug revenue rose
   **+138.3%**, driven by orders (+137.3%), not basket size (AOV +0.4%,
   BRL 136.55 → 137.14).
-- **Customers rarely return.** Only **3.12%** ordered twice; 2017 cohorts
-  returned at 1.75–4.32% by August 2018. **93%** of the top 1% of spenders
-  bought exactly once.
+- **Customers rarely return.** Only **3.12%** ordered twice, and 30% of those
+  second orders came the same day (likely split checkouts): just **2.19%**
+  came back on a later day, after a median 72 days. 2017 cohorts returned at
+  1.75–4.32% by August 2018. **93%** of the top 1% of spenders bought exactly once.
 - **Potential Loyalists, not Champions, hold the value.** RFM: 21,427 Potential
   Loyalists hold **33.6%** of revenue; 951 Champions hold 2.3%.
 - **Geography is the concentration risk**: 3 of 27 states hold 63.4% of revenue,
@@ -180,8 +182,11 @@ From [`reports/business_insights.md`](reports/business_insights.md) (14 insights
 
 **Top recommendations:** prevent late deliveries and hold the review survey
 until delivery; run a first-to-second purchase programme for Potential
-Loyalists; make AOV an owned KPI; treat geographic concentration as the main
-risk; report the one-star rate beside the average.
+Loyalists within ~3 months of a first order (to test on a holdout group); make
+AOV an owned KPI and A/B test a free-shipping threshold (freight is 21% of
+product value just above the median order); treat geographic concentration as
+the main risk; report the one-star rate beside the average. Each priority is
+labelled decision-ready or hypothesis in the insights report.
 
 ---
 
@@ -239,9 +244,11 @@ checks each count against a recorded baseline:
 | App-account connection, read-only session | pass |
 | Data-quality issue register (recomputed from raw) | 19 / 19 |
 | `sql/08_validation.sql` | 71 / 71 |
-| `sql/03`–`06`, `09` execute as the app account | no errors |
+| `sql/03`–`06`, `09`, `11` execute as the app account | no errors |
 | Power BI analytical sources | 90 / 90 |
-| DAX measure logic (84 measures) | 230 / 230 |
+| DAX measure logic (90 measures) | 251 / 251 |
+| Insight evidence (`sql/11` vs pandas) | 38 / 38 |
+| Power BI data readiness (files, 11 relationships, dates, blanks) | 27 / 27 |
 | Notebook 03 (30 code cells) · notebook 04 | 15 / 15 · 10 / 10 |
 
 **Never run by the suite** (destructive or regenerating; admin or manual only):
@@ -270,8 +277,8 @@ simulated. Ready for the build on Windows:
   matrix, product and seller × category drill-through, delivery stages,
   category satisfaction, seller counts, shared category dimension)
 - data model with relationships ([`data_model.md`](powerbi/data_model.md))
-- 84 DAX measures ([`dax_measures.md`](powerbi/dax_measures.md)); their logic is
-  checked against independent SQL in 230 checks, but **DAX syntax and Power BI
+- 90 DAX measures ([`dax_measures.md`](powerbi/dax_measures.md)); their logic is
+  checked against independent SQL in 251 checks, but **DAX syntax and Power BI
   runtime behaviour are untested**
 - six-page specification with mandatory captions
   ([`dashboard_specification.md`](powerbi/dashboard_specification.md)) and a theme

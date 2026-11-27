@@ -10,13 +10,13 @@ this folder. Nothing here has been executed yet: the project machine is macOS
 |---|---|
 | 20 CSV data sources, data-readiness checks 30/30 | Import into Power BI Desktop |
 | Data model design (`data_model.md`) | Relationships, date table, sort-by columns |
-| 84 DAX measures, logic checks 230/230 | Entering the measures; syntax and runtime check |
+| 90 DAX measures, logic checks 251/251 | Entering the measures; syntax and runtime check |
 | Six-page specification, theme JSON | Building the pages, applying the theme |
 | Expected values for every measure | Comparing card values in Power BI |
 | — | Slicer, cross-filter and drill-through tests; screenshots; saving the `.pbix` |
 
 Companion files: [`dax_implementation_checklist.md`](dax_implementation_checklist.md)
-(84 measures in entry order) · [`powerbi_completion_checklist.md`](powerbi_completion_checklist.md)
+(90 measures in entry order) · [`powerbi_completion_checklist.md`](powerbi_completion_checklist.md)
 (page-by-page acceptance) · [`dashboard_specification.md`](dashboard_specification.md)
 (source of truth for the design) · [`data_model.md`](data_model.md) ·
 [`analytical_sources.md`](analytical_sources.md).
@@ -84,7 +84,7 @@ columns are known to be wrong around 2016/2017 (use the DAX measures).
 
 1. *File ▸ Options ▸ Current file ▸ Data load:* **turn off Auto date/time**
    (the model has its own date table).
-2. Create these **10 relationships**, all **single cross-filter direction**,
+2. Create these **11 relationships**, all **single cross-filter direction**,
    **one-to-many** (one side first):
 
 | # | One side | Many side | Note |
@@ -99,16 +99,18 @@ columns are known to be wrong around 2016/2017 (use the DAX measures).
 | 8 | `dim_category[category]` | `product_performance[category]` | |
 | 9 | `dim_category[category]` | `seller_category_performance[category]` | |
 | 10 | `dim_category[category]` | `category_satisfaction[category]` | set **manually to one-to-many** |
+| 11 | `vw_seller_performance[seller_id]` | `seller_category_performance[seller_id]` | needed by the seller drill-through (categories a seller sells); verified 0 orphans, 3,053 sellers |
 
    Power BI auto-detects 4, 5, 6 and 10 as one-to-one (both keys are unique).
    **A one-to-one relationship always filters in both directions**, so change
    each to *Many to one (\*:1)* from the many side, single direction. The DAX
    assumes single direction.
    **Delete any relationship Power BI auto-creates that is not in this table**
-   (e.g. on `seller_id` between `seller_category_performance` and
-   `vw_seller_performance`, or `customer_state`).
-   There are **no inactive relationships** in this design. The filter graph is
-   a tree, so there are no ambiguous paths.
+   (e.g. on `customer_state`, `order_month` or `category` between unrelated
+   tables). There are **no inactive relationships** in this design. The
+   relationships form two separate trees (orders/customers/reviews/stages; and
+   sellers/categories/products/satisfaction) with no cycle, so there are no
+   ambiguous filter paths.
 3. Leave unrelated: `cohort_retention`, `delivery_stage_summary`,
    `vw_delivery_performance`, `vw_monthly_revenue`, `sellers`, `products`,
    `product_category_translation`.
@@ -135,7 +137,7 @@ columns are known to be wrong around 2016/2017 (use the DAX measures).
 8. Hide technical columns from report view (keys on the many side,
    `*_seconds`, `MonthIndex`, `YearMonthSort`).
 
-## 3. Create the 84 measures
+## 3. Create the 90 measures
 
 1. *Home ▸ Enter data* → an empty table named **`_Measures`**; delete its
    placeholder column after the first measure exists.
@@ -144,7 +146,7 @@ columns are known to be wrong around 2016/2017 (use the DAX measures).
    the formatted DAX from [`dax_measures.md`](dax_measures.md).
 3. After each measure: no red error bar → tick *Syntax OK*. Set the format
    string from the checklist.
-4. When all 84 exist, test each unfiltered value on a scratch page with a card
+4. When all 90 exist, test each unfiltered value on a scratch page with a card
    (or a table of measures) against *Test value*. Tick *Value OK* only on an
    exact match (to the cent for BRL; to the shown decimals otherwise).
 5. Record any mismatch with the measure ID, the Power BI value and the
@@ -171,27 +173,24 @@ from the 2026-11-20 inspection:
 - **Page 6 delay-vs-score:** axis `vw_review_summary[delivery_bucket]`
   (sorted by `Delivery Bucket Order`), filter out `not delivered`.
 
-### Spec gaps: visuals without a measure among the 84
+### Specification visuals implemented by N36–N41 (added 2026-11-27)
 
-Four visuals in the specification need a calculation the 84 measures do not
-provide. Proposed DAX is below. These are **not** part of the 84, **not** in
-`dax_measures.md`, and **not** checked by the validator. Add them only after
-approval, then add them to `dax_measures.md` and `scripts/validate_dax_logic.py`.
-Reference values were computed on 2026-11-20 from the same CSVs Power BI
-imports, and they reproduce the published findings.
+Four visuals in the specification originally had no measure among the first
+84. They now use six measures in `dax_measures.md`, validated like the rest
+(`scripts/validate_dax_logic.py`, 251/251):
 
-| Visual | Proposed DAX (unvalidated) | Reference value |
+| Visual | Measures | Validated reference |
 |---|---|---|
-| Page 3 Pareto curve | `Category Cumulative Share = VAR Cur = [Category Revenue] VAR T = ADDCOLUMNS ( ALL ( dim_category[category] ), "@r", [Category Revenue] ) RETURN DIVIDE ( SUMX ( FILTER ( T, [@r] >= Cur ), [@r] ), SUMX ( T, [@r] ) )` — or a *visual calculation* `RUNNINGSUM` | top 10 = 62.4%; 18 categories reach 80% (Insight 7) |
-| Page 3 growth vs decline | `Category Revenue 2017 Q1 = CALCULATE ( [Category Revenue], vw_category_performance[order_month] IN { "2017-01", "2017-02", "2017-03" } )`; `Category Revenue Jun-Aug 2018 = CALCULATE ( [Category Revenue], vw_category_performance[order_month] IN { "2018-06", "2018-07", "2018-08" } )`; growth = `DIVIDE ( Jun-Aug − Q1, Q1 )`, shown only where both periods have ≥ 50 items (`[Category Items Sold]` with the same filters) | 24 categories meet the floor; 22 grew, 2 shrank; `housewares` +532.2% |
-| Page 4 concentration curve | as the Pareto, over `ALL ( vw_seller_performance[seller_id] )` with `[Seller Revenue]` | largest seller 1.70%; top 306 sellers (10% of 3,053, rounded up) = 67.50%, top 305 = 67.43% |
-| Page 5 promised vs actual | `Avg Promised Days = CALCULATE ( AVERAGEX ( vw_order_summary, vw_order_summary[delivery_days] - vw_order_summary[delay_days] ), vw_order_summary[delivery_measurable] = 1 )`, beside `[Avg Delivery Days]` | 2017-01: 39.51 promised vs 12.65 actual; 2018-08: 15.19 vs 7.73 (Insight 10 shows 39.5 / 12.6 and 15.2 / 7.7) |
+| Page 3 Pareto curve | `[Category Cumulative Share]` (N36) on a `dim_category[category]` axis sorted by `[Category Revenue]` descending, plus an 80% constant line | health_beauty 9.31%; 10th category 62.4%; 18 categories reach 80% |
+| Page 3 growth vs decline | `[Category Revenue 2017 Q1]` (N37), `[Category Revenue Jun-Aug 2018]` (N38), `[Category Growth Q1 2017 to Jun-Aug 2018]` (N39; BLANK under 50 items in either period) | 24 categories meet the floor; 22 grew; housewares +532.2% |
+| Page 4 concentration curve | `[Seller Cumulative Share]` (N40) on a seller axis sorted by `[Seller Revenue]` descending | largest seller 1.70%; seller 305 = 67.43%, seller 306 = 67.50% (10% of 3,053 = 305.3) |
+| Page 5 promised vs actual | `[Avg Promised Days]` (N41) and `[Avg Delivery Days]` (M41) by `dim_date[YearMonth]`, stable window | 2017-01: 39.51 vs 12.65 days; 2018-08: 15.19 vs 7.73 (Insight 10: 39.5 / 12.6, 15.2 / 7.7) |
 
-> **Label correction for the growth chart.** The specification says "2017 Q1
-> vs 2018 Q3", but the analysis it reproduces (`sql/04` Q13, Insight 7)
-> compares **June–August 2018**, the last three complete months, and labels it
-> "2018_q3". Calendar Q3 would be July–September, and September 2018 holds 16
-> orders. Title the chart "2017 Q1 vs Jun–Aug 2018".
+> **Growth chart label.** The specification originally said "2017 Q1 vs 2018
+> Q3", but the analysis it reproduces (`sql/04` Q13, Insight 7) compares
+> **June–August 2018**, the last three complete months. Calendar Q3 would be
+> July–September, and September 2018 holds 16 orders. Title the chart
+> "2017 Q1 vs Jun–Aug 2018" (the specification is now corrected).
 
 ## 5. Apply the theme
 
@@ -225,7 +224,9 @@ For each page, with the expected values in `dax_validation_results.csv`:
   reviews; average 4.1822.
 - **Seller detail page** (drill-through field `vw_seller_performance[seller_id]`):
   seller revenue, weighted rates (one seller returns its published values in
-  `vw_seller_performance`), categories sold (`seller_category_performance`).
+  `vw_seller_performance`), categories sold (`seller_category_performance`,
+  filtered through relationship 11). Drill from the largest seller: its rows
+  in `seller_category_performance` must sum to its `[Seller Revenue]`.
 
 ## 8. Check KPI cards
 
@@ -252,7 +253,7 @@ Only when **all** of these hold, with evidence in
 `powerbi_completion_checklist.md`:
 
 - the `.pbix` opens without errors and refreshes from the CSVs without warnings
-- all 84 measures are entered, with no syntax errors, and their values match
+- all 90 measures are entered, with no syntax errors, and their values match
 - all six pages are built per the specification, with mandatory captions
 - slicer, cross-filter and drill-through tests pass
 - the screenshots are captured from the real file

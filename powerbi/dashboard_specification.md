@@ -134,11 +134,12 @@ Revenue Share]` and `[Category Rank]` are written for that axis.
 
 ### Visuals
 1. **Revenue by category** — horizontal bar, top 15, sorted desc.
-2. **Pareto curve** — cumulative % by category rank, with a reference line at
-   80%. Caption: *18 of 74 categories reach 80% of revenue*.
+2. **Pareto curve** — `[Category Cumulative Share]` by category, sorted by
+   `[Category Revenue]` descending, with a reference line at 80%. Caption:
+   *18 of 74 categories reach 80% of revenue*.
 3. **Monthly category trend** — line chart, top 5 categories over time
    (max 5 series; beyond that, fold into "Other").
-4. **Category growth vs decline** — diverging bar, 2017 Q1 vs 2018 Q3,
+4. **Category growth vs decline** — diverging bar, 2017 Q1 vs **Jun–Aug 2018** (the last three complete months; corrected 2026-11-27 from "2018 Q3"),
    minimum 50 items in both periods.
 5. **Category table** — revenue, items, orders, avg price, share, rank.
 
@@ -164,8 +165,9 @@ sellers (`seller_category_performance`) and satisfaction
 
 ### Visuals
 1. **Top 20 sellers by revenue** — horizontal bar.
-2. **Seller concentration curve** — cumulative revenue share. Caption:
-   *largest seller 1.70%; top 10% of sellers 67.5%*.
+2. **Seller concentration curve** — `[Seller Cumulative Share]` by seller,
+   sorted by `[Seller Revenue]` descending. Caption: *largest seller 1.70%;
+   top 10% of sellers (306 of 3,053) 67.5%*.
 3. **Scorecard scatter** — X = late %, Y = inherited order rating, size =
    revenue. Median reference lines creating quadrants.
 4. **Intervention table** — sellers with ≥100 orders and rating < 3.8,
@@ -202,8 +204,9 @@ canceled or unavailable orders.
 ### Visuals
 1. **Order status distribution** — horizontal bar, log scale (delivered
    dwarfs everything else).
-2. **Promised vs actual delivery** — two lines over time with the gap shaded.
-   This is the page's most important visual.
+2. **Promised vs actual delivery** — `[Avg Promised Days]` and `[Avg Delivery
+   Days]` by `dim_date[YearMonth]` (stable window), with the gap shaded. This is
+   the page's most important visual.
 3. **Delivery performance by state** — map or bar, coloured by late rate.
 4. **Delivery time distribution** — histogram, median reference line.
 5. **Delivery stage breakdown** — stacked bar from `delivery_stage_summary`
