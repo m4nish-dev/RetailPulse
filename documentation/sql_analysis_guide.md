@@ -218,7 +218,7 @@ Q32 scores Recency and Monetary in quintiles, but **tie-consistently**
 (changed 2026-11-20): `score = 1 + FLOOR(5 * (RANK() - 1) / N)`, so customers
 with identical recency or spend always share a score. Plain `NTILE(5)` splits
 a tied group across two buckets arbitrarily, and its counts even changed
-between runs. The result matches the Power BI source `rfm_customer_segments.csv`
+between runs. The result matches the dashboard source `tableau/data/analytical/rfm_customer_segments.csv`
 exactly. **Frequency is not scored in quintiles at all**, and the reason
 matters:
 

@@ -1,6 +1,6 @@
 -- =============================================================================
 --  RetailPulse — 07_business_analysis.sql
---  Reusable VIEWS for Power BI (Phase 6) and ad-hoc analysis
+--  Reusable VIEWS for the dashboard extracts (Phase 6, Tableau) and ad-hoc analysis
 -- =============================================================================
 --  WHAT A VIEW IS, AND WHY THESE EXIST
 --  -----------------------------------
@@ -9,7 +9,7 @@
 --
 --  Why that matters here: the hardest part of this dataset is getting the
 --  GRAIN right. Every view below does the aggregation correctly ONCE, so that
---  anyone querying later — including Power BI — physically cannot make the
+--  anyone querying later — including the dashboard extracts — physically cannot make the
 --  fan-out mistake that inflates revenue by 4.54%.
 --
 --  A view is only created where the grain and the arithmetic are provably
@@ -33,7 +33,7 @@ DROP VIEW IF EXISTS vw_review_summary;
 --  reviews are each collapsed to order level in their own subquery BEFORE
 --  being joined, so no join can multiply rows.
 --
---  This is the view Power BI should use for every order-level measure.
+--  This is the view every order-level dashboard measure is built on.
 --
 --  Columns:
 --    order_id, customer_id, customer_unique_id   identity (count people on _unique_)

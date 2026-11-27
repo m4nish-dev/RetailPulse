@@ -18,7 +18,7 @@ for the tools that are missing. Nothing here blocks the project.
 | Jupyter Lab | ❌ Missing | Phase 3 |
 | MySQL | ❌ Missing | Phase 4 |
 | Microsoft Excel | ❌ Missing (Numbers.app present) | Phase 2 |
-| Power BI Desktop | ❌ Missing — **not available for macOS** | Phase 6 |
+| Tableau Desktop Public Edition | 🔲 To install (free, native macOS app, Apple silicon supported) | Phase 6 |
 | Kaggle CLI | ❌ Missing (optional) | Phase 1 |
 
 Nothing is needed until its phase arrives, so none of this has to be solved
@@ -148,34 +148,24 @@ then depends on it.
 
 ---
 
-## 5. Power BI on macOS — the one real constraint
+## 5. Dashboard tool on macOS: Tableau Desktop Public Edition
 
-**Power BI Desktop does not exist for macOS.** Microsoft has never released a
-Mac version, and there is no workaround within macOS itself. This is a hard
-limitation of the platform, not something that can be configured around.
+The dashboard is built in **Tableau Desktop Public Edition**, Tableau's free desktop
+app. It runs natively on macOS, including Apple-silicon Macs such as the M2, and
+publishes to a free **Tableau Public** profile. No other operating system, virtual
+machine or paid licence is needed.
 
-Options, honestly compared:
+| What it needs | Why it fits this project |
+|---|---|
+| A free Tableau Public account (to publish) | Portfolio work is meant to be public; the dataset licence (CC BY-NC-SA 4.0) allows non-commercial sharing with attribution |
+| The 14 CSV files in `tableau/data/` | The free edition connects to text files but not to MySQL, so no database credentials can end up in the published workbook |
+| Up to 15 million rows per data source | The largest data source here has 293,753 rows |
 
-| Option | Cost | Effort | Gets you a `.pbix`? |
-|---|---|---|---|
-| **Windows VM via UTM** (Apple Silicon) | Free | Medium — a few hours | ✅ Yes, full Desktop |
-| **Parallels Desktop** | ~$100/yr | Low — smoothest experience | ✅ Yes, full Desktop |
-| **Cloud Windows VM** (Azure/AWS, hourly) | ~$0.10–0.50/hr | Low | ✅ Yes |
-| **Power BI Service** (web, free account) | Free | Low | ⚠️ Partial — web authoring is limited; no local `.pbix` editing, weaker DAX/modelling |
-| **Tableau Public** instead | Free | Low — native Mac app | ❌ No, but produces a comparable dashboard portfolio piece |
+Install, build and publish steps:
+[`../tableau/mac_implementation_guide.md`](../tableau/mac_implementation_guide.md).
 
-**Recommendation:** if Power BI specifically appears in the job descriptions
-you are targeting — and in India it very often does — invest in a Windows VM.
-Power BI plus DAX is frequently a hard filter in Data Analyst screening, and
-a real `.pbix` with working DAX measures is worth far more on your resume than
-a screenshot of something else.
-
-If you want to defer that decision, Phases 1–5 and 7 produce a complete,
-genuinely strong project on their own: cleaned data, a MySQL schema, 25–30
-analytical queries, RFM segmentation, cohort analysis, and documented
-insights. Phase 6 can be added once the VM is ready. This is also the right
-order of operations regardless — the dashboard should be built on validated
-data, not before it.
+The analysis itself (Phases 1–5 and 7) needs no BI tool: it is complete in Python,
+SQL and the notebooks, and the dashboard is built on its validated outputs.
 
 ---
 
@@ -190,5 +180,5 @@ Needed right now: **nothing**. Only the dataset download.
 | 3 | Python packages (`pip install -r requirements.txt`) |
 | 4 | MySQL + Workbench |
 | 5 | Nothing new |
-| 6 | Windows environment + Power BI Desktop |
+| 6 | Tableau Desktop Public Edition (free) and a Tableau Public account |
 | 7–9 | Nothing |

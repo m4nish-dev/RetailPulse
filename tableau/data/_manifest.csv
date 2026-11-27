@@ -1,0 +1,6 @@
+object,rows,columns,size_mb,md5
+vw_order_summary,99441,29,20.54,56117b6654b15d5aeaacc802f62b4dc2
+vw_review_summary,99224,17,15.62,9786f7c7bd5e00f4a448a1a322ab232e
+vw_customer_summary,96096,14,9.22,ae59c42774de89c0f00ba8bcf521a27e
+vw_category_performance,1282,10,0.07,2aac18ce682518b2f4e1d35f813c52cb
+vw_seller_performance,3053,14,0.33,3486e0d2383e86cb83cdcd4718c7e2ab

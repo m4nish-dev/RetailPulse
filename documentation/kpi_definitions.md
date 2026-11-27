@@ -88,7 +88,7 @@ the count by 3.5% and makes repeat purchase rate collapse to zero.
 **Formula:** `SUM(order_items.price) / COUNT(DISTINCT order_items.order_id)`,
 **both restricted to revenue-eligible orders** (status not canceled/unavailable).
 **Validated:** 13,494,400.74 ÷ **98,199** eligible orders with items = **137.42 BRL**
-(SQL, pandas and the DAX logic check agree).
+(SQL, pandas and the Tableau measure check agree).
 **Limitations:**
 - ⚠ Numerator and denominator must describe **the same orders**. The
   denominator is eligible orders *with items* (98,199) — not all orders
@@ -113,10 +113,10 @@ collapse that did not happen.
 
 ### KPI 6 — Month-over-Month Growth
 **Formula:** `(revenue_this_month − revenue_prev_month) / revenue_prev_month`
-(SQL: `LAG()` window function; DAX: `dim_date[MonthIndex] - 1`, see `powerbi/dax_measures.md` M10)
+(SQL: `LAG()` window function; Tableau: `LOOKUP` with a `DATEDIFF` month guard, see `tableau/calculated_fields.md` M10)
 **Limitations:** undefined for the first month. Only meaningful inside the
 stable window: **both** months must be complete, so 2017-01 (vs December
-2016's single order) is BLANK in DAX. The 3-month moving average (M11) likewise
+2016's single order) is blank on the dashboard. The 3-month moving average (M11) likewise
 needs three complete months and starts at 2017-03. `vw_monthly_revenue`'s
 `mom_growth_pct` and `moving_avg_3m` do not apply this rule at the 2016/2017
 boundary; don't quote them for 2016-12 to 2017-02. **Month-over-month % is a volatility measure, not a growth

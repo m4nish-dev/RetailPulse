@@ -1,5 +1,8 @@
 # RetailPulse — Final Project Audit
 
+> **HISTORICAL RECORD.** This audit describes the project as it stood on its date. Its references to Power BI, DAX, Windows and the `powerbi/` folder are superseded: the dashboard is now built in **Tableau Public** (see [`../tableau/README.md`](../tableau/README.md)), the analytical CSVs live in `tableau/data/`, and the measure validation is `scripts/validate_tableau_calcs.py`. Kept unchanged as evidence of the checks done at the time; do not follow it as current instructions.
+
+
 > **Historical snapshot (2026-11-20, before the fix phases).** This audit is
 > preserved as written. Its findings have since been addressed or explicitly
 > carried forward; the current state, and what remains outstanding, are in
@@ -370,7 +373,7 @@ will break all three.
 - Documentation states the database is "~210 MB"; measured **260.4 MB**
   (`sql_analysis_guide.md` l.239, `sql_analysis_report.md` l.409).
 - Hard-coded absolute paths: `/Applications/LibreOffice.app` in `recalc_workbook.py`;
-  `/Users/manish/...` and `/opt/homebrew/...` in `mysql_setup.md` (8×),
+  `/Users/<name>/...` and `/opt/homebrew/...` in `mysql_setup.md` (8×),
   `dataset_setup.md` (4×), `sql_analysis_guide.md`, `sql_analysis_report.md`, and a stale
   scratch path in the `build_phase2_data.py` docstring. Scripts themselves resolve
   paths relative to the repo — good.
@@ -546,7 +549,7 @@ Could another developer reproduce RetailPulse from the repository?
 | Rerun EDA notebook | ✅ | **[EXECUTED]** 0 errors, 15/15 |
 | Regenerate Power BI exports | ✅ | **[EXECUTED]** 335,797 rows — but exports are incomplete for the spec (§5.1) |
 | Build the dashboard | ❌ | No `.pbix`; Windows required |
-| File paths | ⚠️ | Scripts are repo-relative ✅; several docs hard-code `/Users/manish/...` |
+| File paths | ⚠️ | Scripts are repo-relative ✅; several docs hard-code `/Users/<name>/...` |
 | Setup instructions complete | ❌ | README setup omits MySQL install, schema/import, `--local-infile`, LibreOffice, and the Power BI export step. The information exists, but scattered across `mysql_setup.md`, `environment_setup.md`, `dataset/cleaned/README.md`, `powerbi/README.md` |
 | Undocumented manual steps | ⚠️ | Pipeline order (raw → clean → MySQL → views → exports → workbook → recalc) is never stated in one place |
 
@@ -587,7 +590,7 @@ pipeline.
 | P1-8 | Time-to-second-purchase analysis | Evidence for Insight 6's follow-up window | SQL or notebook | — | No | Distribution reported; recommendation cites it | L |
 | P1-9 | Seller dispatch metric (excl. anomalies) | Fairer seller assessment | `vw_seller_performance` | P0-6 | No | Matches pandas | L |
 | P1-10 | MT-01 manual chart | Closes Phase 2 as planned | Excel workbook | — | **Yes** | Chart present, stable window only | L |
-| P1-11 | Fix minor doc inaccuracies (DB size, hard-coded paths, dual-axis contradiction) | Accuracy | several `.md` | — | No | Grep finds no `/Users/manish`, no "210 MB" | L |
+| P1-11 | Fix minor doc inaccuracies (DB size, hard-coded paths, dual-axis contradiction) | Accuracy | several `.md` | — | No | Grep finds no `/Users/<name>`, no "210 MB" | L |
 
 ### P2 — Optional enhancements
 

@@ -46,22 +46,24 @@ PY = sys.executable
 EXPECTED = {
     "issue_register": 19,          # scripts/verify_issue_register.py
     "mysql_validation": 71,        # sql/08_validation.sql PASS rows
-    "powerbi_sources": 90,         # scripts/validate_powerbi_sources.py
-    "dax_logic": 251,              # scripts/validate_dax_logic.py (90 measures)
-    "insight_evidence": 38,        # scripts/validate_insight_evidence.py
-    "powerbi_readiness": 27,       # scripts/check_powerbi_readiness.py
+    "tableau_sources": 90,         # scripts/validate_tableau_sources.py (analytical CSVs vs SQL and pandas)
+    "tableau_data": 24,            # scripts/check_tableau_data.py (files, MD5, keys, 8 relationships)
+    "tableau_calcs": 264,          # scripts/validate_tableau_calcs.py (90 measures vs SQL, Tableau semantics)
+    "tableau_workbook": 15,        # scripts/validate_tableau_workbook.py (generated .twb: XSD + registry)
+    "insight_evidence": 78,        # scripts/validate_insight_evidence.py
+    "repository": 18,              # scripts/check_repository.py (structure, links, references, security)
     "nb03_code_cells": 30,         # notebooks/03 code cells executed
     "nb03_mysql_checks": 15,       # notebooks/03 §G
     "nb04_checks": 10,             # notebooks/04 §D
 }
 READ_ONLY_SQL = ["03_basic_analysis.sql", "04_joins_and_aggregations.sql", "05_advanced_sql.sql",
-                 "06_customer_analytics.sql", "09_powerbi_sources.sql", "11_insight_evidence.sql"]
+                 "06_customer_analytics.sql", "09_dashboard_sources.sql", "11_insight_evidence.sql"]
 NEVER_RUN = [("sql/01_schema.sql", "drops and recreates the database (admin rebuild only)"),
              ("sql/02_import.sql", "reloads all tables (admin rebuild only)"),
              ("sql/07_business_analysis.sql", "drops and recreates the views (admin only)"),
              ("sql/10_app_user.sql", "creates the MySQL account (admin, once)"),
              ("notebooks/02_data_cleaning.ipynb", "rewrites dataset/cleaned/"),
-             ("scripts/export_powerbi_*.py", "overwrite powerbi/data/ (sources validator compares them to live SQL instead)")]
+             ("scripts/export_tableau_*.py", "overwrite tableau/data/ (the validators compare the files with live SQL and MD5 manifests instead)")]
 
 RESULTS: list[dict] = []
 G, R, Y, B, X = "\033[32m", "\033[31m", "\033[33m", "\033[1m", "\033[0m"
@@ -181,12 +183,13 @@ def main():
             record(f"sql/{name} executes", "PASS" if rc == 0 and not errs else "FAIL",
                    "no errors" if rc == 0 and not errs else (errs[0][:120] if errs else f"exit {rc}"), s, out)
 
-    # 5-6 ---- Power BI sources and DAX logic ---------------------------------
-    print(f"\n{B}4. Power BI sources, DAX measure logic, insight evidence{X}")
-    for script, key, label in [("validate_powerbi_sources.py", "powerbi_sources", "Power BI analytical sources"),
-                               ("validate_dax_logic.py", "dax_logic", "DAX measure logic (90 measures)"),
-                               ("validate_insight_evidence.py", "insight_evidence", "Insight evidence (sql/11 vs pandas)"),
-                               ("check_powerbi_readiness.py", "powerbi_readiness", "Power BI data readiness (11 relationships)")]:
+    # 5-6 ---- Tableau data, calculated fields, insight evidence ---------------
+    print(f"\n{B}4. Tableau data sources, calculated fields, insight evidence{X}")
+    for script, key, label in [("validate_tableau_sources.py", "tableau_sources", "Tableau analytical sources (vs SQL + pandas)"),
+                               ("check_tableau_data.py", "tableau_data", "Tableau data readiness (files, MD5, keys, relationships)"),
+                               ("validate_tableau_calcs.py", "tableau_calcs", "Tableau calculated fields (90 measures, logic)"),
+                               ("validate_tableau_workbook.py", "tableau_workbook", "Tableau workbook (generated .twb: XSD + registry)"),
+                               ("validate_insight_evidence.py", "insight_evidence", "Insight evidence (sql/11 vs pandas)")]:
         rc, out, s = run([PY, f"scripts/{script}"])
         res = parse_checks(out)
         if res:
@@ -234,8 +237,17 @@ def main():
                 record(label, "FAIL" if problems else "PASS",
                        ", ".join(notes + problems) + ("" if problems else " (executed in a temp folder)"), s, out)
 
+    # ---- repository, documentation and security ---------------------------------
+    print(f"\n{B}6. Repository: structure, links, references, security{X}")
+    rc, out, secs = run([PY, "scripts/check_repository.py"])
+    res = parse_checks(out)
+    if res:
+        count_status("Repository checks (links, paths, secrets, ignores)", "repository", res[0], res[1], res[2], secs, out, rc)
+    else:
+        record("Repository checks (links, paths, secrets, ignores)", "FAIL", f"could not read result (exit {rc})", secs, out)
+
     # ---- never run ------------------------------------------------------------
-    print(f"\n{B}6. Deliberately not run (destructive or regenerating){X}")
+    print(f"\n{B}7. Deliberately not run (destructive or regenerating){X}")
     for name, why in NEVER_RUN:
         record(name, "SKIP", why)
 

@@ -7,6 +7,8 @@ rebuild from dataset/cleaned/:
 
   E1  time from first to second order (Insight 6)
   E2  freight as a share of product value by order-value band (priority 3)
+  E3  what a free-shipping threshold at the 86.90 BRL median would cover
+  E4  freight share by customer region and by items per order
 
 Read-only. Exit code 1 on any mismatch.
 Usage:  ./venv/bin/python scripts/validate_insight_evidence.py
@@ -44,21 +46,22 @@ def main():
     except ConfigError as e:
         sys.exit(f"CONFIG ERROR: {e}")
     q = sql_statements()
-    if len(q) != 3:
-        sys.exit(f"expected 3 queries in sql/11_insight_evidence.sql, found {len(q)}")
+    if len(q) != 5:
+        sys.exit(f"expected 5 queries in sql/11_insight_evidence.sql, found {len(q)}")
 
     def run(s):
         cur = conn.cursor(); cur.execute(s)
         cols = [d[0] for d in cur.description]; rows = cur.fetchall(); cur.close()
         return pd.DataFrame(rows, columns=cols, dtype=object)
 
-    e1, e1q, e2 = run(q[0]).iloc[0], run(q[1]), run(q[2])
+    e1, e1q, e2, e3, e4 = run(q[0]).iloc[0], run(q[1]), run(q[2]), run(q[3]).iloc[0], run(q[4])
     conn.close()
 
     # ---- pandas rebuild ------------------------------------------------------
     o = pd.read_csv(ROOT / "dataset/cleaned/orders_clean.csv", low_memory=False,
                     usecols=["order_id", "customer_unique_id", "order_purchase_timestamp",
-                             "revenue_eligible", "has_items", "order_revenue", "order_freight"],
+                             "revenue_eligible", "has_items", "order_revenue", "order_freight",
+                             "customer_state", "item_count"],
                     parse_dates=["order_purchase_timestamp"])
     people = o.customer_unique_id.nunique()
     o = o.sort_values(["customer_unique_id", "order_purchase_timestamp", "order_id"])
@@ -97,6 +100,37 @@ def main():
         check(f"E2 {r.band} value BRL", r.value_brl, round(p.value, 2), 0.01)
         check(f"E2 {r.band} freight BRL", r.freight_brl, round(p.freight, 2), 0.01)
         check(f"E2 {r.band} freight % of value", r.freight_pct_of_value, round(p.freight / p.value * 100, 2), 0.005)
+
+
+    # ---- E3 threshold impact -------------------------------------------------
+    v = e.order_revenue.round(2)
+    qual, near = v >= 86.90, (v >= 70) & (v < 86.90)
+    check("E3 qualifying orders (>= 86.90)", e3.qualifying_orders, int(qual.sum()))
+    check("E3 qualifying %", e3.qualifying_pct, round(qual.mean() * 100, 2), 0.005)
+    check("E3 freight on qualifying orders BRL", e3.qualifying_freight_brl, round(e.loc[qual, "order_freight"].sum(), 2), 0.01)
+    check("E3 qualifying freight % of all freight", e3.qualifying_pct_of_freight,
+          round(e.loc[qual, "order_freight"].sum() / e.order_freight.sum() * 100, 1), 0.05)
+    check("E3 qualifying freight % of product revenue", e3.qualifying_pct_of_product_revenue,
+          round(e.loc[qual, "order_freight"].sum() / e.order_revenue.sum() * 100, 1), 0.05)
+    check("E3 near-miss orders (70.00-86.89)", e3.near_miss_orders, int(near.sum()))
+    check("E3 near-miss %", e3.near_miss_pct, round(near.mean() * 100, 2), 0.005)
+
+    # ---- E4 by region and items ----------------------------------------------
+    reg = {"SP": "SP", **{x: "Southeast excl. SP" for x in ["RJ", "MG", "ES"]}, **{x: "South" for x in ["PR", "SC", "RS"]},
+           **{x: "Centre-West" for x in ["DF", "GO", "MT", "MS"]},
+           **{x: "Northeast" for x in ["BA", "PE", "CE", "MA", "PB", "RN", "AL", "PI", "SE"]}}
+    e["grp_r"] = "region: " + e.customer_state.map(reg).fillna("North")
+    e["grp_i"] = "items: " + np.where(e.item_count > 1, "2+", "1")
+    for col in ["grp_r", "grp_i"]:
+        gg = e.groupby(col).agg(orders=("order_id", "size"), value=("order_revenue", "sum"), freight=("order_freight", "sum"),
+                                avg_fr=("order_freight", "mean"), qual=("order_revenue", lambda x: (x.round(2) >= 86.90).mean() * 100))
+        for name, p in gg.iterrows():
+            r = e4[e4.grp == name].iloc[0]
+            check(f"E4 {name} orders", r.orders, p.orders)
+            check(f"E4 {name} freight % of value", r.freight_pct_of_value, round(p.freight / p.value * 100, 2), 0.005)
+            check(f"E4 {name} avg freight BRL", r.avg_freight_brl, round(p.avg_fr, 2), 0.005)
+            check(f"E4 {name} qualifying %", r.qualifying_pct, round(p.qual, 2), 0.005)
+    check("E4 group rows returned", len(e4), 8)
 
     print("INSIGHT EVIDENCE — sql/11_insight_evidence.sql vs independent pandas")
     for name, ok, a, b in RESULTS:

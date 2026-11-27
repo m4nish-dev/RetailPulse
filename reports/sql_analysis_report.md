@@ -367,7 +367,7 @@ RFM segmentation is correspondingly skewed:
 | Loyal Customers | 895 | 0.9% | 1.3% |
 
 (Q32 now uses tie-consistent quintiles, corrected 2026-11-20, and matches the
-Power BI source exactly; the earlier `NTILE` run gave 22,072 / 957.)
+dashboard source exactly; the earlier `NTILE` run gave 22,072 / 957.)
 
 **Champions hold just 2.3% of revenue.** A VIP retention programme has almost
 nothing to work with. The 21,427 Potential Loyalists — recent, high-value,
@@ -478,7 +478,7 @@ for no measurable gain.
 | **23 impossible date sequences** | Flagged, not fixable — cause unknowable from this data |
 | **Cohort right-censoring** | Later cohorts had less time to return; not comparable with earlier ones |
 | **MySQL has no root password** | Deliberate — a fresh Homebrew install. Not secured without your permission. See `mysql_setup.md` §2 |
-| **Views take 2–3s** | Acceptable here; Power BI should import rather than DirectQuery |
+| **Views take 2–3s** | Acceptable here; the dashboard reads CSV extracts, never the views live |
 
 ---
 

@@ -1,8 +1,8 @@
 """
-RetailPulse - export the Power BI analytical data sources (fix-Phase 3).
+RetailPulse - export the analytical data sources of the Tableau dashboard.
 
-Runs the read-only queries in sql/09_powerbi_sources.sql and writes one CSV per
-source into powerbi/data/analytical/, plus _manifest.csv.
+Runs the read-only queries in sql/09_dashboard_sources.sql and writes one CSV per
+source into tableau/data/analytical/, plus _manifest.csv (rows, columns, size, MD5).
 
 SAFETY
   * The SQL file is split on "-- @source: <name>" markers. Every statement is
@@ -12,16 +12,20 @@ SAFETY
   * The connection uses the read-only application account (scripts/rp_db.py,
     credentials from .env) in a READ ONLY session, so even a statement that
     slipped past the check could not write.
-  * Output goes only to powerbi/data/analytical/. Existing files there are
-    overwritten (they are generated artefacts); nothing else is touched.
+  * Output goes only to the output folder (default tableau/data/analytical/).
+    Existing files there are overwritten (they are generated artefacts);
+    nothing else is touched. Never run by scripts/run_all_validations.py.
 
-CSV conventions (Power BI friendly)
+CSV conventions (Tableau text-file connector)
   UTF-8, comma-separated, header row, '.' decimal point, dates as YYYY-MM-DD,
   flags as 0/1, NULL as an empty field.
 
-Usage:  ./venv/bin/python scripts/export_powerbi_sources.py
+Usage:
+  ./venv/bin/python scripts/export_tableau_sources.py                # writes tableau/data/analytical/
+  ./venv/bin/python scripts/export_tableau_sources.py --out /tmp/x   # writes elsewhere (e.g. to compare)
 """
 from pathlib import Path
+import argparse
 import hashlib
 import re
 import sys
@@ -32,8 +36,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rp_db import ConfigError, get_connection                 # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-SQL_FILE = ROOT / "sql" / "09_powerbi_sources.sql"
-OUT = ROOT / "powerbi" / "data" / "analytical"
+SQL_FILE = ROOT / "sql" / "09_dashboard_sources.sql"
+DEFAULT_OUT = ROOT / "tableau" / "data" / "analytical"
 
 FORBIDDEN = re.compile(
     r"\b(INSERT|UPDATE|DELETE|REPLACE|MERGE|DROP|CREATE|ALTER|TRUNCATE|RENAME|"
@@ -79,6 +83,9 @@ def run(conn, sql: str) -> pd.DataFrame:
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser(description="Export the dashboard analytical sources")
+    ap.add_argument("--out", type=Path, default=DEFAULT_OUT, help="output folder (default tableau/data/analytical/)")
+    out = ap.parse_args().out
     sources = load_sources()
     try:
         conn = get_connection(read_only=True)                 # app account from .env
@@ -88,11 +95,11 @@ def main() -> None:
     cur.execute("SET SESSION cte_max_recursion_depth = 100")
     cur.close()
 
-    OUT.mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents=True, exist_ok=True)
     manifest = []
     for name, sql in sources.items():
         df = run(conn, sql)
-        path = OUT / f"{name}.csv"
+        path = out / f"{name}.csv"
         df.to_csv(path, index=False, encoding="utf-8", lineterminator="\n")
         md5 = hashlib.md5(path.read_bytes()).hexdigest()
         mb = path.stat().st_size / 1024**2
@@ -102,8 +109,8 @@ def main() -> None:
     conn.close()
 
     mf = pd.DataFrame(manifest)
-    mf.to_csv(OUT / "_manifest.csv", index=False, lineterminator="\n")
-    print(f"\n{len(mf)} sources, {mf.rows.sum():,} rows, {mf.size_mb.sum():.1f} MB -> {OUT}")
+    mf.to_csv(out / "_manifest.csv", index=False, lineterminator="\n")
+    print(f"\n{len(mf)} sources, {mf.rows.sum():,} rows, {mf.size_mb.sum():.1f} MB -> {out}")
 
 
 if __name__ == "__main__":

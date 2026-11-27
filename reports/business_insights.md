@@ -142,6 +142,8 @@ first-to-second purchase conversion, and delivery reliability. Commit to
 measuring one of them as a controlled change rather than assuming growth
 resumes on its own.
 
+**Classification:** Decision-ready: plan from the 2018 plateau (measured: compound monthly growth −1.5%). Hypothesis to test: the effect of any one growth lever.
+
 ---
 
 ## Insight 2 — Every bit of growth came from more orders, none from bigger ones
@@ -216,6 +218,22 @@ reflects typical customers rather than the tail.
 > cost a threshold there would absorb. The dataset has no cost or margin
 > data, so whether bigger baskets would pay for it **cannot be judged here**.
 > It is a hypothesis for an A/B test, not a decision.
+>
+> **Threshold impact** (`sql/11` E3–E4, checked in pandas). Because 86.90 BRL
+> is the *median* order, **49,119 orders (50.0%) already clear it** without
+> any change in behaviour. Absorbing their freight in full would cost
+> **1,423,461.81 BRL**: 63.5% of all freight and 10.5% of product revenue.
+> Only **6,869 orders (7.0%)** fall just below it (70.00–86.89 BRL), the one
+> group a threshold could plausibly move. Freight also weighs very
+> differently across the country: **13.8%** of order value in São Paulo
+> versus **22.7%** in the North (average 17.37 vs 41.39 BRL per order), and
+> 15.7% for single-item versus 22.1% for multi-item orders. A threshold at the
+> median would therefore mostly subsidise orders that happen anyway. A test
+> should try a **higher or region-specific threshold** and measure the change
+> in the near-miss band. No conversion or revenue effect can be claimed from
+> this data.
+
+**Classification:** Decision-ready: make AOV an owned KPI (AOV flat at +0.4% is measured). Hypothesis to test: the free-shipping threshold and bundles (no cost or conversion data; half of orders already clear the median).
 
 ---
 
@@ -266,6 +284,8 @@ start treating geographic reach as one. Before investing in expansion, read
 Insight 9 — the under-served states are also the ones with the worst delivery
 performance, and the two facts are probably connected.
 
+**Classification:** Decision-ready: treat geography as the main concentration risk (3 states = 63.4% of revenue). Hypothesis to test: that better delivery would grow volume there (correlation only).
+
 ---
 
 # B · Customer Intelligence
@@ -309,7 +329,7 @@ matrix is below 1.5%.
 Chart: [`B3_cohort_retention_heatmap.png`](eda_charts/B3_cohort_retention_heatmap.png)
 
 > *Method note:* cohorts and offsets use **calendar months**, the project
-> convention since 2026-11-20 in SQL Q33, notebook 03 and the Power BI source
+> convention since 2026-11-20 in SQL Q33, notebook 03 and the dashboard source
 > `cohort_retention.csv` (all three agree). Only activity up to 2018-08 counts,
 > and months a cohort could not yet reach are blank, not 0. (Historical: Q33
 > once used elapsed whole months, which gave 3.93% for the best cohort.)
@@ -332,6 +352,8 @@ initiative, run a small controlled test of post-purchase follow-up on recent
 first-time buyers (Insight 6 identifies the target group) and require it to
 beat the 3.12% baseline before scaling. Do not assume a loyalty programme will
 work here simply because it works elsewhere.
+
+**Classification:** Decision-ready: plan on about one order per customer (3.12%; 2.19% returned on a later day). Hypothesis to test: whether post-purchase follow-up beats that baseline (holdout test).
 
 ---
 
@@ -383,6 +405,8 @@ bought: if high-value orders cluster in particular categories or price bands,
 that is a merchandising opportunity to move more customers up the value curve.
 Target the behaviour (large basket), not the person (who has left).
 
+**Classification:** Decision-ready: do not build a VIP tier (93% of the top 1% bought once). Open analysis: what the top 1% bought has not been studied yet.
+
 ---
 
 ## Insight 6 — "Potential Loyalists" hold 34% of revenue; Champions hold 2.3%
@@ -397,14 +421,14 @@ measured from the person's last eligible order to the dataset end date
 customers with identical recency or spend always share a score.
 Source: [`sql/06_customer_analytics.sql`](../sql/06_customer_analytics.sql) Q32 ·
 [`notebooks/03_exploratory_data_analysis.ipynb`](../notebooks/03_exploratory_data_analysis.ipynb) §B2 ·
-`powerbi/data/analytical/rfm_customer_segments.csv` (all three agree customer by customer) ·
+`tableau/data/analytical/rfm_customer_segments.csv` (all three agree customer by customer) ·
 chart [`B2_rfm_segments_customers_vs_revenue.png`](eda_charts/B2_rfm_segments_customers_vs_revenue.png)
 
 > **Corrected 2026-11-20.** The first version of this insight used `NTILE(5)`,
 > which splits customers with identical values across two scores arbitrarily.
 > Its counts (21,917 Potential Loyalists, 982 Champions; the notebook's `qcut`
 > gave 21,989 / 979) were not reproducible: the same query later returned
-> 22,072. SQL Q32, notebook 03 and the Power BI source now share one
+> 22,072. SQL Q32, notebook 03 and the dashboard source now share one
 > tie-consistent method and give identical results. **The finding did not
 > change** (34% vs 2% of revenue).
 >
@@ -447,6 +471,8 @@ after a first order. Treat Champions as a reporting curiosity, not a
 target. Set the success bar at beating the 3.12% baseline repeat rate
 (Insight 4) on a holdout group — anything less is noise.
 
+**Classification:** Hypothesis to test: target segment (21,427 people, 33.6% of revenue) and ~3-month window are evidenced; the uplift is not. Run on a holdout group.
+
 ---
 
 # C · Product and Category Performance
@@ -486,6 +512,8 @@ Do not spend effort diversifying the catalogue further; it is already
 diversified. Redirect that effort to the geographic and delivery problems in
 Insights 3 and 9. Use the growth list to prioritise seller recruitment in
 expanding categories rather than adding new categories from scratch.
+
+**Classification:** Decision-ready: no further catalogue diversification (top 10 categories = 62.4%). Hypothesis to test: the payoff of recruiting sellers in growing categories.
 
 ---
 
@@ -546,6 +574,8 @@ it in two: sellers with high late rates get a fulfilment conversation; sellers
 with good delivery but poor ratings get a product-quality and listing review.
 Make a seller scorecard a standing monthly report from `vw_seller_performance`
 rather than a one-off.
+
+**Classification:** Decision-ready: work through the intervention list and publish the scorecard monthly (descriptive and operational; ratings are inherited from orders).
 
 ---
 
@@ -644,6 +674,8 @@ waiting customer. Separately, **review the survey trigger** (Insight 13):
 holding it until delivery would stop the platform rating the wait instead of
 the order. When reporting satisfaction by delivery timing, show both analyses.
 
+**Classification:** Decision-ready: the at-risk alert and the survey-timing change (late orders and 4,795 pre-arrival reviews are measured facts). Hypothesis to test: the size of any rating gain (association only).
+
 ---
 
 ## Insight 10 — Delivery promises are heavily padded, but the padding is being squeezed out
@@ -688,6 +720,8 @@ the operation can hit reliably — not the fastest it can sometimes hit.
 > of padding costs conversions at checkout. There is no browsing or cart data
 > in this dataset, so this is a **hypothesis to test**, not a finding. An A/B
 > test on quoted dates would settle it.
+
+**Classification:** Hypothesis to test: tighter promises may lift conversion but risk more late orders; the dataset has no checkout data (A/B test on quoted dates).
 
 ---
 
@@ -735,6 +769,8 @@ under-served state with reasonable population, improve delivery there (a
 regional partner or fulfilment point), and measure whether order volume
 responds. That converts an unanswerable correlation into a testable business
 case at limited cost.
+
+**Classification:** Hypothesis to test: explicitly a bounded experiment; the state-level link between delivery and volume is a correlation.
 
 ---
 
@@ -787,6 +823,8 @@ Direct logistics investment and carrier negotiation at the last mile, and hold
 carriers to delivery-date commitments the way sellers are held to dispatch
 times. When assessing seller performance (Insight 8), separate dispatch speed
 — which a seller controls — from total delivery time, which they largely do not.
+
+**Classification:** Decision-ready: judge sellers on dispatch speed, not total delivery time (measurement change). Hypothesis to test: the payoff of last-mile investment (74.2% is time spent, not proven controllable gain).
 
 ---
 
@@ -848,16 +886,18 @@ triggered:** today it goes to customers whose order has not arrived. Those
 produce no usable product feedback. Holding the survey until a delivery scan
 exists is a cheap, testable change.
 
+**Classification:** Decision-ready: report the one-star rate and hold the survey until delivery (a reporting change and a measured survey artefact).
+
 ---
 
 ## Insight 14 — Below-average satisfaction reaches the revenue core, but not most rated revenue
 
-> **Revised 2026-11-20 (DAX audit).** The original version said **20 of 34**
+> **Revised 2026-11-20 (measure audit).** The original version said **20 of 34**
 > categories, holding **60.0%** of rated revenue, score below average. That
 > scored each category by repeating every order's rating **once per item**, so
 > a 6-unit order counted six times. The project's review-grain convention
 > counts each review once per category it touches
-> (`powerbi/data/analytical/category_satisfaction.csv`, validated). On that
+> (`tableau/data/analytical/category_satisfaction.csv`, validated). On that
 > basis it is **15 of 34 categories and 45.1%**: no longer "most". Five
 > categories near the line move above average (auto, drinks, electronics,
 > garden_tools, housewares). Restricting reviews to eligible orders gives
@@ -873,8 +913,8 @@ ones that matter?
 Average review score per category at **review grain** (each review once per
 category in its order), with a floor of 300 eligible items sold. Revenue =
 eligible item revenue on orders that have a review ("rated revenue").
-Source: [`powerbi/data/analytical/category_satisfaction.csv`](../powerbi/analytical_sources.md) ·
-DAX `[Category Avg Review Score]` (N30). The original item-weighted figures come
+Source: [`tableau/data/analytical/category_satisfaction.csv`](../documentation/analytical_sources.md) ·
+Tableau field `Category Avg Review Score` (N30). The original item-weighted figures come
 from [`notebooks/03_exploratory_data_analysis.ipynb`](../notebooks/03_exploratory_data_analysis.ipynb) §F2
 and chart [`F2_review_score_by_category.png`](eda_charts/F2_review_score_by_category.png), which have **not**
 been regenerated and still show the superseded method.
@@ -906,11 +946,14 @@ slower. **This analysis does not separate the two effects**, and that
 separation would be the natural next piece of work.
 
 **5. Recommended action**
-Before treating this as a product-quality problem, split category review
-scores by on-time versus late delivery. If the gap disappears, it is a
-logistics issue in disguise and belongs with Insight 12. If it persists, it is
-a merchandising and seller-quality issue in the largest categories. One query
-settles it, and the answer changes who owns the fix.
+The on-time versus late split has now been done (follow-up below). Act on its
+result: give `bed_bath_table`, `furniture_decor`, `office_furniture` and
+`home_confort`, whose deficit persists on on-time orders, a merchandising and
+seller-quality review (listing accuracy, dimensions, damage in transit). Route
+`watches_gifts`, `electronics` and `baby`, whose gap vanishes on on-time
+orders, to the delivery work in Insights 9 and 12.
+
+**Classification:** Decision-ready: the merchandising review of the four product-problem categories (supported by the on-time split). Hypothesis to test: how much a fix would raise their ratings.
 
 ---
 
@@ -1023,9 +1066,10 @@ revenue.
 2018) and AOV has been flat (+0.4%, Jan–Aug like-for-like) while orders more
 than doubled. With retention structurally near zero, basket size is the
 only lever that does not depend on customers returning. **Start with:** an
-A/B test of a free-shipping threshold just above the 86.90 BRL median order
-value; freight there averages 21.81 BRL per order (21% of product value), the
-cost the test must recover.
+A/B test of a free-shipping threshold, set **above** the 86.90 BRL median or
+by region. At the median, half of all orders already qualify and full
+absorption would cost 1.42M BRL (63.5% of freight); only 7.0% of orders sit
+just below it. Measure the effect on that near-miss band.
 
 ### 4. Treat geographic concentration as the top business risk
 *Decision-ready as a risk statement; whether better delivery creates volume is a hypothesis (the bounded experiment tests it).*
@@ -1071,6 +1115,12 @@ Stated plainly, because every one of them bounds a conclusion above.
 
 # Verification
 
+**2026-11-27 approved T05/T06 update** — Free-shipping threshold impact and
+regional freight shares added to Insight 2 and priority 3 (`sql/11` E3–E4,
+validator 78/78). Every insight's recommended action now carries a
+decision-ready / hypothesis-to-test classification. Insight 14's action was
+replaced, because the on-time split it asked for has been done.
+
 **2026-11-27 evidence update** — Two recommendations gained evidence from
 `sql/11_insight_evidence.sql`, reproduced in pandas
 (`scripts/validate_insight_evidence.py`, 38/38): time to the second order
@@ -1087,13 +1137,13 @@ Insight 14 follow-up use review-grain category scores (identical to
 `category_satisfaction.csv`). Insight 6's conclusion and the follow-up verdicts
 held, except `audio`.
 
-**2026-11-20 DAX audit (fix-Phase 4)** — Insight 14 re-tested at review grain
+**2026-11-20 measure audit (fix-Phase 4)** — Insight 14 re-tested at review grain
 (each review once per category, the project convention): **15 of 34 categories,
 45.1% of rated revenue** below average, replacing the item-weighted 20 / 60.0%.
 The title and implication were revised. Insight 6 gained a dependency note
 with tie-consistent RFM counts; its conclusion is unchanged. Both new figures
-come from validated sources (`scripts/validate_powerbi_sources.py` 90/90,
-`scripts/validate_dax_logic.py` 230/230).
+come from validated sources (source validator 90/90 and measure validator 230/230 at
+the time; today `scripts/validate_tableau_sources.py` and `scripts/validate_tableau_calcs.py`).
 
 **2026-11-20 data-quality re-test (fix-Phase 2)** — Insight 12 recomputed on
 the `stage_timing_valid` population (74.2% last mile, unchanged in substance).

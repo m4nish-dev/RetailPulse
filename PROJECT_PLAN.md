@@ -5,16 +5,26 @@
 **Owner:** Manish
 **Started:** 2026-11-12
 
-> **Current status (2026-11-20).** Phases 1–5 and 7 are complete. The original
-> Phase 6 (Power BI) is **prepared but not built**: data sources, data model,
-> 90 logic-validated DAX measures and the page specification exist; the
-> `.pbix` needs Windows. After the final audit, corrective work was done in
-> addition to this plan: metric fixes, a data-quality investigation (issues
-> Q18–Q19), Power BI analytical sources, a DAX audit, a consistency cleanup,
-> security hardening (read-only MySQL account, `.env`) and a documentation
-> audit. Phase-by-phase records below are kept as written at the time; figures
-> superseded since are marked. Live checklist:
-> `documentation/project_completion_checklist.md`.
+> **Current status (2026-11-27).** Phases 1–5 and 7 are complete and validated. Phase 6
+> (dashboards, **Tableau Public**) is prepared and logic-validated but not yet built.
+> Prepared so far:
+> - the data in `tableau/data/`
+> - 6 data sources and 8 relationships
+> - 90 calculated fields, validated against SQL (264/264)
+> - a generated Tableau workbook with the model, formulas and KPI check sheets (schema-validated)
+> - a specification for 6 dashboards and 2 drill-throughs
+> - a Mac build guide
+>
+> The build, runtime test, publication and screenshots are manual (`MANUAL_TASKS.md`).
+> After the final audit, corrective work was also done:
+> - metric fixes and a measure audit
+> - a data-quality investigation (Q18–Q19)
+> - analytical sources and a consistency cleanup
+> - security hardening (read-only MySQL account, `.env`) and a documentation audit
+>
+> Phase records below are kept as written at the time, with superseded figures marked.
+> The retired first dashboard attempt is a clearly marked **HISTORICAL RECORD** in
+> Phase 6. Live checklist: `documentation/project_completion_checklist.md`.
 
 ---
 
@@ -22,7 +32,7 @@
 
 Turn raw, multi-table e-commerce transaction data into validated business
 insights and actionable recommendations, delivered through SQL analysis and
-interactive Power BI dashboards.
+interactive Tableau Public dashboards.
 
 The project answers questions a real business stakeholder would ask:
 
@@ -66,8 +76,8 @@ project from a tutorial.
 | Visual exploration | Matplotlib (Seaborn planned, not used) | Distributions, trends, correlations |
 | Notebooks | Jupyter Lab | Documented, reproducible analysis |
 | Database | MySQL 8 | Relational schema, analytical SQL |
-| Dashboards | Power BI Desktop | Six-page interactive BI layer |
-| Metrics | DAX | KPI measures, time intelligence |
+| Dashboards | Tableau Desktop Public Edition → Tableau Public | Six dashboards + two drill-through dashboards |
+| Metrics | Tableau calculated fields (LOD expressions, table calculations), validated against SQL | KPI measures, time intelligence |
 | Version control | Git + GitHub | History and public portfolio artefact |
 
 Deliberately excluded: machine learning (no genuine business problem requires
@@ -95,7 +105,7 @@ to what a Data Analyst job description actually asks for.
 4. Seller performance scorecards (composite, weighted)
 5. Delivery performance analysis vs promised dates
 6. Month-over-month KPI comparison
-7. Power BI drill-through
+7. Drill-through (Tableau parameter actions + Go to Sheet actions)
 8. Geographic sales analysis by state and city
 9. Customer satisfaction driver analysis
 10. Evidence-backed business recommendations
@@ -254,8 +264,39 @@ late 3.66. See Insight 9.)*
 
 ---
 
-### Phase 6 — Power BI Dashboards
+### Phase 6 — Tableau Public Dashboards
 **Goal:** A BI layer a stakeholder could use without a tour guide.
+
+- [x] Export the validated views and analytical sources (`tableau/data/`, MD5 manifests)
+- [x] Tableau data model: 6 data sources, 8 relationships, keys, types, filter rules
+- [x] Calculated fields for every KPI in `kpi_definitions.md` (90 measures, 10 helpers, 2 parameters), logic validated against SQL (264/264)
+- [x] Specify 6 dashboards (Executive, Customers, Products, Sellers, Operations, Satisfaction) and 2 drill-throughs (Category Detail, Seller Detail)
+- [x] Beginner Mac build guide and completion checklist
+- [x] Generate the workbook from code (`tableau/RetailPulse.twb`: model, 100 calculated fields, parameters, KPI check sheets), validated against Tableau's official 2026.3 XSD
+- [ ] Open the workbook, build the chart sheets and 8 dashboards in Tableau Desktop Public Edition, test every value (manual)
+- [ ] Publish to Tableau Public and verify (manual)
+- [ ] Capture 8 screenshots into `reports/dashboard_screenshots/` (manual)
+
+**Deliverables:** 🚧 **PREPARED — build pending (manual).**
+
+| Deliverable | Status |
+|---|---|
+| `tableau/data/` (5 view extracts) and `tableau/data/analytical/` (9 sources) | ✅ Byte-identical re-export; `check_tableau_data.py` 24/24, `validate_tableau_sources.py` 90/90 |
+| `tableau/data_model.md` | ✅ |
+| `tableau/calculated_fields.md` (generated) | ✅ 90 measures, logic 264/264 vs SQL; Tableau runtime pending |
+| `tableau/dashboard_specification.md` | ✅ 8 dashboards, 47 sheets |
+| `tableau/mac_implementation_guide.md`, `tableau/tableau_completion_checklist.md` | ✅ |
+| `tableau/RetailPulse.twb` (generated) | ✅ XSD-valid, 15/15 checks; not yet opened in Tableau |
+| Chart sheets, dashboards, Tableau Public link, screenshots | 🔲 Manual |
+
+<details><summary>HISTORICAL RECORD — first dashboard attempt (retired 2026-11-27)</summary>
+
+The dashboard was first planned in Power BI Desktop, which does not run on macOS. The
+data, model, measures and page specification were prepared and logic-validated, but the
+report could not be built on this Mac. On 2026-11-27 the owner moved the dashboard to
+Tableau Public. The validated data and the measure definitions carried over: the data
+now sits in `tableau/data/` and the measures are Tableau calculated fields. The Power BI
+files were removed. The checklist below is kept as written at the time.
 
 - [ ] Load cleaned data, build star-schema-style model with a date table
 - [ ] Shape in Power Query where needed
@@ -293,7 +334,9 @@ same views Power BI will import — 37/37 agree. *(Since superseded by the
 2026-11-20 DAX audit: 84 measures, 230/230 checks against independent SQL; 90 measures, 251/251 since 2026-11-27.)*
 DAX *execution* remains untested.
 
-**To finish:** one Windows environment. See `powerbi/README.md`.
+**To finish (superseded 2026-11-27):** ~~one Windows environment~~. Now: the Tableau build on macOS. See `tableau/mac_implementation_guide.md`.
+
+</details>
 
 ---
 
@@ -315,8 +358,8 @@ Phase 4 and 5 reports — 38/38 agreed. All 23 file references resolve; no
 contradictions; no causal claims from correlational evidence; no profit or
 margin figures anywhere.
 
-Phase 7 was completed ahead of Phase 6 because Power BI Desktop does not run
-on macOS and the dashboard phase is blocked on a Windows environment. The
+Phase 7 was completed ahead of Phase 6 because the dashboard phase was waiting
+for a BI tool that runs on macOS (resolved 2026-11-27: Tableau Public). The
 insights depend only on Phases 4–5, so the ordering costs nothing.
 
 ---
@@ -334,7 +377,7 @@ insights depend only on Phases 4–5, so the ordering costs nothing.
 - [ ] ATS-friendly project description
 - [ ] 2-3 quantified resume bullets (real numbers only)
 - [ ] Architecture walkthrough script
-- [ ] SQL, Python, Power BI interview question banks from this project
+- [ ] SQL, Python and Tableau interview question banks from this project
 - [ ] Business case questions
 - [ ] Rationale for every analytical decision made
 

@@ -1,5 +1,8 @@
 # RetailPulse — Documentation, Consistency & Readiness Audit
 
+> **HISTORICAL RECORD.** This audit describes the project as it stood on its date. Its references to Power BI, DAX, Windows and the `powerbi/` folder are superseded: the dashboard is now built in **Tableau Public** (see [`../tableau/README.md`](../tableau/README.md)), the analytical CSVs live in `tableau/data/`, and the measure validation is `scripts/validate_tableau_calcs.py`. Kept unchanged as evidence of the checks done at the time; do not follow it as current instructions.
+
+
 **Date:** 2026-11-20 · **Scope:** all project documentation and reports, checked
 against the implementation and against figures recomputed during this audit.
 **Result:** documentation corrected and consistent with validated outputs;

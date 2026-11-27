@@ -3,14 +3,18 @@
 **Legend:** `[ ]` pending · `[~]` in progress · `[x]` done · `[!]` blocked
 
 **Last updated:** 2026-11-27
-**Current phase:** ✅ Phases 1–5 + 7 COMPLETE · ✅ corrective fix phases complete (see below) · 🚧 Power BI dashboard PREPARED but NOT BUILT (needs Windows)
+**Current phase:** ✅ Phases 1–5 + 7 COMPLETE · ✅ corrective fix phases complete (see below) · 🚧 Phase 6 **Tableau Public** dashboard PREPARED and logic-validated, NOT BUILT (manual build on macOS)
 **Overall progress:** All analysis is complete and validated by one command
-(`scripts/run_all_validations.py`: 15 PASS, 0 FAIL). Power BI assets are
-built and logic-validated as far as macOS allows (**90 DAX measures, 251/251
-checks**; 9 analytical sources, 90/90), but **no .pbix exists**. Outstanding
-manual work: MT-01 Excel chart, the Power BI build and screenshots, the final
-GitHub push. Live checklist: `documentation/project_completion_checklist.md`.
-Rows below record each phase as it was completed; superseded figures are marked.
+(`scripts/run_all_validations.py`: 17 PASS, 0 FAIL, 6 deliberate SKIP). The
+dashboard data lives in `tableau/data/` (byte-identical re-export, MD5 manifests).
+The 90 measures are Tableau calculated fields whose logic is validated against
+independent SQL (**264/264**). A Tableau workbook with the full model, all 100
+calculated fields and KPI check sheets is **generated from code** and validated against
+Tableau's official 2026.3 schema (15/15); it has not been opened in Tableau yet, and the
+chart sheets and dashboards are not built. **Nothing is published.** Outstanding manual work: MT-01 Excel chart (optional), the Tableau
+build, publication and screenshots (MT-03–MT-07), the final GitHub push. Live
+checklist: `documentation/project_completion_checklist.md`.
+Rows below record each phase as it was completed; superseded figures are marked. Rows about the retired first dashboard tool are a **HISTORICAL RECORD** (Phase 6 history block, fix phases F3–F12).
 
 ---
 
@@ -134,11 +138,27 @@ Rows below record each phase as it was completed; superseded figures are marked.
 
 ---
 
-## Phase 6 — Power BI Dashboards
+## Phase 6 — Dashboards (Tableau Public)
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 6.1 | Install Power BI Desktop | [!] | **BLOCKED.** Environment checked 2026-11-13: no Power BI, Parallels, VMware, UTM, VirtualBox, CrossOver, wine, Docker or QEMU. macOS cannot run Power BI Desktop |
+| 6.T1 | Choose a macOS dashboard tool | [x] | 2026-11-27: Tableau Desktop Public Edition (free; CSV connector; 15M rows per data source; publishes publicly). Facts from Tableau help pages, cited in `tableau/README.md` |
+| 6.T1a | Migrate the dashboard data to `tableau/data/` | [x] | 14 CSVs moved; re-export byte-identical; manifests with MD5; `scripts/check_tableau_data.py` 24/24, `scripts/validate_tableau_sources.py` 90/90 |
+| 6.T2 | Tableau data model | [x] | `tableau/data_model.md`: 6 data sources, 8 relationships, filter rules (Tableau filters cross relationships both ways), 28 field renames, data types |
+| 6.T3 | 90 measures as Tableau calculated fields | [x] | `tableau/calculated_fields.md` (generated) + 10 helpers + 2 parameters; `scripts/validate_tableau_calcs.py` **264/264** (223 SQL reference contexts, 7 fan-out guards, 10 drill-through/dashboard, 9 pitfalls, coverage). **Logic only; Tableau runtime untested** |
+| 6.T4 | Tableau dashboard specification + Mac guide + checklist | [x] | `tableau/dashboard_specification.md` (8 dashboards, 47 sheets), `tableau/mac_implementation_guide.md`, `tableau/tableau_completion_checklist.md` |
+| 6.T4a | Generate the Tableau workbook from code | [x] | `scripts/build_tableau_workbook.py` → `tableau/RetailPulse.twb` (6 data sources, 8 relationships, captions, types, 2 parameters, 100 calculated fields, 8 KPI check sheets) + model-only fallback; format copied from files written by Tableau 2026.3.2; `scripts/validate_tableau_workbook.py` 15/15 (official XSD 2026.3, registry, data). **Not yet opened in Tableau** |
+| 6.T5 | Install Tableau Desktop Public Edition; open the generated workbook; check the KPI sheets | [~] | Installed (2026.3.2). Opening and checking: manual (MT-04) |
+| 6.T6 | Build 39 chart/table sheets, 6 dashboards + 2 detail dashboards, actions | [ ] | Manual (MT-05) |
+| 6.T7 | Runtime test of every value in the checklist | [ ] | Manual (MT-05) |
+| 6.T8 | Publish to Tableau Public and verify | [ ] | Manual (MT-06) |
+| 6.T9 | Capture 8 real screenshots | [ ] | Manual (MT-07). No fake images |
+
+<details><summary>HISTORICAL RECORD — first dashboard attempt (retired 2026-11-27; files removed)</summary>
+
+| # | Task | Status | Notes |
+|---|---|---|---|
+| 6.1 | Install Power BI Desktop | [x] | *Superseded 2026-11-27 (Tableau Public, 6.T1).* Was **BLOCKED.** Environment checked 2026-11-13: no Power BI, Parallels, VMware, UTM, VirtualBox, CrossOver, wine, Docker or QEMU. macOS cannot run Power BI Desktop |
 | 6.1a | Export validated views for Power BI | [x] | `scripts/export_powerbi_data.py` — 11 CSVs + generated dim_date, 335,797 rows |
 | 6.1b | Build + validate Power BI theme | [x] | `powerbi/RetailPulse_Theme.json` — valid JSON, palette passes CVD checks on dark surface |
 | 6.1c | Write + verify 37 DAX measures | [x] | `powerbi/dax_measures.md`; **37/37 logic verified** via `scripts/validate_dax_logic.py`. Caught 1 fabricated expected value. *Superseded by fix-phase F4 (84 measures, 15 corrected, 230/230) and F8 (90 measures, 251/251)* |
@@ -156,7 +176,9 @@ Rows below record each phase as it was completed; superseded figures are marked.
 | 6.11 | Slicers, drill-through, tooltips | [!] | Blocked — specified |
 | 6.12 | Apply charcoal / white / orange theme | [x] | Theme file built and validated; **applying it needs Power BI** |
 | 6.13 | Capture screenshots | [!] | Blocked — nothing to screenshot yet. No fake images created |
-| 6.14 | Phase 6 review gate | [!] | **NOT PASSED — cannot pass without Windows.** Phase 6 is explicitly incomplete |
+| 6.14 | Phase 6 review gate | [!] | **NOT PASSED.** Now waits for the Tableau build (6.T5–6.T9), not for Windows |
+
+</details>
 
 ---
 
@@ -187,6 +209,10 @@ Rows below record each phase as it was completed; superseded figures are marked.
 | F5 | Consistency cleanup | [x] | RFM, cohort and category methods aligned across SQL, notebook 03, reports and sources |
 | F6 | Security & reproducibility | [x] | read-only `retailpulse_app`, `.env`, `scripts/rp_db.py`, `scripts/run_all_validations.py` |
 | F8 | Remaining Mac-side work (2026-11-27) | [x] | 11th Power BI relationship (seller drill-through); N36–N41 for four spec visuals (251/251); `sql/11` evidence for Insights 4/6 and priority 3 (38/38); priorities labelled decision-ready/hypothesis; business-question answer map; readiness script (27/27); `local_infile` reset in `sql/02`; doc fixes |
+| F11 | Approved T05/T06 + final Power BI prep (2026-11-27) | [x] | `sql/11` E3–E4 threshold impact and regional freight (validator 78/78); free-shipping threshold kept as a hypothesis with impact figures; all 14 recommendations classified; Insight 14 action updated; exact Page 7/8 drill-through specifications; `MANUAL_TASKS.md` ordered manual list |
+| F12 | Migration to Tableau Public (2026-11-27) | [x] | `tableau/` documentation set; `scripts/validate_tableau_calcs.py` added to the runner; Power BI docs marked archived (nothing deleted); `MANUAL_TASKS.md` MT-03–MT-07 replaced with Mac steps; extracts and `.twbx` git-ignored |
+| F13 | Tableau-only cleanup (2026-11-27) | [x] | Data moved to `tableau/data/`; scripts renamed (`export_tableau_*`, `validate_tableau_sources`, `check_tableau_data`); SQL reference values kept in `scripts/sql_reference.py`; retired-tool scripts and the `powerbi/` folder removed; `scripts/check_repository.py` (links, references, secrets) added; validation 16 PASS / 0 FAIL / 6 SKIP |
+| F14 | Tableau workbook automation (2026-11-27) | [x] | Registry split into `scripts/tableau_registry.py`; workbook generator and validator; Tableau's official XSD vendored in `tableau/schema/`; relationship specification with measured cardinality and rejected candidates; guide reorganised around the generated workbook; validation 17 PASS / 0 FAIL / 6 SKIP |
 | F10 | Licence (2026-11-27) | [x] | `LICENSE` added: MIT for the original code, © 2026 Manish Kumar (holder confirmed by the owner). README states the Olist dataset keeps CC BY-NC-SA 4.0 and is not covered by MIT |
 | F9 | Re-verification of T01/T03/T07–T10a (2026-11-27) | [x] | All six confirmed in the files; four leftovers fixed: `data_model.md` "not related" text now matches the 11 relationships; `sql/04` Q13 column `revenue_2018_q3` → `revenue_jun_aug_2018`; chart C2 axis label "2018 Q3" → "Jun–Aug 2018" (data unchanged); plan's architecture deliverable marked superseded |
 | F7 | Documentation audit | [x] | README rewritten, inconsistencies corrected, B3 chart clarified; `reports/phase6_documentation_audit.md` |
@@ -201,7 +227,7 @@ Rows below record each phase as it was completed; superseded figures are marked.
 | 8.2 | Methodology documentation | [x] | Covered by `kpi_definitions.md`, `cleaning_decisions.md` and the reports; no separate `methodology.md` |
 | 8.3 | Limitations | [x] | README, `business_insights.md` and `kpi_definitions.md`; no separate `limitations.md` |
 | 8.4 | Setup / reproduction instructions | [x] | README, `mysql_setup.md`, `.env.example`, validation runner |
-| 8.5 | Embed dashboard screenshots | [!] | Waits for the Power BI build (Windows) |
+| 8.5 | Embed dashboard screenshots | [ ] | Waits for the Tableau build and publication (manual, macOS) |
 | 8.6 | Push to GitHub | [~] | Pushed through F6 (commit b6eb1a6); final push pending your instruction |
 | 8.7 | Phase 8 review gate | [ ] | After screenshots and final push |
 
@@ -216,7 +242,7 @@ Rows below record each phase as it was completed; superseded figures are marked.
 | 9.3 | Architecture walkthrough script | [ ] | |
 | 9.4 | SQL interview question bank | [ ] | |
 | 9.5 | Python interview question bank | [ ] | |
-| 9.6 | Power BI / DAX question bank | [ ] | |
+| 9.6 | Tableau question bank (relationships, LOD, table calculations) | [ ] | |
 | 9.7 | Business case questions | [ ] | |
 | 9.8 | Decision rationale document | [ ] | |
 
@@ -230,7 +256,7 @@ Recorded here so they are made deliberately, not by accident.
 |---|---|---|
 | Spreadsheet tool for Phase 2 | LibreOffice Calc (free, full pivot tables) · Numbers (installed, weaker pivots) · Excel 365 trial | Pending |
 | MySQL installation route | Homebrew `mysql` · Docker container · MySQL Workbench bundle | Pending |
-| Power BI access on macOS | Windows VM (Parallels/UTM) · cloud Windows VM · Power BI Service web authoring · Tableau Public substitute | Pending |
+| Power BI access on macOS | Windows VM (Parallels/UTM) · cloud Windows VM · Power BI Service web authoring · Tableau Public substitute | ✅ **Resolved 2026-11-27: Tableau Public** (owner's decision, to avoid Windows or a VM) |
 | Python version for the venv | 3.10 · **3.14** | ✅ **Resolved: 3.14.3.** Prebuilt wheels confirmed for the whole stack, and 3.10 reached end-of-life in Oct 2026 |
 
 ---
@@ -300,8 +326,8 @@ None.
 | MT-01 monthly revenue chart | 2 | 🔲 Manual, deferred by your request. Blocks nothing |
 | MySQL root has no password | 4 | Deliberate — fresh Homebrew default. Application code no longer uses root (F6); `mysql_secure_installation` is your call |
 | `vw_monthly_revenue` MoM / moving average across the 2016/2017 gap; monthly AOV includes 8 item-less orders | F7 | Documented, fix proposed in `reports/phase6_documentation_audit.md`; needs an admin to apply. No reported figure or DAX measure uses these columns |
-| Views take 2–3s | 4 | Fine here; Power BI should Import, not DirectQuery |
-| **Power BI needs Windows** | 6 | **HARD BLOCKER — Phase 6 cannot be completed on this machine.** Verified absent: Power BI, Parallels, VMware, UTM, VirtualBox, CrossOver, wine, Docker, QEMU. All non-Windows assets are built and validated |
+| Views take 2–3s | 4 | Not relevant to the dashboard: Tableau reads CSV extracts, never the views live |
+| ~~Power BI needs Windows~~ | 6 | ✅ **Resolved 2026-11-27 by moving to Tableau Public (macOS).** Historical note: was a HARD BLOCKER. Verified absent: Power BI, Parallels, VMware, UTM, VirtualBox, CrossOver, wine, Docker, QEMU. All non-Windows assets are built and validated |
 | ~~Insight 14: product vs delivery~~ | 7 | ✅ **Resolved 2026-11-13.** Category-specific: `bed_bath_table` and `furniture_decor` keep their full deficit on on-time orders (product); `watches_gifts` and `electronics` lose theirs entirely (delivery) |
 | Cleaned data not in version control | 3 | 90 MB derived artifact; regenerates in ~2 min |
 | 2016-11 absent from the dataset entirely | 3 | New finding. Reinforces the 2017-01 window start |

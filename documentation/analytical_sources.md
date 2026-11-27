@@ -1,52 +1,52 @@
-# RetailPulse — Power BI Analytical Data Sources
+# RetailPulse — Analytical Data Sources
 
 **Added:** 2026-11-20 (fix-Phase 3; `seller_scorecard` added in fix-Phase 4) · **Status:** built and validated on macOS, **90/90 checks pass**
-**Not done here:** the `.pbix`, visuals and DAX for these tables. Those need Windows (see `README.md`).
+**Used by:** the Tableau dashboard ([`../tableau/data_model.md`](../tableau/data_model.md)), alongside five view extracts in `tableau/data/`.
 
-The original Power BI preparation (`data/`, 7 views + `dim_date`) covered the
-order, customer, category-month, seller, state-month and review grains. The
-dashboard specification also needs six things those views do not provide.
-This document covers those six sources plus a small shared category dimension.
+The MySQL views cover the order, customer, category-month, seller and review
+grains. The dashboard specification also needs six things those views do not
+provide. This document covers those six sources plus a small shared category
+dimension and the seller counts behind the weighted seller rates.
 
-| | Source file (`powerbi/data/analytical/`) | Grain | Rows | Needed by |
+| | Source file (`tableau/data/analytical/`) | Grain | Rows | Needed by |
 |---|---|---|---|---|
-| A | `rfm_customer_segments.csv` | one per person | 96,096 | Page 2 RFM visual |
-| B | `cohort_retention.csv` | cohort month × months since acquisition | 400 | Page 2 cohort heatmap |
-| C | `product_performance.csv` | one per product | 32,951 | Page 3 category drill-through |
-| D | `seller_category_performance.csv` | seller × category | 6,545 | Page 3 / Page 4 drill-through |
-| E | `delivery_stage_orders.csv` | one per order with valid stage timing | 95,088 | Page 5 stage breakdown |
-| E | `delivery_stage_summary.csv` | one per stage (+ Total) | 4 | Page 5 stacked bar |
-| F | `category_satisfaction.csv` | one per category | 74 | Page 6 category satisfaction |
+| A | `rfm_customer_segments.csv` | one per person | 96,096 | Customers: RFM visual |
+| B | `cohort_retention.csv` | cohort month × months since acquisition | 400 | Customers: cohort matrix |
+| C | `product_performance.csv` | one per product | 32,951 | Category Detail |
+| D | `seller_category_performance.csv` | seller × category | 6,545 | Category Detail, Seller Detail |
+| E | `delivery_stage_orders.csv` | one per order with valid stage timing | 95,088 | Operations: stage shares |
+| E | `delivery_stage_summary.csv` | one per stage (+ Total) | 4 | Operations: stage bar |
+| F | `category_satisfaction.csv` | one per category | 74 | Satisfaction, Category Detail |
 | — | `dim_category.csv` | one per category | 74 | shared key for C, D, F and `vw_category_performance` |
-| — | `seller_scorecard.csv` | one per seller | 3,053 | counts behind the weighted Page 4 seller measures (fix-Phase 4) |
+| — | `seller_scorecard.csv` | one per seller | 3,053 | counts behind the weighted seller measures (fix-Phase 4) |
 
 ---
 
 ## How the sources are built
 
 ```
-sql/09_powerbi_sources.sql          8 read-only SELECT queries, one per source,
+sql/09_dashboard_sources.sql        9 read-only SELECT queries, one per source,
         │                           each introduced by "-- @source: <name>"
         ▼
-scripts/export_powerbi_sources.py   splits on the markers, refuses anything that is
+scripts/export_tableau_sources.py   splits on the markers, refuses anything that is
         │                           not a single SELECT/WITH, opens a READ ONLY
         │                           session, writes one CSV per source + _manifest.csv
         ▼
-powerbi/data/analytical/*.csv       gitignored, regenerable (~23 MB)
+tableau/data/analytical/*.csv       gitignored, regenerable (~24 MB), MD5 in _manifest.csv
         ▲
-scripts/validate_powerbi_sources.py rebuilds every source in pandas from
+scripts/validate_tableau_sources.py rebuilds every source in pandas from
                                     dataset/cleaned/ and compares (90 checks)
 ```
 
 ```bash
-./venv/bin/python scripts/export_powerbi_sources.py     # build the CSVs
-./venv/bin/python scripts/validate_powerbi_sources.py   # 90 checks, exit 1 on any failure
+./venv/bin/python scripts/export_tableau_sources.py     # build the CSVs (not needed if they exist)
+./venv/bin/python scripts/validate_tableau_sources.py   # 90 checks, exit 1 on any failure
 ```
 
 **No database object was created or changed.** The queries are ordinary
 SELECTs, so they run against the existing `retailpulse` database without any
-schema change. If Power BI is later connected straight to MySQL, each query can
-be pasted into *Get Data ▸ MySQL ▸ Advanced options ▸ SQL statement*.
+schema change. (The free Tableau Desktop Public Edition cannot connect to MySQL,
+which is why the dashboard reads these exported files.)
 
 ### Conventions shared by every source
 
@@ -56,14 +56,14 @@ be pasted into *Get Data ▸ MySQL ▸ Advanced options ▸ SQL statement*.
 | A customer is `customer_unique_id` | `customer_id` is per order: 99,441 "customers" instead of 96,096 people |
 | One `order_items` row = one unit | Olist numbers units 1..n within an order |
 | Items are never joined to payments or reviews row-by-row | Measured fan-out: +4.54% revenue via payments, −0.47% via reviews |
-| Flags are 0/1, dates `YYYY-MM-DD`, NULL is an empty field | Power BI type detection reads these cleanly |
+| Flags are 0/1, dates `YYYY-MM-DD`, NULL is an empty field | Tableau's text-file connector reads these cleanly |
 | Integer columns stay integer even when they contain NULLs | No `160.0` in a day count |
 
 ---
 
 ## A · `rfm_customer_segments.csv`
 
-**Purpose.** RFM segment for every person, for the Page 2 segment visual.
+**Purpose.** RFM segment for every person, for the Customers dashboard RFM visual.
 **Grain.** One row per `customer_unique_id`: **96,096 rows** (every person in
 the data). **94,983** have revenue-eligible orders with items and are scored.
 The other **1,113** have only canceled, unavailable or item-less orders. They
@@ -125,7 +125,7 @@ customer by customer. The table above is kept as the historical reconciliation.
 
 ## B · `cohort_retention.csv`
 
-**Purpose.** A long-format matrix for the Page 2 cohort heatmap: rows =
+**Purpose.** A long-format matrix for the Customers dashboard cohort matrix: rows =
 `cohort_month`, columns = `months_since_acquisition`, values = `retention_pct`.
 **Grain.** One row per (cohort_month, months_since_acquisition): 20 cohorts
 (2017-01 … 2018-08) × offsets 0–19 = **400 rows**, 95,764 people.
@@ -158,9 +158,8 @@ here; month-1 returns were 348 vs 453. **Resolved 2026-11-20:** Q33 now uses
 calendar months, counts activity only to 2018-08 and returns NULL for
 unobservable months. Its m1–m3 match this source cell for cell, blanks included.
 
-**Use in Power BI.** Matrix visual: rows `cohort_month`, columns
-`months_since_acquisition`, values `retention_pct` (Don't summarize / Max),
-background colour scale. Exclude offset 0 from the colour scale or it swamps
+**Use in Tableau.** Square marks: rows `cohort_month`, columns
+`months_since_acquisition`, colour `Cohort Retention %` (calculated field N05). Exclude offset 0 from the colour scale or it swamps
 every other cell (every observed cell after offset 0 is below 0.8%). Keep the mandatory right-censoring caption.
 
 ---
@@ -233,7 +232,7 @@ orders are excluded rather than misattributed.
 
 ## E · `delivery_stage_orders.csv` and `delivery_stage_summary.csv`
 
-**Purpose.** The Page 5 stage breakdown, using the corrected Phase 2 logic.
+**Purpose.** The Operations stage breakdown, using the corrected Phase 2 logic.
 **Population.** `stage_timing_valid = 1`: all four timestamps present and
 purchase ≤ approval ≤ carrier ≤ customer. **95,088 orders**, computed by the
 query and independently by pandas from the raw timestamps, not hardcoded.
@@ -262,11 +261,11 @@ missing approval or carrier timestamp.
 | 4 | Total | 95,088 | 12.618 | 100 |
 
 **Shares are ratio-of-sums** (`SUM(stage seconds) ÷ SUM(total seconds)`), not an
-average of per-order percentages. In DAX:
-`DIVIDE(SUM(delivery_stage_orders[carrier_to_customer_seconds]), SUM(delivery_stage_orders[total_seconds]))`.
+average of per-order percentages. In Tableau (field N22):
+`SUM([carrier_to_customer_seconds]) / SUM([total_seconds])`.
 
 > **Two "average delivery" numbers, both correct.** KPI 19 (Average Delivery
-> Time, Page 5 card) is **12.56 days** over the 96,476 orders with a delivery
+> Time, Operations card) is **12.56 days** over the 96,476 orders with a delivery
 > date. The stage total here is **12.62 days** over the 95,088 orders whose
 > stages can be measured. They answer different questions; label each with its
 > population.
@@ -275,7 +274,7 @@ average of per-order percentages. In DAX:
 
 ## F · `category_satisfaction.csv`
 
-**Purpose.** Category-level satisfaction for Page 6 and the category drill-through.
+**Purpose.** Category-level satisfaction for the Satisfaction and Category Detail dashboards.
 **Grain.** One row per category: **74 rows**.
 
 | Column | Type | Meaning |
@@ -334,13 +333,13 @@ category filter.
 
 ---
 
-## `seller_scorecard.csv` (added in the DAX audit)
+## `seller_scorecard.csv` (added in the measure audit)
 
 **Purpose.** `vw_seller_performance` publishes per-seller **rates** (late %,
 average delivery days, average rating) but not the counts behind them. The
 only way to total them across sellers was therefore `AVERAGE` of the rates,
 which gives a 1-order seller the same weight as a 2,000-order seller (late
-rate 8.42% unweighted). This table supplies the counts, so the Page 4 measures
+rate 8.42% unweighted). This table supplies the counts, so the seller measures
 are ratio-of-sums.
 **Grain.** One row per seller with eligible sales: **3,053** (same sellers as
 `vw_seller_performance`).
@@ -365,52 +364,30 @@ Ratings are inherited order ratings, not seller ratings.
 
 ---
 
-## Relationships (add to `data_model.md` §3)
+## Relationships and use in Tableau
 
-| From (one) | To (many) | Key | Notes |
-|---|---|---|---|
-| `dim_category` | `product_performance` | `category` | |
-| `dim_category` | `seller_category_performance` | `category` | |
-| `dim_category` | `category_satisfaction` | `category` | 1 : 1 in practice |
-| `dim_category` | `vw_category_performance` | `category` | |
-| `vw_customer_summary` | `rfm_customer_segments` | `customer_unique_id` | unique in practice; **set as one-to-many, single direction** (a one-to-one relationship would force both directions) |
-| `vw_order_summary` | `delivery_stage_orders` | `order_id` | 95,088 of 99,441 orders; one-to-many, single direction |
-| `vw_seller_performance` | `seller_scorecard` | `seller_id` | unique in practice; one-to-many, single direction |
-| — | `cohort_retention` | none | self-contained matrix; do not relate |
-| — | `delivery_stage_summary` | none | pre-aggregated; do not relate |
+The Tableau relationships, data types and filter rules are in
+[`../tableau/data_model.md`](../tableau/data_model.md) (§3–§5), and the keys and
+orphans are re-checked by `scripts/check_tableau_data.py`. In short:
+`dim_category` relates to `vw_category_performance`, `product_performance` and
+`category_satisfaction`; `vw_seller_performance` to `seller_scorecard` and
+`seller_category_performance`; `vw_customer_summary` to `rfm_customer_segments`;
+`vw_order_summary` to `delivery_stage_orders`. `cohort_retention` and
+`delivery_stage_summary` stand alone.
 
-`seller_category_performance` **must** also relate many : 1 to `vw_seller_performance`
-on `seller_id` (one seller row, many categories). All relationships are
-single-direction, as in the existing model.
+Quick checks once loaded in Tableau (expected values validated on macOS):
 
----
-
-## Power BI import (Windows)
-
-1. Copy `powerbi/data/analytical/` with the rest of `powerbi/data/`.
-2. *Get Data ▸ Text/CSV* for each file. In Power Query, confirm the types:
-   IDs and `rfm_code`, `cohort_month`, `activity_month`, `order_month` → **Text**;
-   dates → **Date**; money → **Fixed decimal**; flags → **Whole number**
-   (or True/False).
-3. Create the relationships above and mark `dim_date` as the date table as before.
-4. Set *Don't summarize* on every ID, score, `months_since_acquisition` and
-   `retention_pct` column.
-5. Refresh and run the checks in `README.md` §6, plus:
-   - [ ] `SUM(product_performance[product_revenue])` = 13,494,400.74
-   - [ ] `SUM(seller_category_performance[product_revenue])` = 13,494,400.74
-   - [ ] `SUM(rfm_customer_segments[monetary_value])` = 13,494,400.74
-   - [ ] `COUNTROWS(rfm_customer_segments)` = 96,096; scored = 94,983
-   - [ ] Cohort heatmap shows **blank**, not 0, below the diagonal
-   - [ ] Carrier-to-customer share = 74.21%
-
-DAX measures for these tables are **not** written yet; that belongs to the DAX
-remediation phase.
+- `SUM([product_revenue])` (product_performance) = R$ 13,494,400.74
+- `SUM([product_revenue])` (seller_category_performance, RP Sellers) = R$ 13,494,400.74
+- `SUM([monetary_value])` = R$ 13,494,400.74; `rfm_customer_segments(Count)` = 96,096; scored = 94,983
+- Cohort matrix shows **blank**, not 0, in the 190 unobserved cells
+- `Last Mile Share` = 74.21%
 
 ---
 
 ## Validation results — 90 / 90 PASS (2026-11-20)
 
-`scripts/validate_powerbi_sources.py` compares three independent paths: the
+`scripts/validate_tableau_sources.py` compares three independent paths: the
 exported CSV, the live SQL result, and a pandas rebuild from `dataset/cleaned/`
 that never reads the SQL. It also reconciles against the existing validated
 views. No expected value is typed in by hand.
@@ -448,8 +425,8 @@ such as 129.86625.
 | 2 | `reports/business_insights.md` Insight 6 | Counts came from `NTILE`, which splits ties arbitrarily (21,917 / 982; later 22,072 / 957) | **Resolved 2026-11-20.** Q32, notebook 03 §B2 and Insight 6 use tie-consistent scoring; identical to this source |
 | 3 | `sql/06` Q33 vs notebook 03 §B3 | Elapsed months vs calendar months; month-1 returns 348 vs 453 | **Resolved 2026-11-20.** Q33 uses calendar months with NULL for unobservable months; notebook 03 §B3 now also leaves unobserved cells blank; both match `cohort_retention.csv` |
 | 4 | Insight 14 / notebook 03 §F2 | Category ratings were item-weighted (20 categories / 60.0%) | **Resolved 2026-11-20.** Notebook 03 §F2, chart F2, Insight 14 and its follow-up gap table use review grain (15 / 45.1%); identical to `category_satisfaction.csv` |
-| 5 | `dashboard_specification.md` | Listed the superseded stage figures (0.41 / 2.78 / 9.31, 74%) and the all-review "cliff" table | **Corrected** on 2026-11-20 to the Phase 2 figures |
+| 5 | dashboard specification | Listed the superseded stage figures (0.41 / 2.78 / 9.31, 74%) and the all-review "cliff" table | **Corrected** on 2026-11-20 to the Phase 2 figures |
 | 6 | KPI 19 vs stage total | 12.56 days (96,476 orders) vs 12.62 days (95,088): different populations, both correct | Documented above; label both |
-| 7 | `scripts/export_powerbi_data.py` under pandas 3 | Wrote `review_creation_date` in two formats in one column (5,882 date-only values) | **Fixed** (explicit timestamp format); every existing extract re-verified byte-identical to the 13 Nov export apart from the three new Phase 2 columns |
-| 8 | `vw_monthly_revenue` (MySQL view) | `moving_avg_3m` and `mom_growth_pct` use `ROWS BETWEEN 2 PRECEDING`/`LAG` over the months that exist, so 2016-12 and 2017-01 average across the missing Nov 2016 and 2017-01 MoM compares with Dec 2016's single order | **Open.** The DAX measures (M10, M11) now blank those months; the view is unchanged (changing it is a schema change). Don't use the view's columns for those months |
+| 7 | the view-export script under pandas 3 (now `scripts/export_tableau_data.py`) | Wrote `review_creation_date` in two formats in one column (5,882 date-only values) | **Fixed** (explicit timestamp format); every existing extract re-verified byte-identical to the 13 Nov export apart from the three new Phase 2 columns |
+| 8 | `vw_monthly_revenue` (MySQL view) | `moving_avg_3m` and `mom_growth_pct` use `ROWS BETWEEN 2 PRECEDING`/`LAG` over the months that exist, so 2016-12 and 2017-01 average across the missing Nov 2016 and 2017-01 MoM compares with Dec 2016's single order | **Open.** The dashboard measures (M10, M11) blank those months and the dashboard does not use this view; the view is unchanged (changing it is a schema change). Don't use the view's columns for those months |
 | 9 | Seller late rate 8.02% vs platform 8.11% | Pair grain vs order grain; both correct | Documented in `dax_measures.md`; label the Page 4 card |

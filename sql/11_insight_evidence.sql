@@ -124,3 +124,71 @@ SELECT band,
 FROM banded
 GROUP BY band
 ORDER BY band;
+
+
+-- -----------------------------------------------------------------------------
+-- E3. What a free-shipping threshold at the 86.90 BRL median would cover
+-- -----------------------------------------------------------------------------
+-- Same population as E2. Because 86.90 BRL is the MEDIAN order value, half
+-- of all orders already clear it without any change in behaviour; their
+-- freight is what the platform would absorb if it paid shipping in full.
+-- "Near-miss" orders (70.00–86.89 BRL) are the only group a threshold could
+-- plausibly move. Added 2026-11-27 (approved T05).
+-- -----------------------------------------------------------------------------
+WITH ord AS (
+    SELECT o.order_id, SUM(oi.price) AS value_brl, SUM(oi.freight_value) AS freight_brl
+    FROM orders o
+    JOIN order_items oi ON oi.order_id = o.order_id
+    WHERE o.revenue_eligible = 1
+    GROUP BY o.order_id
+)
+SELECT
+    COUNT(*)                                                              AS orders,
+    SUM(value_brl >= 86.90)                                               AS qualifying_orders,
+    ROUND(100 * SUM(value_brl >= 86.90) / COUNT(*), 2)                    AS qualifying_pct,
+    ROUND(SUM(CASE WHEN value_brl >= 86.90 THEN freight_brl ELSE 0 END), 2) AS qualifying_freight_brl,
+    ROUND(100 * SUM(CASE WHEN value_brl >= 86.90 THEN freight_brl ELSE 0 END) / SUM(freight_brl), 1)
+                                                                          AS qualifying_pct_of_freight,
+    ROUND(100 * SUM(CASE WHEN value_brl >= 86.90 THEN freight_brl ELSE 0 END) / SUM(value_brl), 1)
+                                                                          AS qualifying_pct_of_product_revenue,
+    SUM(value_brl >= 70 AND value_brl < 86.90)                            AS near_miss_orders,
+    ROUND(100 * SUM(value_brl >= 70 AND value_brl < 86.90) / COUNT(*), 2) AS near_miss_pct
+FROM ord;
+
+
+-- -----------------------------------------------------------------------------
+-- E4. Freight share by customer region and by items per order
+-- -----------------------------------------------------------------------------
+-- Same population. Regions follow the IBGE macro-regions, with São Paulo
+-- shown separately because it holds 42% of these orders. Added 2026-11-27.
+-- -----------------------------------------------------------------------------
+WITH ord AS (
+    SELECT o.order_id, c.customer_state AS st, COUNT(*) AS items,
+           SUM(oi.price) AS value_brl, SUM(oi.freight_value) AS freight_brl
+    FROM orders o
+    JOIN order_items oi ON oi.order_id = o.order_id
+    JOIN customers c    ON c.customer_id = o.customer_id
+    WHERE o.revenue_eligible = 1
+    GROUP BY o.order_id, c.customer_state
+),
+grouped AS (
+    SELECT CONCAT('region: ',
+             CASE WHEN st = 'SP' THEN 'SP'
+                  WHEN st IN ('RJ','MG','ES') THEN 'Southeast excl. SP'
+                  WHEN st IN ('PR','SC','RS') THEN 'South'
+                  WHEN st IN ('DF','GO','MT','MS') THEN 'Centre-West'
+                  WHEN st IN ('BA','PE','CE','MA','PB','RN','AL','PI','SE') THEN 'Northeast'
+                  ELSE 'North' END) AS grp, value_brl, freight_brl
+    FROM ord
+    UNION ALL
+    SELECT CONCAT('items: ', CASE WHEN items > 1 THEN '2+' ELSE '1' END), value_brl, freight_brl
+    FROM ord
+)
+SELECT grp,
+       COUNT(*)                                          AS orders,
+       ROUND(100 * SUM(freight_brl) / SUM(value_brl), 2) AS freight_pct_of_value,
+       ROUND(AVG(freight_brl), 2)                        AS avg_freight_brl,
+       ROUND(100 * SUM(value_brl >= 86.90) / COUNT(*), 2) AS qualifying_pct
+FROM grouped
+GROUP BY grp
+ORDER BY grp;

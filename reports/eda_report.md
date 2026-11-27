@@ -374,5 +374,5 @@ skips, rather than failing. The analysis stands on its own.
 | Correlation vs causation | ✅ labelled throughout |
 | Phase 1–4 work modified | ✅ No |
 
-**Phase 5: PASSED.** Ready for Phase 6 — Power BI dashboards on the Phase 4
+**Phase 5: PASSED.** Ready for Phase 6 — Tableau Public dashboards on the Phase 4
 SQL views.

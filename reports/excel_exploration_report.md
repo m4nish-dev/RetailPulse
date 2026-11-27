@@ -382,7 +382,7 @@ in every metric definition.
 | No distinct count | Cannot count customers in-sheet | SQL `COUNT(DISTINCT ...)` in Phase 4 |
 | No `MEDIANIFS` | Conditional median needs a slow array formula | Python / SQL |
 | No native pivot tables created programmatically | `openpyxl` cannot build them | Live formulas + 8 guided exercises in sheet 11 |
-| Geolocation excluded | No map analysis in the workbook | Phase 6 Power BI |
+| Geolocation excluded | No map analysis in the workbook | Phase 6 dashboard (state-level bars; no map) |
 | 22 MB workbook | Slow to open; heavy in Git | Regenerable via `scripts/build_phase2_workbook.py` |
 | Recalculation takes minutes | 311k rows × many `SUMIFS` | Expected at this scale; itself an argument for SQL |
 

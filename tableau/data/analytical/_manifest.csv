@@ -1,0 +1,10 @@
+source,rows,columns,size_mb,md5
+rfm_customer_segments,96096,14,9.618,7b81421dfc20860ec09bf6403236d3af
+cohort_retention,400,9,0.014,b8ec36fd8d3ac086571fd4ffef8c90e3
+product_performance,32951,12,3.325,3d8cc13a67ae24f1f1ee0aa61e3dccb5
+seller_category_performance,6545,14,0.622,626e2d64e14d0010a6a9b13c672bbee0
+delivery_stage_orders,95088,12,9.852,f5f0a4521194017c14e70f147aa658b6
+delivery_stage_summary,4,5,0.0,35ffd241a5445d9daeb3d10bdaf23e59
+category_satisfaction,74,18,0.008,9a54e31d6db3e3a015ac70cc93930ca1
+seller_scorecard,3053,8,0.169,7d7293eb1c2103c7eebc0b909d6389a1
+dim_category,74,3,0.003,9822c5c1ef9cb45a1d13bca3f67d2e35

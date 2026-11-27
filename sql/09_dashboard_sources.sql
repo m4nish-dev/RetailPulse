@@ -1,16 +1,16 @@
 -- =============================================================================
---  RetailPulse — 09 · Power BI analytical data sources (fix-Phase 3)
+--  RetailPulse — 09 · Dashboard (Tableau) analytical data sources (fix-Phase 3)
 -- =============================================================================
 --  READ-ONLY. Every statement below is a SELECT. Nothing here creates, alters
 --  or drops any object, so running this file can never change the database.
 --
 --  Each query is introduced by a marker line:   -- @source: <name>
---  scripts/export_powerbi_sources.py splits the file on those markers, runs
---  each query, and writes powerbi/data/analytical/<name>.csv.
---  scripts/validate_powerbi_sources.py rebuilds every source independently in
+--  scripts/export_tableau_sources.py splits the file on those markers, runs
+--  each query, and writes tableau/data/analytical/<name>.csv.
+--  scripts/validate_tableau_sources.py rebuilds every source independently in
 --  pandas from dataset/cleaned/ and compares.
 --
---  Documentation: powerbi/analytical_sources.md
+--  Documentation: documentation/analytical_sources.md
 --
 --  Shared conventions (same as kpi_definitions.md):
 --    * Revenue        = SUM(order_items.price) on revenue_eligible orders
@@ -41,7 +41,7 @@
 --      score = 1 + FLOOR(5 * (RANK() - 1) / N)
 --   so tied customers always share a score, and pandas reproduces it exactly
 --   (rank(method="min")). Segment counts therefore differ slightly from Q32;
---   see powerbi/analytical_sources.md §A for the reconciliation.
+--   see documentation/analytical_sources.md §A for the reconciliation.
 -- -----------------------------------------------------------------------------
 WITH dataset_end AS (
     SELECT MAX(order_purchase_timestamp) AS max_ts FROM orders
@@ -462,7 +462,7 @@ ORDER BY ci.category;
 --         avg_delivery_days, avg_review_score) but not the counts behind them,
 --         so any cross-seller total could only average the rates — giving
 --         every seller equal weight (an unweighted late rate of 8.42% against
---         the platform's 8.11%). These additive COUNTS and SUMS let DAX build
+--         the platform's 8.11%). These additive COUNTS and SUMS let the dashboard build
 --         properly weighted measures:  SUM(late_orders) / SUM(delivery_measurable_orders).
 -- GRAIN OF THE COUNTS  seller-order pairs: an eligible order is counted once
 --   for each seller in it (1,277 eligible orders have 2+ sellers), exactly as
@@ -501,8 +501,8 @@ ORDER BY so.seller_id;
 -- -----------------------------------------------------------------------------
 -- GRAIN   one row per English category (74). The shared key that lets the
 --         product, seller-category, category-satisfaction and
---         vw_category_performance tables filter together in Power BI
---         (one-to-many from dim_category[category] to each).
+--         vw_category_performance tables filter together in Tableau
+--         (relationships from dim_category.category to each; see tableau/data_model.md).
 -- -----------------------------------------------------------------------------
 SELECT p.product_category_name_english                 AS category,
        MIN(COALESCE(p.product_category_name, 'unknown')) AS category_portuguese,

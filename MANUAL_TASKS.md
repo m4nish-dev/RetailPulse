@@ -90,7 +90,7 @@ collapse that never happened. The sheet flags these rows in column F.
   `#,##0` so revenue reads `1,200,000` rather than `1.2E6`.
 - Right-click the line ▸ **Format Data Series ▸ Line** ▸ set the colour to the
   project orange `EB6834` and width to `0.08"` for consistency with the
-  notebook charts and the future Power BI theme.
+  notebook charts and the dashboard colours.
 - Right-click the X axis ▸ **Format Axis ▸ Label** ▸ rotate labels 45° if the
   month names overlap.
 
@@ -107,10 +107,19 @@ Change this task's status line to ✅ and tick task 2.11 in `TASK_TRACKER.md`.
 
 ---
 
-## Tasks that may appear later
+## Remaining manual tasks, in order (updated 2026-11-27)
 
-| Phase | Likely manual task |
-|---|---|
-| 6 | Power BI Desktop requires Windows — a VM or cloud Windows machine. See `documentation/environment_setup.md` |
-| 6 | Capturing dashboard screenshots into `reports/dashboard_screenshots/` |
-| 8 | Creating the GitHub repository and pushing |
+Everything that can be done without you is finished; these need your hands.
+
+| # | Task | Where |
+|---|---|---|
+| MT-01 | Monthly revenue line chart (above) | Mac, LibreOffice or Excel, ~10 min |
+| MT-02 | *Optional:* switch off `local_infile` and set a MySQL root password | Mac, admin: `documentation/mysql_setup.md` §2 and §4 |
+| MT-03 | Create a free Tableau Public account (Tableau Desktop Public Edition 2026.3.2 is already installed) | `tableau/mac_implementation_guide.md` §1 |
+| MT-04 | Open the generated `tableau/RetailPulse.twb`, check the data model and compare the 8 KPI check sheets with the checklist; save as `tableau/RetailPulse_build.twbx` (if it does not open: `RetailPulse_model_only.twb`, else the manual route §2–§6) | guide §1A |
+| MT-05 | Build the 39 chart/table sheets, 6 dashboards + 2 detail dashboards, filters and actions (all fields already exist); test every value | guide §7–§10, ticking `tableau/tableau_completion_checklist.md` |
+| MT-06 | Run the safety checklist, save `tableau/RetailPulse_build.twbx` locally (git-ignored), publish to Tableau Public and verify it in a private window | guide §11–§13 |
+| MT-07 | Capture 8 real screenshots into `reports/dashboard_screenshots/`; then ask Claude to update the README with the Tableau Public link, run the final validation, and (when you say so) commit and push | guide §14–§15 |
+
+Before MT-03, confirm the data is in place (read-only, ~1 minute):
+`./venv/bin/python scripts/check_tableau_data.py` → `checks: 24 PASS: 24 FAIL: 0`.

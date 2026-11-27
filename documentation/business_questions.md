@@ -24,7 +24,7 @@ is unchanged.
 | Q11 Payment method vs order value / repeat | ◐ | `sql/03` Q5 gives the payment mix only; its relation to order value and repeat buying was not analysed |
 | Q12 Category revenue, concentration | ✅ | Insight 7 · `sql/04` Q11 · chart C1 |
 | Q13 Growing vs declining categories | ✅ | Insight 7 · `sql/04` Q13 · chart C2 (2017 Q1 vs Jun–Aug 2018) |
-| Q14 Frequent-cheap vs rare-expensive products | ◐ | `sql/04` Q12, `sql/05` Q24 (best sellers); `powerbi/data/analytical/product_performance.csv` holds units and average price per product, but no volume-vs-price analysis was written |
+| Q14 Frequent-cheap vs rare-expensive products | ◐ | `sql/04` Q12, `sql/05` Q24 (best sellers); `tableau/data/analytical/product_performance.csv` holds units and average price per product, but no volume-vs-price analysis was written |
 | Q15 Categories with poor reviews | ✅ | Insight 14 and follow-up · chart F2 |
 | Q16 Dependence on largest sellers | ✅ | Insight 8 · `sql/04` Q14 · chart D1 |
 | Q17 High-volume sellers with poor delivery or ratings | ✅ | Insight 8 · `sql/04` Q15–Q16 · chart D2 |
@@ -56,7 +56,7 @@ honestly answer are listed at the end rather than quietly dropped.
 ## A · Business performance
 
 ### Q1 — How has monthly revenue changed, and is growth accelerating or slowing?
-**Priority:** P1 · **Tool:** SQL + Power BI · **Actionable:** Yes — sets targets and budget
+**Priority:** P1 · **Tool:** SQL + Tableau · **Actionable:** Yes — sets targets and budget
 **Method:** revenue by month over 2017-01 → 2018-08, with MoM growth via `LAG()`.
 **Watch out:** the four edge months must be excluded or the chart implies a collapse.
 
@@ -66,7 +66,7 @@ honestly answer are listed at the end rather than quietly dropped.
 **Watch out:** full-year YoY is impossible — 2016 has 329 orders.
 
 ### Q3 — Which states and cities generate the most revenue, and which are under-served relative to population?
-**Priority:** P1 · **Tool:** SQL + Power BI map · **Actionable:** Yes — targets regional expansion
+**Priority:** P1 · **Tool:** SQL + Tableau (state bars) · **Actionable:** Yes — targets regional expansion
 **Method:** revenue, orders and AOV by `customer_state`; concentration (what share do the top 3 states hold?).
 **Watch out:** state-level only until city names are normalised.
 
@@ -99,7 +99,7 @@ payment type between the 2,997 repeat customers and the 93,099 one-time buyers.
 a notably better first delivery, that is a lever.
 
 ### Q8 — Which customers are Champions, At Risk, or Lost, and how much revenue sits in each segment?
-**Priority:** P1 · **Tool:** Python + Power BI · **Actionable:** Yes — directly targetable lists
+**Priority:** P1 · **Tool:** Python + Tableau · **Actionable:** Yes — directly targetable lists
 **Method:** RFM (R and M by quintile, F as a 1/3/5 ordinal — see `kpi_definitions.md`).
 **Watch out:** the F dimension is nearly degenerate; this must be stated.
 
@@ -123,7 +123,7 @@ a notably better first delivery, that is a lever.
 ## C · Product & category performance
 
 ### Q12 — Which categories drive revenue, and how concentrated is the business?
-**Priority:** P1 · **Tool:** SQL + Power BI · **Actionable:** Yes — merchandising and marketing focus
+**Priority:** P1 · **Tool:** SQL + Tableau · **Actionable:** Yes — merchandising and marketing focus
 **Method:** revenue, orders and AOV by English category name; cumulative contribution curve.
 **Watch out:** LEFT JOIN the translation table; `unknown` holds 610 products.
 
@@ -153,7 +153,7 @@ poor ratings is a quantifiable risk.
 3,095 sellers. If a handful carry the platform, losing one is a material event.
 
 ### Q17 — Which sellers combine high volume with poor delivery or poor ratings?
-**Priority:** P1 · **Tool:** SQL + Power BI scorecard · **Actionable:** Yes — a named intervention list
+**Priority:** P1 · **Tool:** SQL + Tableau scorecard · **Actionable:** Yes — a named intervention list
 **Method:** composite scorecard — revenue, order count, average delivery days,
 late rate, average review score. Minimum 20 orders to qualify.
 **Watch out:** reviews are order-level; in multi-seller orders every seller
@@ -177,7 +177,7 @@ dates — a finding with a clear, testable action behind it. **This is one of th
 strongest questions available in this dataset.**
 
 ### Q20 — Where and when do late deliveries concentrate?
-**Priority:** P1 · **Tool:** SQL + Power BI · **Actionable:** Yes — targeted logistics fixes
+**Priority:** P1 · **Tool:** SQL + Tableau · **Actionable:** Yes — targeted logistics fixes
 **Method:** late rate by customer state, by month, and by distance proxy (seller state → customer state).
 
 ### Q21 — Which stage of the journey consumes the most time?

@@ -137,8 +137,8 @@ LIMIT 20;
 --   so customers with IDENTICAL recency or spend always share a score. The
 --   earlier NTILE(5) split tied groups across two scores arbitrarily, and its
 --   counts were not even stable between runs (21,917 Potential Loyalists when
---   first run, 22,072 on 2026-11-20). This now reproduces the validated Power
---   BI source powerbi/data/analytical/rfm_customer_segments.csv exactly.
+--   first run, 22,072 on 2026-11-20). This now reproduces the validated dashboard
+--   source tableau/data/analytical/rfm_customer_segments.csv exactly.
 --   F = order count. *** NOT quintiles. ***
 --
 --       Why: 96.88% of people have exactly ONE order. NTILE(5) on that column
@@ -226,7 +226,7 @@ ORDER BY segment_revenue DESC;
 -- with earlier ones.
 --
 -- METHOD (calendar months, changed 2026-11-20 to match notebook 03 §B3 and
--- powerbi/data/analytical/cohort_retention.csv):
+-- tableau/data/analytical/cohort_retention.csv):
 --   * cohort = calendar month of the person's first order (any status)
 --   * offset = CALENDAR-month difference (Feb vs Jan = 1), via PERIOD_DIFF.
 --     The earlier TIMESTAMPDIFF(MONTH ...) counted elapsed whole months, so

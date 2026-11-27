@@ -1,10 +1,10 @@
 """
-RetailPulse - independent validation of the Power BI analytical sources.
+RetailPulse - independent validation of the Tableau analytical sources.
 
 Three independent paths are compared for every source:
 
-  1. EXPORT   powerbi/data/analytical/<source>.csv (written by
-              scripts/export_powerbi_sources.py from sql/09_powerbi_sources.sql)
+  1. EXPORT   tableau/data/analytical/<source>.csv (written by
+              scripts/export_tableau_sources.py from sql/09_dashboard_sources.sql)
   2. SQL      the same query re-run live (CSV == SQL), plus reconciliation
               against the EXISTING validated views (vw_customer_summary,
               vw_category_performance, vw_seller_performance)
@@ -17,7 +17,7 @@ here from the cleaned data or read from an existing view.
 Read-only: the MySQL session is set READ ONLY; nothing is written anywhere.
 Exit code 1 if any check fails.
 
-Usage:  ./venv/bin/python scripts/validate_powerbi_sources.py
+Usage:  ./venv/bin/python scripts/validate_tableau_sources.py
 """
 from pathlib import Path
 import sys
@@ -27,12 +27,12 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
-from export_powerbi_sources import load_sources, run          # noqa: E402
+from export_tableau_sources import load_sources, run          # noqa: E402
 
 from rp_db import ConfigError, get_connection                   # noqa: E402
 
 CLEAN = ROOT / "dataset" / "cleaned"
-EXP = ROOT / "powerbi" / "data" / "analytical"
+EXP = ROOT / "tableau" / "data" / "analytical"
 RESULTS: list[dict] = []
 # SQL rounds exported averages to 4 or 6 decimals (exact decimal, half-up).
 # The pandas rebuild keeps the EXACT value, and a correctly rounded export can
@@ -472,7 +472,7 @@ check(S, "multi-category duplicates equal multi-category reviews minus their dis
       == rv[rv.n_cat > 1][["review_id", "order_id"]].drop_duplicates().shape[0])
 
 # ===========================================================================
-# seller_scorecard (added in the DAX audit, fix-Phase 4)
+# seller_scorecard (added in the measure audit, fix-Phase 4)
 # ===========================================================================
 S = "seller_scorecard"
 sk = generic(S, ["seller_id"], ["seller_id", "orders_served", "delivery_measurable_orders",
@@ -528,7 +528,7 @@ conn.close()
 # ---------------------------------------------------------------------------
 res = pd.DataFrame(RESULTS)
 print("=" * 112)
-print("POWER BI ANALYTICAL SOURCES — INDEPENDENT VALIDATION (export vs live SQL vs pandas vs existing views)")
+print("TABLEAU ANALYTICAL SOURCES — INDEPENDENT VALIDATION (export vs live SQL vs pandas vs existing views)")
 print("=" * 112)
 for src, grp in res.groupby("source", sort=False):
     print(f"\n{src}  ({int(grp['pass'].sum())}/{len(grp)})")

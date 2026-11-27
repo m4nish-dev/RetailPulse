@@ -182,6 +182,7 @@ key will be declared, and no KPI depends on it.
    be attributed to a product, category and seller.
 6. **AOV denominator = 98,199 revenue-eligible orders with items**, not 99,441
    (and not 98,666, which includes canceled/unavailable orders; corrected 2026-11-20).
-7. In Power BI, model this as a **star schema**: `order_items` as the central
-   fact, with `orders`, `products`, `sellers` and `customers` as dimensions, and
-   a dedicated date table.
+7. For the dashboard, never relate these base tables at row level. Tableau reads
+   **one-row-per-grain extracts of the views** (orders, reviews, people, sellers,
+   category-months) and relates them with Tableau relationships, so each measure
+   is aggregated at its own grain. See `tableau/data_model.md`.

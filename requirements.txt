@@ -37,3 +37,6 @@ python-dotenv==1.2.4              # scripts/rp_db.py reads credentials from .env
 # Removed after an import audit (no file references them):
 #   seaborn, tabulate, python-dateutil (direct pin), xlsxwriter, sqlalchemy
 # Re-add a package only when code actually imports it.
+
+# --- Tableau workbook validation ---------------------------------------------
+lxml==6.1.3                   # scripts/validate_tableau_workbook.py (XSD validation of the generated .twb)

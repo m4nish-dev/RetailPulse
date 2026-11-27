@@ -1,10 +1,12 @@
 # RetailPulse — Project Completion Checklist
 
-**Updated:** 2026-11-27 (remaining Mac-side work completed) · **Overall status: NOT complete.**
-The analysis is complete and validated; the Power BI dashboard, its
-screenshots, one manual Excel chart and the final GitHub push are outstanding.
+**Updated:** 2026-11-27 (Tableau-only structure) · **Overall status: NOT complete.**
+All repository work is done and validated. What remains is the manual work:
+- the Tableau dashboard: build, runtime test, publication on Tableau Public, and 8 screenshots
+- one optional Excel chart
+- the final GitHub push
 
-Legend: ✅ done · 🔲 outstanding · ⚠ done with a documented limitation
+Legend: ✅ done · 🔲 outstanding (manual) · ⚠ done with a documented limitation
 
 ---
 
@@ -20,13 +22,16 @@ Legend: ✅ done · 🔲 outstanding · ⚠ done with a documented limitation
 | MySQL 8.4 schema, import, 7 views | ✅ | `sql/01`, `02`, `07`; `sql/08_validation.sql` (71/71) |
 | 34 analytical SQL queries | ✅ | `sql/03`–`06` |
 | EDA, 15 charts | ✅ | `notebooks/03_exploratory_data_analysis.ipynb` (15/15 MySQL checks) |
-| Power BI analytical sources (9) | ✅ | `sql/09_powerbi_sources.sql`, `scripts/validate_powerbi_sources.py` (90/90) |
-| DAX measures (90) with logic validation | ⚠ | `powerbi/dax_measures.md`, `scripts/validate_dax_logic.py` (251/251; N36–N41 added 2026-11-27 for four spec visuals). DAX syntax and runtime untested (needs Power BI) |
+| Dashboard data: 5 view extracts + 9 analytical sources in `tableau/data/`, byte-identical re-export, MD5 manifests | ✅ | `scripts/export_tableau_data.py`, `scripts/export_tableau_sources.py`, `scripts/check_tableau_data.py` (24/24) |
+| Analytical sources equal live SQL and a pandas rebuild | ✅ | `sql/09_dashboard_sources.sql`, `scripts/validate_tableau_sources.py` (90/90) |
+| Tableau data model: 6 data sources, 8 relationships, keys, types, filter rules | ✅ | `tableau/data_model.md` |
+| 90 measures as Tableau calculated fields (+10 helpers, 2 parameters), logic validated against independent SQL | ⚠ | `tableau/calculated_fields.md`, `scripts/validate_tableau_calcs.py` (264/264). Tableau syntax and runtime: pending the manual build |
+| Tableau workbook generated from code (model, relationships, 100 calculated fields, parameters, 8 KPI check sheets) | ⚠ | `scripts/build_tableau_workbook.py`; `scripts/validate_tableau_workbook.py` (15/15, official XSD 2026.3). Not yet opened in Tableau |
 | Read-only MySQL account `retailpulse_app` | ✅ | `sql/10_app_user.sql` (template), permission tests in Phase 5 |
 | Environment-based configuration | ✅ | `.env.example`, `scripts/rp_db.py`, `.env` git-ignored |
-| Evidence for two recommendations | ✅ | `sql/11_insight_evidence.sql`, `scripts/validate_insight_evidence.py` (38/38) |
-| Power BI data readiness | ✅ | `scripts/check_powerbi_readiness.py` (27/27, incl. 11 relationships) |
-| One-command validation | ✅ | `scripts/run_all_validations.py` (15 PASS, 0 FAIL, 6 deliberate SKIP; 2026-11-27) |
+| Evidence for recommendations (second-purchase timing, freight bands, free-shipping threshold impact, regional freight) | ✅ | `sql/11_insight_evidence.sql`, `scripts/validate_insight_evidence.py` (78/78) |
+| Repository checks: links, paths, no retired-tool references, no secrets, ignores | ✅ | `scripts/check_repository.py` |
+| One-command validation | ✅ | `scripts/run_all_validations.py` (17 PASS, 0 FAIL, 6 deliberate SKIP; 2026-11-27) |
 
 ## 2. Validated analytical outputs
 
@@ -39,43 +44,42 @@ Legend: ✅ done · 🔲 outstanding · ⚠ done with a documented limitation
 | Repeat purchase rate (`customer_unique_id`) | 3.12% (2,997 of 96,096) | ✅ |
 | RFM | ordinal F (1/3/5), tie-consistent R and M; 94,983 scored | ✅ |
 | Cohorts | calendar months; activity to 2018-08; 190 unobserved cells blank | ✅ |
-| Category satisfaction | each review once per category | ✅ |
+| Category satisfaction | each review once per category; never summed across categories | ✅ |
 | Delivery-stage shares | 3.19% / 22.60% / 74.21% (95,088 orders) | ✅ |
 | On-time delivery | 91.8871% of 96,476 orders with a delivery date | ✅ |
-| 14 business insights, 5 priorities (each labelled decision-ready or hypothesis) | `reports/business_insights.md` | ✅ |
+| Average delivery time · average review | 12.56 days · 4.0864 | ✅ |
+| 14 business insights, 5 priorities; every recommendation classified decision-ready or hypothesis | `reports/business_insights.md` | ✅ |
 | Business-question answer map (19 answered, 5 partly, 2 not) | `documentation/business_questions.md` | ✅ |
 
 ## 3. Documentation completed
 
 | Item | Status |
 |---|---|
-| README as project landing page | ✅ |
-| KPI definitions, data dictionary, table relationships, schema | ✅ |
+| README as portfolio landing page | ✅ |
+| KPI definitions, data dictionary, table relationships, schema, analytical sources | ✅ |
 | Cleaning decisions and data-quality report (19 issues) | ✅ |
 | EDA, SQL, cleaning, Excel and business-insight reports | ✅ |
-| Power BI preparation: sources, model, DAX, audit, page spec | ✅ |
+| Tableau package: README, data model, calculated fields, dashboard specification, Mac guide, completion checklist | ✅ `tableau/` |
 | Setup guides: environment, dataset, MySQL (admin vs app account), `.env` | ✅ |
-| Documentation audit | ✅ `reports/phase6_documentation_audit.md` |
-| Known technical items documented | ⚠ `vw_monthly_revenue` boundary values and monthly AOV (see audit §5) |
+| Audits kept as historical records | ✅ `reports/final_project_audit.md`, `reports/phase6_documentation_audit.md`, `reports/metric_audit_history.md` |
+| Known technical items documented | ⚠ `vw_monthly_revenue` boundary values and monthly AOV (not used by the dashboard) |
 
-## 4. Remaining Power BI work (Windows required)
+## 4. Remaining dashboard work (Tableau Public, on this Mac): MANUAL PENDING
 
-Detailed procedure and acceptance list: [`powerbi/windows_implementation_guide.md`](../powerbi/windows_implementation_guide.md) · [`powerbi/powerbi_completion_checklist.md`](../powerbi/powerbi_completion_checklist.md) · [`powerbi/dax_implementation_checklist.md`](../powerbi/dax_implementation_checklist.md).
+Procedure: [`tableau/mac_implementation_guide.md`](../tableau/mac_implementation_guide.md) ·
+acceptance list: [`tableau/tableau_completion_checklist.md`](../tableau/tableau_completion_checklist.md).
 
 | Item | Status |
 |---|---|
-| Data readiness for Power BI re-verified on macOS (`scripts/check_powerbi_readiness.py` 27/27) | ✅ 2026-11-27 |
-| Windows environment with Power BI Desktop | 🔲 |
-| Load `powerbi/data/` and `powerbi/data/analytical/`; build the model per `powerbi/data_model.md` (one-to-many, single direction for the analytical tables) | 🔲 |
-| Mark `dim_date` as the date table | 🔲 |
-| Enter the 90 measures from `powerbi/dax_measures.md`; confirm syntax | 🔲 |
-| Build the six pages per `powerbi/dashboard_specification.md`, with mandatory captions | 🔲 |
-| Apply `powerbi/RetailPulse_Theme.json` | 🔲 |
-| Test card values against `powerbi/dax_validation_results.csv` and the checks in `powerbi/README.md` | 🔲 |
-| Capture dashboard screenshots into `reports/dashboard_screenshots/` | 🔲 |
-| Final visual verification (slicers, drill-through, blank cohort cells, BRL formatting) | 🔲 |
+| Install Tableau Desktop Public Edition | ✅ 2026.3.2 (Apple silicon) |
+| Create a Tableau Public account | 🔲 |
+| Open the generated `tableau/RetailPulse.twb`; confirm model and KPI check sheets | 🔲 |
+| Build 39 chart/table sheets, 6 dashboards + 2 detail dashboards, filters and actions, mandatory captions | 🔲 |
+| Test every value in the Tableau checklist §4 and §6 (runtime test) | 🔲 |
+| Publish to Tableau Public after the safety checklist; verify in a private window | 🔲 |
+| Capture 8 real screenshots into `reports/dashboard_screenshots/` | 🔲 |
 
-## 5. Remaining manual Excel work
+## 5. Remaining manual Excel work (optional)
 
 | Item | Status |
 |---|---|
@@ -85,21 +89,21 @@ Detailed procedure and acceptance list: [`powerbi/windows_implementation_guide.m
 
 | Item | Status |
 |---|---|
-| Review the uncommitted documentation-audit changes | 🔲 |
+| Review the uncommitted changes (T05/T06 work and the Tableau migration) | 🔲 |
+| After the dashboard: README link to the Tableau Public viz and the 8 screenshots | 🔲 |
 | Final commit and push (author: you only; no co-author lines) | 🔲 |
-| After the dashboard: commit screenshots and the `.pbix` (or document why the `.pbix` is excluded) | 🔲 |
-| Confirm `.env`, raw and cleaned data are not tracked | ✅ verified 2026-11-20 |
-| `LICENSE` added: MIT for the original code (© 2026 Manish Kumar); dataset stays CC BY-NC-SA 4.0 (README § Licence) | ✅ 2026-11-27 |
+| `.env`, raw, cleaned and Tableau data, workbooks and extracts not tracked | ✅ verified 2026-11-27 (`scripts/check_repository.py`) |
+| `LICENSE` added: MIT for the original code (© 2026 Manish Kumar); dataset stays CC BY-NC-SA 4.0 | ✅ 2026-11-27 |
 
 ## 7. Final project quality checks
 
 | Check | Status |
 |---|---|
-| `scripts/run_all_validations.py` passes | ✅ 2026-11-20 |
-| No password or secret in tracked files | ✅ |
+| `scripts/run_all_validations.py` passes | ✅ 2026-11-27 |
+| No password or secret in committable files | ✅ |
 | No application code connects as root | ✅ |
 | Raw and cleaned datasets unchanged | ✅ |
-| Documentation agrees with validated outputs | ✅ (see audit) |
+| Documentation agrees with validated outputs | ✅ |
 | MySQL root password set (optional, owner's decision) | 🔲 |
-| `vw_monthly_revenue` fix applied by an administrator (optional; proposal in audit §5) | 🔲 |
-| Re-run the full validation after the Power BI build and before the final push | 🔲 |
+| `vw_monthly_revenue` fix applied by an administrator (optional) | 🔲 |
+| Re-run the full validation after the Tableau build and before the final push | 🔲 |
