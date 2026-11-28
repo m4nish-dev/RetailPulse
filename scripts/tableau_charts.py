@@ -54,6 +54,11 @@ SOURCES = {
     "RP Stage Summary": ("RP Stage Summary", None),
 }
 KPI_SOURCE = {"5.6 Stage Shares": "RP Delivery Stages"}
+# KPI sheets placed in narrow chart zones: one KPI per line (side by side they show ### at dashboard size)
+KPI_VERTICAL = {"1.5 YoY Jan–Aug": "Like-for-like growth: Jan–Aug 2018 vs Jan–Aug 2017",
+                "5.6 Stage Shares": "Share of delivery time by stage (responds to the filters)"}
+
+PARAM_CAPTIONS = {"p_category": "Category", "p_seller": "Seller (seller_id)"}
 
 # bins: (data source, field caption, size)
 BINS = {("RP Customers", "Log10 Historical Value"): 0.25, ("RP Orders", "delivery_days"): 1}
@@ -74,13 +79,13 @@ CHARTS: list[dict] = [
     dict(name="1.1 Revenue and Orders by Month", ds="RP Orders", mark="Line",
          title="Monthly revenue (with 3-month moving average) and orders",
          rows=["MV", "C:Total Orders"], cols=["M:Order Month"],
-         mv=["C:Total Revenue", "C:Revenue 3M Moving Avg"], tc={"C:Revenue 3M Moving Avg": "Columns"},
-         enc=dict(color="MN", tooltip=["C:Total Orders"]),
+         mv=["C:Total Revenue", "C:Revenue 3M Moving Avg"], tc={"C:Revenue 3M Moving Avg": ("Field", "M:Order Month")},
+         enc=dict(color="MN", tooltip=["C:Total Orders"]), nulls_by_design=True, legend=True,
          palette={"MN": {"C:Total Revenue": ORANGE, "C:Revenue 3M Moving Avg": GREY}},
          filters=[("range", "Q:in_stable_window", (1, 1))]),
     dict(name="1.2 Revenue MoM %", ds="RP Orders", mark="Bar", title="Month-over-month revenue change",
-         rows=["C:Revenue MoM %"], cols=["MD:Order Month"], tc={"C:Revenue MoM %": "Columns"},
-         enc=dict(color="C:Revenue MoM %"), diverge="C:Revenue MoM %",
+         rows=["C:Revenue MoM %"], cols=["M:Order Month"], tc={"C:Revenue MoM %": ("Field", "M:Order Month")},
+         enc=dict(color="C:Revenue MoM %"), diverge="C:Revenue MoM %", nulls_by_design=True,
          filters=[("range", "Q:in_stable_window", (1, 1))]),
     dict(name="1.3 Revenue by State (Top 12)", ds="RP Orders", mark="Bar", title="Revenue by customer state (top 12)",
          rows=["D:customer_state"], cols=["C:Total Revenue"], color=ORANGE, labels=True,
@@ -112,8 +117,8 @@ CHARTS: list[dict] = [
     dict(name="2.4 Cohort Retention Matrix", ds="RP Cohorts", mark="Square",
          title="Cohort retention: share of each monthly cohort ordering again N months later",
          rows=["D:cohort_month"], cols=["D:months_since_acquisition"],
-         enc=dict(color="C:Cohort Retention %", text=["C:Cohort Retention %"], tooltip=["C:Cohort Customers"]),
-         sequential="C:Cohort Retention %", labels=True,
+         enc=dict(color="C:Cohort Retention %", tooltip=["C:Cohort Retention %", "C:Cohort Customers"]),
+         sequential="C:Cohort Retention %",
          filters=[("range", "Q:months_since_acquisition", (1, None))]),
     dict(name="2.5 Purchase Frequency", ds="RP Customers", mark="Bar", title="Customers by number of orders",
          rows=["C:Total People"], cols=["D:total_orders"], color=ORANGE, labels=True),
@@ -130,18 +135,19 @@ CHARTS: list[dict] = [
          enc=dict(lod=["D:category"], tooltip=["C:Category Revenue"]), color=ORANGE,
          sort=("D:category", "DESC", "C:Category Revenue")),
     dict(name="3.3 Monthly Trend (Top 5)", ds="RP Categories", mark="Line", title="Monthly revenue of the top 5 categories",
-         rows=["C:Category Revenue"], cols=["D:order_month"], enc=dict(color="D:category"),
+         rows=["C:Category Revenue"], cols=["D:order_month"], enc=dict(color="D:category"), legend=True,
          filters=[("range", "Q:in_stable_window", (1, 1)), ("top", "D:category", (5, "C:Category Revenue"))]),
     dict(name="3.4 Growth vs Decline", ds="RP Categories", mark="Bar",
          title="Revenue growth, 2017 Q1 to Jun–Aug 2018 (categories with 50+ items in both periods)",
-         rows=["D:category"], cols=["C:Category Growth Q1 2017 to Jun-Aug 2018"], labels=True,
+         rows=["D:category"], cols=["C:Category Growth Q1 2017 to Jun-Aug 2018"], labels=True, header_size=8,
          enc=dict(color="C:Category Growth Q1 2017 to Jun-Aug 2018"), diverge="C:Category Growth Q1 2017 to Jun-Aug 2018",
          filters=[("nonnull", "C:Category Growth Q1 2017 to Jun-Aug 2018", None)],
          sort=("D:category", "DESC", "C:Category Growth Q1 2017 to Jun-Aug 2018")),
     dict(name="3.5 Category Table", ds="RP Categories", mark="Text", title="Category table",
          rows=["D:category"], cols=["MN"], enc=dict(text=["MV"]),
          mv=["C:Category Revenue", "C:Category Items Sold", "S:orders", "C:Category Revenue Share", "C:Category Rank"],
-         tc={"C:Category Rank": "Rows"},
+         cell_format={"S:orders": "n#,##0"},
+         tc={"C:Category Rank": ("Field", "D:category")},
          sort=("D:category", "DESC", "C:Category Revenue")),
     # ---------------- 4 Sellers ----------------
     dict(name="4.1 Top 20 Sellers", ds="RP Sellers", mark="Bar", title="Top 20 sellers by revenue (sellers with 50+ orders)",
@@ -174,7 +180,7 @@ CHARTS: list[dict] = [
     dict(name="5.2 Promised vs Actual", ds="RP Orders", mark="Line",
          title="Promised vs actual delivery time (days, delivered orders)",
          rows=["MV"], cols=["M:Order Month"], mv=["C:Avg Promised Days", "C:Avg Delivery Days"],
-         enc=dict(color="MN"), palette={"MN": {"C:Avg Promised Days": GREY, "C:Avg Delivery Days": ORANGE}},
+         enc=dict(color="MN"), palette={"MN": {"C:Avg Promised Days": GREY, "C:Avg Delivery Days": ORANGE}}, legend=True,
          filters=[("range", "Q:in_stable_window", (1, 1))]),
     dict(name="5.3 Delivery by State", ds="RP Orders", mark="Bar", title="Late delivery rate by customer state",
          rows=["D:customer_state"], cols=["C:Late Delivery Rate"], labels=True,
@@ -186,7 +192,9 @@ CHARTS: list[dict] = [
          filters=[("range", "Q:delivery_days", (0, 60))]),
     dict(name="5.5 Delivery Stage Breakdown", ds="RP Stage Summary", mark="Bar",
          title="Where delivery time goes (average days per stage)",
-         rows=[], cols=["S:avg_days"], enc=dict(color="D:stage", text=["S:avg_days"]), labels=True,
+         rows=["D:stage"], cols=["S:avg_days"], enc=dict(color="D:stage"), labels=True,
+         label_format={"S:avg_days": "n#,##0.00"},
+         sort=("manual", "D:stage", ["Purchase to approval", "Approval to carrier handoff", "Carrier handoff to customer"]),
          palette={"D:stage": {"Purchase to approval": AMBER, "Approval to carrier handoff": BLUE,
                               "Carrier handoff to customer": ORANGE}},
          filters=[("range", "Q:stage_order", (1, 3))]),
@@ -195,17 +203,17 @@ CHARTS: list[dict] = [
          rows=["C:Total Reviews"], cols=["D:review_score"], color=ORANGE, labels=True),
     dict(name="6.2 Delay vs Score", ds="RP Orders", mark="Bar",
          title="Average order rating by delivery timing (all reviews vs after arrival)",
-         rows=["D:delivery_bucket"], cols=["MV"], mv=["C:Avg Order Rating (Review Table)", "C:Avg Order Rating After Arrival"],
+         rows=["D:delivery_bucket", "MN"], cols=["MV"], mv=["C:Avg Order Rating (Review Table)", "C:Avg Order Rating After Arrival"],
          enc=dict(color="MN", tooltip=["C:Total Reviews", "C:One-Star Rate", "C:One-Star Rate After Arrival"]),
          palette={"MN": {"C:Avg Order Rating (Review Table)": ORANGE, "C:Avg Order Rating After Arrival": GREY}},
-         labels=True, filters=[("exclude", "D:delivery_bucket", ["not delivered"])],
+         labels=True, header_size=8, filters=[("exclude", "D:delivery_bucket", ["not delivered"])],
          sort=("manual", "D:delivery_bucket", DELIVERY_BUCKETS)),
     dict(name="6.3 Satisfaction Trend", ds="RP Orders", mark="Line", title="Average review score and one-star rate by month",
          rows=["C:Avg Review Score", "C:One-Star Rate"], cols=["M:Order Month"], color=ORANGE,
          filters=[("range", "Q:in_stable_window", (1, 1))]),
     dict(name="6.4 Category Satisfaction", ds="RP Category Reviews", mark="Bar",
          title="Average review score by category (categories with 300+ items sold)",
-         rows=["D:category"], cols=["C:Category Avg Review Score"], color=ORANGE, labels=True,
+         rows=["D:category"], cols=["C:Category Avg Review Score"], color=ORANGE, labels=True, header_size=8,
          enc=dict(tooltip=["C:Category One-Star Rate", "C:Category Avg Score After Arrival", "C:Category Review Count"]),
          filters=[("min", "S:item_count", 300)],
          sort=("D:category", "ASC", "C:Category Avg Review Score")),
@@ -217,7 +225,7 @@ CHARTS: list[dict] = [
     dict(name="7.0 Review KPIs", ds="RP Category Reviews", kpi=["N30", "N31", "N33"],
          filters=[("true", "B:Is Selected Category", None)]),
     dict(name="7.1 Rank and Cumulative Share", ds="RP Categories", mark="Text", title="Rank among 74 categories",
-         rows=["D:category"], cols=["MN"], enc=dict(text=["MV"]), mv=["C:Category Rank", "C:Category Cumulative Share"],
+         rows=["MN"], cols=[], enc=dict(lod=["D:category"], text=["MV"]), mv=["C:Category Rank", "C:Category Cumulative Share"],
          tc={"C:Category Rank": ("Field", "D:category"), "C:Category Cumulative Share": ("Field", "D:category")},
          filters=[("tctrue", "C:Selected Category TC", ("Field", "D:category"))],
          sort=("D:category", "DESC", "C:Category Revenue")),
@@ -226,7 +234,7 @@ CHARTS: list[dict] = [
          filters=[("true", "B:Is Selected Category", None), ("range", "Q:in_stable_window", (1, 1))]),
     dict(name="7.3 Top 10 Products", ds="RP Products", mark="Text", title="Top 10 products in the category",
          rows=["D:product_id"], cols=["MN"], enc=dict(text=["MV"]),
-         mv=["C:Product Revenue", "C:Product Units Sold", "C:Product Avg Item Price", "S:seller_count"],
+         mv=["C:Product Revenue", "C:Product Units Sold", "C:Product Avg Item Price", "S:seller_count"], cell_format={"S:seller_count": "n#,##0"},
          filters=[("ctxtrue", "B:Is Selected Category", None), ("top", "D:product_id", (10, "C:Product Revenue"))],
          sort=("D:product_id", "DESC", "C:Product Revenue")),
     dict(name="7.4 Top 10 Sellers in Category", ds="RP Seller Categories", mark="Text", title="Top 10 sellers in the category",
@@ -235,7 +243,8 @@ CHARTS: list[dict] = [
              "C:Seller Category Dispatch Days"],
          filters=[("ctxtrue", "B:Is Selected Category", None), ("top", "D:seller_id", (10, "C:Seller Category Revenue"))],
          sort=("D:seller_id", "DESC", "C:Seller Category Revenue")),
-    dict(name="7.5 Seller Delivery in Category", ds="RP Seller Categories", kpi=["N15", "N16", "N13"],
+    dict(name="7.5 Seller Delivery in Category", ds="RP Seller Categories", kpi=["N15", "N16", "N13"], vertical=True,
+         title="Seller delivery in this category",
          filters=[("ctxtrue", "B:Is Selected Category", None)]),
     dict(name="7.6 Satisfaction", ds="RP Category Reviews", mark="Bar", title="Review score: all reviews vs after arrival",
          rows=["MN"], cols=["MV"], mv=["C:Category Avg Review Score", "C:Category Avg Score After Arrival"],
@@ -246,13 +255,13 @@ CHARTS: list[dict] = [
     dict(name="8.0 KPIs", ds="RP Sellers", kpi=["M29", "M31", "M33", "M32", "M35"],
          filters=[("true", "B:Is Selected Seller", None)]),
     dict(name="8.1 Cumulative Share", ds="RP Sellers", mark="Text", title="Cumulative revenue share at this seller",
-         rows=["D:seller_id"], cols=["MN"], enc=dict(text=["MV"]), mv=["C:Seller Cumulative Share"],
+         rows=["MN"], cols=[], enc=dict(lod=["D:seller_id"], text=["MV"]), mv=["C:Seller Cumulative Share"],
          tc={"C:Seller Cumulative Share": ("Field", "D:seller_id")},
          filters=[("tctrue", "C:Selected Seller TC", ("Field", "D:seller_id"))],
          sort=("D:seller_id", "DESC", "C:Seller Revenue")),
     dict(name="8.2 Profile", ds="RP Sellers", mark="Text", title="Seller profile",
          rows=["D:seller_state", "D:seller_city", "D:first_sale", "D:last_sale"], cols=["MN"], enc=dict(text=["MV"]),
-         mv=["S:poor_rated_orders"], filters=[("true", "B:Is Selected Seller", None)]),
+         mv=["S:poor_rated_orders"], filters=[("true", "B:Is Selected Seller", None)], cell_format={"S:poor_rated_orders": "n#,##0"}),
     dict(name="8.3 Categories Sold", ds="RP Seller Categories", mark="Bar", title="Revenue by category for this seller",
          rows=["D:category"], cols=["C:Seller Category Revenue"], color=ORANGE, labels=True,
          filters=[("true", "B:Is Selected Seller", None)], sort=("D:category", "DESC", "C:Seller Category Revenue")),
@@ -266,11 +275,11 @@ CHARTS: list[dict] = [
 # dashboard filter controls: (field pill, mode, title, [sheets]) per dashboard
 STATE_ORDERS = "D:customer_state"
 DASH_FILTERS = {
-    "1 Executive": [("D:order_year", "checkdropdown", "Order year",
+    "1 Executive": [("D:order_year", "checkdropdown", "Year",
                      ["1.0 KPIs", "1.1 Revenue and Orders by Month", "1.2 Revenue MoM %", "1.3 Revenue by State (Top 12)"]),
-                    (STATE_ORDERS, "checkdropdown", "Customer state",
+                    (STATE_ORDERS, "checkdropdown", "State",
                      ["1.0 KPIs", "1.1 Revenue and Orders by Month", "1.2 Revenue MoM %", "1.5 YoY Jan–Aug"]),
-                    ("D:order_status", "checkdropdown", "Order status",
+                    ("D:order_status", "checkdropdown", "Status",
                      ["1.0 KPIs", "1.1 Revenue and Orders by Month", "1.2 Revenue MoM %", "1.3 Revenue by State (Top 12)",
                       "1.5 YoY Jan–Aug"])],
     "2 Customers": [("D:customer_state", "checkdropdown", "Customer state",
@@ -313,8 +322,9 @@ DASHBOARDS = [
                    "(190 cells), never zero. RFM frequency is scored 1/3/5, not quintiles: 96.88% of customers ordered once. "
                    "Customer figures are lifetime totals and are not filtered by order date."]),
     dict(name="3 Products", title="Products", question="Which categories drive revenue and growth?", kpi="3.0 KPIs",
-         rows=[(380, [("3.1 Revenue by Category (Top 15)", 0.5), ("3.2 Pareto", 0.5)]),
-               (390, [("3.3 Monthly Trend (Top 5)", 0.36), ("3.4 Growth vs Decline", 0.30), ("3.5 Category Table", 0.34)])],
+         rows=[(440, [("3.1 Revenue by Category (Top 15)", 0.5), ("3.4 Growth vs Decline", 0.5)]),
+               (250, [("3.2 Pareto", 0.45), ("3.3 Monthly Trend (Top 5)", 0.55)]),
+               (170, [("3.5 Category Table", 1.0)])],
          captions=["18 of 74 categories reach 80% of revenue. Growth compares 2017 Q1 with Jun–Aug 2018 (the last three complete "
                    "months), only for categories with 50+ items in both periods. Click a category to select it, then use "
                    "'Category Detail' in a tooltip menu opens the detail page; choose the category there."]),
@@ -337,8 +347,8 @@ DASHBOARDS = [
                    "mean 12.56). Click a state to filter the page (the stage shares too)."]),
     dict(name="6 Satisfaction", title="Customer satisfaction", question="How do customers rate their orders, and why?",
          kpi="6.0 KPIs",
-         rows=[(400, [("6.2 Delay vs Score", 0.55), ("6.3 Satisfaction Trend", 0.45)]),
-               (370, [("6.1 Score Distribution", 0.4), ("6.4 Category Satisfaction", 0.6)])],
+         rows=[(360, [("6.2 Delay vs Score", 0.58), ("6.3 Satisfaction Trend", 0.42)]),
+               (500, [("6.1 Score Distribution", 0.32), ("6.4 Category Satisfaction", 0.68)])],
          captions=["Correlation, not causation: a late delivery may share a cause with a bad experience. 4,795 reviews were "
                    "written before the parcel arrived; the after-arrival bars exclude them. Reviews rate the whole order, "
                    "delivery included, not product quality alone. Category chart: all periods, not filtered; categories with "
@@ -346,17 +356,17 @@ DASHBOARDS = [
     dict(name="7 Category Detail", title="Category detail", question="",
          kpi=["7.0 KPIs", "7.0 Product KPIs", "7.0 Review KPIs"], detail="p_category",
          back="3 Products", height=1000,
-         rows=[(330, [("7.2 Monthly Trend", 0.5), ("7.6 Satisfaction", 0.3), ("7.1 Rank and Cumulative Share", 0.2)]),
-               (330, [("7.3 Top 10 Products", 0.45), ("7.4 Top 10 Sellers in Category", 0.4),
-                      ("7.5 Seller Delivery in Category", 0.15)])],
-         captions=["Shows the category chosen in the p_category box (top right). "
+         rows=[(330, [("7.2 Monthly Trend", 0.38), ("7.6 Satisfaction", 0.24), ("7.1 Rank and Cumulative Share", 0.17),
+                      ("7.5 Seller Delivery in Category", 0.21)]),
+               (330, [("7.3 Top 10 Products", 0.5), ("7.4 Top 10 Sellers in Category", 0.5)])],
+         captions=["Shows the category chosen in the Category box (top right). "
                    "Full history; the Products page filters do not carry over. Reviews rate the whole order. Dispatch days use "
                    "single-seller orders with valid timestamps."]),
     dict(name="8 Seller Detail", title="Seller detail", question="", kpi="8.0 KPIs", detail="p_seller",
          back="4 Sellers", height=1000,
          rows=[(340, [("8.3 Categories Sold", 0.5), ("8.2 Profile", 0.3), ("8.1 Cumulative Share", 0.2)]),
                (320, [("8.4 Category Breakdown", 1.0)])],
-         captions=["Shows the seller whose seller_id is in the p_seller box (top right; default: the largest seller). Inherited "
+         captions=["Shows the seller whose seller_id is in the Seller box (top right; default: the largest seller). Inherited "
                    "order rating: reviews attach to the order, not the seller. Delivery time is mostly the carrier's (74.2%)."]),
 ]
 
@@ -387,6 +397,10 @@ DEVIATIONS = [
     ("1.2", "Diverging orange-blue colour instead of red-green (colour-blind safe); values unchanged."),
     ("3.2, 4.2", "X axis = revenue rank (a rank table calculation) instead of 74 / 3,053 category or seller headers, which "
                  "are unreadable at dashboard size; the 80% reference line is described in the caption instead."),
+    ("2.4", "No value labels in the 20 × 19 heatmap cells (they cannot be read at that size and showed ####); "
+            "the colour scale shows retention, the tooltip gives the exact % and cohort size; unobserved cells stay blank."),
+    ("5.5", "One bar per stage (in stage order, labelled) instead of one stacked bar: in a stacked bar the 0.40- and "
+            "2.85-day segments are too narrow for their labels. Same three values (0.40 / 2.85 / 9.36 days)."),
     ("5.1", "Linear axis with value labels instead of a logarithmic axis."),
     ("5.4", "Bins up to 60 days (306 of 96,476 measurable orders take longer, stated in the caption); median and mean "
             "stated in the caption instead of a reference line."),
@@ -434,3 +448,6 @@ def text_runs(parent, runs):
 
 def sanitize(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9]", "", name)
+
+
+CHART_BY_NAME = {c["name"]: c for c in CHARTS}

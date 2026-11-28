@@ -68,3 +68,15 @@ FILTERS AND PARAMETERS (6: values saved into a copy, not clicked)
   PASS  7 Category Detail · p_category = watches_gifts 7.0 KPIs: 1,198,185.21 ok
 
 result: ALL PASS   (details: /var/folders/4b/qb8bcq8n0png5yby2f5j_kvc0000gn/T/retailpulse_tableau_check/tableau_runtime_check.json)
+
+# Re-check after the last change (shorter filter titles on 1 Executive), same day:
+
+  PASS  1 Executive          dialogs 0 [] · query errors 0 · sheets queried 6/6 · extracts 6
+  PASS  1.0 KPIs                           queries  3 · checks 9/9
+  PASS  1.1 Revenue and Orders by Month    queries  4 · checks 2/2
+  PASS  1.2 Revenue MoM %                  queries  3 · checks 2/2
+  PASS  1.3 Revenue by State (Top 12)      queries  5 · checks 3/3
+  PASS  1.4 Top 10 Categories              queries  5 · checks 2/2
+  PASS  1.5 YoY Jan–Aug                    queries  3 · checks 4/4
+  PASS  1 Executive · customer_state = SP          1.0 KPIs: 5,163,867.22 ok
+result: ALL PASS

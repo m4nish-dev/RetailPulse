@@ -67,7 +67,8 @@ RUNTIME_FIXES = {"[RP_N07]", "[RP_N34]", "[RP_N35]"}
 # 0/1 flag shown as a dimension with aliases (One-time / Repeat) on chart 2.1
 ROLE_CHANGES = {"is_repeat_customer"}
 RUNTIME_VERIFIED_TAGS = {"wedge-size"}                                   # pie chart 2.1
-RUNTIME_VERIFIED_ATTRS = {("wedge-size", "column"), ("size", "maxwidth")}  # pie 2.1; fixed dashboard size
+RUNTIME_VERIFIED_ATTRS = {("wedge-size", "column"), ("size", "maxwidth"),  # pie 2.1; fixed dashboard size
+                          ("table-calc", "field")}   # nested table calc addressing (2.2 RFM customer share)
 R: list[tuple[str, str, bool, str]] = []
 
 
@@ -239,7 +240,8 @@ def main():
     dss = [d.get("caption") or d.get("name") for d in root.find("datasources")]
     sheets = [w.get("name") for w in root.find("worksheets")]
     dashes = [d.get("name") for d in root.find("dashboards")] if root.find("dashboards") is not None else []
-    params = [c.get("caption") for d in root.find("datasources") if d.get("name") == "Parameters" for c in d.findall("column")]
+    params = [c.get("name")[1:-1] for d in root.find("datasources") if d.get("name") == "Parameters"
+              for c in d.findall("column")]
     want_sheets = sorted([s for s, *_ in B.KPI_SHEETS] + [c["name"] for c in C.CHARTS])
     ck("workbook", f"{len(C.SOURCES)} Tableau data sources + Parameters; 8 relationships; {len(want_sheets)} worksheets "
        f"(8 KPI + {len(C.CHARTS)} charts); {len(C.DASHBOARDS)} dashboards; 2 parameters",
@@ -312,7 +314,8 @@ def main():
                 name = d.get("caption") or d.get("name")
                 reg = C.SOURCES[name][0] if split and name in C.SOURCES else name
                 cap = {c.get("name"): c.get("caption") for c in d.findall("column")}
-                cols = {(c.get("caption"), c.get("datatype"), c.get("default-format"),
+                cols = {(c.get("name") if d.get("name") == "Parameters" else c.get("caption"), c.get("datatype"),
+                         c.get("default-format"),
                          "role-allowed" if c.get("caption") in ROLE_CHANGES else c.get("role"))
                         for c in d.findall("column") if not c.get("name", "").startswith("[__tableau")
                         and c.get("name") != "[:Measure Names]" and not c.get("name", "").endswith(" (bin)]")}

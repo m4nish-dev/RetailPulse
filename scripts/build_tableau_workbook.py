@@ -222,6 +222,15 @@ class SourceModel:
             raise KeyError(f"{self.ds}: unknown reference [{tok}] in formula")
         return re.sub(r"\[([^\]]+)\]", sub, formula)
 
+    def tc_field(self, c) -> str | None:
+        """'[federated...].[field]' a table calculation computes along, from the registry ("Compute Using: X")."""
+        mm = re.search(r"Compute Using: ([^;(]+)", c["level"])
+        if not mm:
+            return None
+        name = mm.group(1).strip()
+        internal = self.calc_internal.get(name) or self.internal_of_caption.get(name)
+        return f"[{self.name}].{internal}" if internal else None
+
     def calc_datatype(self, c) -> tuple[str, str, str]:
         f = c["formula"]
         if c["kind"] == "row-level":
@@ -289,11 +298,18 @@ def calc_column_el(parent, m: SourceModel, c):
     el = column_el(parent, m.calc_internal[c["name"]], c["name"], dtype, role, typ, FORMATS.get(c["fmt"]))
     calc = sub(el, "calculation", **{"class": "tableau", "formula": m.translate(c["formula"])})
     if c["kind"] == "table calculation":
-        sub(calc, "table-calc", ordering_type="Rows")
+        field = m.tc_field(c)
+        if field:   # nested use (e.g. RFM Scored Customers inside Segment Customer Share) follows this default
+            sub(calc, "table-calc", ordering_field=field, ordering_type="Field")
+        else:
+            sub(calc, "table-calc", ordering_type="Rows")
     return el
 
 
-def datasource_el(parent, m: SourceModel, measure_names: bool = False, extra_bins: list | None = None):
+def datasource_el(parent, m: SourceModel, measure_names: bool = False, extra_bins: list | None = None,
+                  palettes: list | None = None):
+    """palettes: [(field, [(bucket, colour)], column-instance or None)] written as the data source's colour
+    assignments (<style> after <layout>), the way Tableau stores them (World Indicators sample)."""
     """measure_names: declare the built-in [:Measure Names] field, as Tableau does for every data source
     whose sheets use Measure Names (Superstore sample). Without it Tableau 2026.3.2 logs "Namespace
     unexpectedly missing field '[...].[:Measure Names]'" when a KPI sheet is drawn."""
@@ -367,7 +383,16 @@ def datasource_el(parent, m: SourceModel, measure_names: bool = False, extra_bin
             calc_column_el(ds, m, item)
         else:
             bin_column_el(ds, *item)
+    for _, _, inst in (palettes or []):
+        if inst:
+            sub(ds, "column-instance", **inst)
     sub(ds, "layout", dim_ordering="alphabetic", measure_ordering="alphabetic", show_structure="true")
+    if palettes:
+        sr = sub(sub(ds, "style"), "style-rule", element="mark")
+        for field, buckets, _ in palettes:
+            enc = sub(sr, "encoding", attr="color", field=field, type="palette")
+            for bucket, colour in buckets:
+                sub(sub(enc, "map", to=colour), "bucket").text = bucket
     if len(m.tables) > 1:
         og = sub(ds, "object-graph")
         objs = sub(og, "objects")
@@ -386,13 +411,15 @@ def datasource_el(parent, m: SourceModel, measure_names: bool = False, extra_bin
     return ds
 
 
-def parameters_el(parent, lists: dict[str, list[str]] | None = None):
-    """lists: allowed values for a parameter (shown as a dropdown), e.g. the 74 categories for p_category."""
-    lists = lists or {}
+def parameters_el(parent, lists: dict[str, list[str]] | None = None, captions: dict[str, str] | None = None):
+    """lists: allowed values for a parameter (shown as a dropdown), e.g. the 74 categories for p_category.
+    captions: display names (the formulas keep using the internal names [p_category], [p_seller])."""
+    lists, captions = lists or {}, captions or {}
     ds = sub(parent, "datasource", hasconnection="false", inline="true", name="Parameters", version=VERSION)
     sub(ds, "aliases", enabled="yes")
     for name, (dtype, value, _) in PARAMETERS.items():
-        col = ET.SubElement(ds, "column", {"caption": name, "datatype": dtype.lower(), "name": f"[{name}]",
+        col = ET.SubElement(ds, "column", {"caption": captions.get(name, name), "datatype": dtype.lower(),
+                                           "name": f"[{name}]",
                                            "param-domain-type": "list" if name in lists else "any", "role": "measure",
                                            "type": "nominal", "value": f'"{value}"'})
         sub(col, "calculation", **{"class": "tableau", "formula": f'"{value}"'})
@@ -555,7 +582,12 @@ class SheetCtx:
             if c["kind"] == "row-level":
                 return self._add(f"[none:{internal[1:-1]}:{SUFFIX[typ]}]", internal, "None", typ)
             typ = "nominal" if dtype == "boolean" else "quantitative"
-            return self._add(f"[usr:{internal[1:-1]}:{SUFFIX[typ]}]", internal, "User", typ, self._tc_spec(pill))
+            name = self._add(f"[usr:{internal[1:-1]}:{SUFFIX[typ]}]", internal, "User", typ, self._tc_spec(pill))
+            if self.inst[name]["tc"]:     # nested table calculations follow the same addressing (one entry each)
+                nested, _ = self.m.calc_deps([c["id"]])
+                self.inst[name]["nested"] = [f"{self.ds()}.{self.m.calc_internal[n['name']]}" for n in nested
+                                             if n["kind"] == "table calculation" and n["id"] != c["id"]]
+            return name
         if k == "B":
             internal, _ = self._calc(f)
             return self._add(f"[none:{internal[1:-1]}:nk]", internal, "None", "nominal")
@@ -627,6 +659,9 @@ class SheetCtx:
                      type=a["type"])
             if a["tc"]:
                 sub(ci, "table-calc", **{k.replace("-", "_"): v for k, v in a["tc"].items()})
+                for f in a.get("nested", []):
+                    sub(ci, "table-calc", field=f, **{k.replace("-", "_"): v for k, v in a["tc"].items()
+                                                      if k in ("ordering-type", "ordering-field")})
 
 
 def bin_column_el(parent, name, caption, src, size):
@@ -639,7 +674,7 @@ def bin_column_el(parent, name, caption, src, size):
 
 def param_column_el(parent, name):
     dtype, value, _ = PARAMETERS[name]
-    col = ET.SubElement(parent, "column", {"caption": name, "datatype": dtype.lower(), "name": f"[{name}]",
+    col = ET.SubElement(parent, "column", {"caption": C.PARAM_CAPTIONS.get(name, name), "datatype": dtype.lower(), "name": f"[{name}]",
                                            "param-domain-type": "any", "role": "measure", "type": "nominal",
                                            "value": f'"{value}"'})
     sub(col, "calculation", **{"class": "tableau", "formula": f'"{value}"'})
@@ -702,13 +737,6 @@ def filter_el(view, ctx: SheetCtx, kind: str, pill: str, value, group: int | Non
 
 def palette_rules(style, ctx: SheetCtx, spec: dict):
     rules = []
-    for pill, mapping in (spec.get("palette") or {}).items():
-        field = f"{ctx.ds()}.[:Measure Names]" if pill == "MN" else ctx.full(ctx.resolve(pill))
-        enc = ET.Element("encoding", {"attr": "color", "field": field, "type": "palette"})
-        for key, colour in mapping.items():
-            bucket = q(ctx.full(ctx.resolve(key))) if pill == "MN" else q(key)
-            sub(sub(enc, "map", to=colour), "bucket").text = bucket
-        rules.append(enc)
     for key, colours in (("diverge", None), ("sequential", ["#FBE3D6", C.ORANGE]), ("sequential_red", ["#FBE0E0", "#B83A3A"])):
         if spec.get(key):
             field = ctx.full(ctx.resolve(spec[key]))
@@ -733,8 +761,10 @@ def chart_worksheet(parent, spec: dict, m: SourceModel, groups: dict[str, list[t
     kpi = spec.get("kpi")
     if kpi:
         names = {c["id"]: c["name"] for c in m.calcs}
-        spec = {**spec, "mark": "Text", "rows": [], "cols": ["MN"], "enc": {"text": ["MV"]},
-                "mv": [f"C:{names[i]}" for i in kpi]}
+        vertical = spec.get("vertical") or spec["name"] in C.KPI_VERTICAL
+        spec = {**spec, "mark": "Text", "rows": ["MN"] if vertical else [], "cols": [] if vertical else ["MN"],
+                "enc": {"text": ["MV"]}, "mv": [f"C:{names[i]}" for i in kpi], "vertical": vertical,
+                "title": spec.get("title") or C.KPI_VERTICAL.get(spec["name"])}
     tc = dict(spec.get("tc") or {})
     for f in spec.get("filters", []):
         if f[0] == "tctrue":
@@ -810,15 +840,37 @@ def chart_worksheet(parent, spec: dict, m: SourceModel, groups: dict[str, list[t
     if spec.get("mark") == "Text":
         sr = sub(style, "style-rule", element="cell")
         big = bool(kpi)
-        sub(sr, "format", attr="font-size", value="15" if big else "9")
+        sub(sr, "format", attr="font-size", value=("13" if spec.get("vertical") else "14") if big else "9")
         if big:
             sub(sr, "format", attr="font-weight", value="bold")
         sub(sr, "format", attr="color", value=C.INK)
+        if big:
+            hr = sub(style, "style-rule", element="header")
+            sub(hr, "format", attr="font-size", value="9")
+            sub(hr, "format", attr="color", value=C.GREY)
+    if spec.get("label_format") or spec.get("label_size"):
+        lr = sub(style, "style-rule", element="label")
+        for pill, fmt in (spec.get("label_format") or {}).items():
+            sub(lr, "format", attr="text-format", field=ctx.full(ctx.resolve(pill)), value=fmt)
+        if spec.get("label_size"):
+            sub(lr, "format", attr="font-size", value=str(spec["label_size"]))
+    if spec.get("header_size"):
+        hr = sub(style, "style-rule", element="header")
+        sub(hr, "format", attr="font-size", value=str(spec["header_size"]))
+    for pill, fmt in (spec.get("cell_format") or {}).items():
+        cr = sub(style, "style-rule", element="cell")
+        sub(cr, "format", attr="text-format", field=ctx.full(ctx.resolve(pill)), value=fmt)
     for pill, gid, title in groups.get(name, []):
         sr = sub(style, "style-rule", element="quick-filter")
         sub(sr, "format", attr="title", field=ctx.full(ctx.resolve(pill)), value=title)
     sr = sub(style, "style-rule", element="worksheet")
     sub(sr, "format", attr="font-family", value=C.FONT)
+    if spec.get("mark") not in ("Text", None) and not kpi:
+        sub(sr, "format", attr="display-field-labels", scope="rows", value="false")
+        sub(sr, "format", attr="display-field-labels", scope="cols", value="false")
+    if spec.get("nulls_by_design"):
+        tr = sub(style, "style-rule", element="table")
+        sub(tr, "format", attr="show-null-value-warning", value="false")
     pane = sub(sub(table, "panes"), "pane", selection_relaxation_option="selection-relaxation-allow")
     sub(sub(pane, "view"), "breakdown", value="auto")
     sub(pane, "mark", **{"class": spec.get("mark", "Automatic")})
@@ -836,7 +888,9 @@ def chart_worksheet(parent, spec: dict, m: SourceModel, groups: dict[str, list[t
     pst = []
     if spec.get("labels"):
         pst.append(("mark-labels-show", "true"))
-        pst.append(("mark-labels-cull", "true"))
+        pst.append(("mark-labels-cull", "false" if spec.get("mark") in ("Pie", "Square") else "true"))
+        if spec.get("mark") == "Pie":
+            pst.append(("mark-labels-mode", "all"))
     if spec.get("color"):
         pst.append(("mark-color", spec["color"]))
     if pst:
@@ -879,8 +933,10 @@ def zone_style(z, background=None, margin="4", padding=None, border=None):
     return st
 
 
-def text_zone(Z, parent, x, y, w, h, runs, background=None, margin="4", padding="4"):
-    z = Z.box(parent, x, y, w, h, type_v2="text")
+def text_zone(Z, parent, x, y, w, h, runs, background=None, margin="4", padding="4", fixed=None):
+    """fixed: size in px along the parent container's direction that Tableau must keep (is-fixed)."""
+    extra = {"fixed_size": str(fixed), "is_fixed": "true"} if fixed else {}
+    z = Z.box(parent, x, y, w, h, type_v2="text", **extra)
     C.text_runs(z, runs)
     zone_style(z, background, margin, padding)
     return z
@@ -935,32 +991,33 @@ def dashboard_el(parent, d: dict, models: dict, filters: dict, inst_of: dict):
     col = Z.box(root, 0, 0, W, H, param="vert", type_v2="layout-flow")
     y = 0
     # header
-    hdr_h = 62
-    hdr = Z.box(col, 0, y, W, hdr_h, param="horz", type_v2="layout-flow")
+    hdr_h = 84
+    hdr = Z.box(col, 0, y, W, hdr_h, fixed_size=str(hdr_h), is_fixed="true", param="horz", type_v2="layout-flow")
     title = d["title"] if not d.get("detail") else (
         "Category: <[Parameters].[p_category]>" if d["detail"] == "p_category" else "Seller: <[Parameters].[p_seller]>")
     text_zone(Z, hdr, 0, y, 1000, hdr_h, [
         ("RetailPulse  ·  ", {"fontcolor": C.ORANGE, "fontname": C.FONT_BOLD, "fontsize": "18"}),
         (title, {"fontcolor": C.INK, "fontname": C.FONT_BOLD, "fontsize": "18"}),
-        ("\n", {}),
+        ("Æ\n", {}),
         ((d["question"] + "   " if d["question"] else "") + C.PERIOD, {"fontcolor": C.GREY, "fontname": C.FONT,
                                                                        "fontsize": "10"})], background=C.WHITE,
-              margin="0", padding="10")
+              margin="0", padding="8")
     if d.get("detail"):
-        pz = Z.box(hdr, 1000, y, 400, hdr_h, mode="compact" if d["detail"] == "p_category" else "type_in",
+        pz = Z.box(hdr, 1000, y, 400, hdr_h, fixed_size="400", is_fixed="true",
+                   mode="compact" if d["detail"] == "p_category" else "type_in",
                    param=f"[Parameters].[{d['detail']}]", type_v2="paramctrl")
         zone_style(pz, C.WHITE, margin="0", padding="8")
     else:
-        text_zone(Z, hdr, 1000, y, 400, hdr_h, [("Pages: use the dashboard tabs above", {"fontcolor": C.GREY,
+        text_zone(Z, hdr, 1000, y, 400, hdr_h, fixed=400, runs=[("Pages: use the dashboard tabs above", {"fontcolor": C.GREY,
                                                  "fontname": C.FONT, "fontsize": "10"})], background=C.WHITE,
                   margin="0", padding="10")
     y += hdr_h
     # filters + KPI strip
-    kpi_h = 104
-    band = Z.box(col, 0, y, W, kpi_h, param="horz", type_v2="layout-flow")
-    fw = 230 if used else 0
+    kpi_h = 118
+    band = Z.box(col, 0, y, W, kpi_h, fixed_size=str(kpi_h), is_fixed="true", param="horz", type_v2="layout-flow")
+    fw = 270 if used else 0
     if used:
-        fcol = Z.box(band, 0, y, fw, kpi_h, param="vert", type_v2="layout-flow")
+        fcol = Z.box(band, 0, y, fw, kpi_h, fixed_size=str(fw), is_fixed="true", param="vert", type_v2="layout-flow")
         fh = kpi_h / len(used)
         for i, (pill, mode, title, sheets) in enumerate(used):
             ds, coldef, inst = inst_of[(sheets[0], pill)]
@@ -971,7 +1028,7 @@ def dashboard_el(parent, d: dict, models: dict, filters: dict, inst_of: dict):
     kx, kw = fw, (W - fw) / len(ks)
     for n, k in enumerate(ks):
         w = W - round(kx) if n == len(ks) - 1 else round(kw)
-        kz = Z.box(band, round(kx), y, w, kpi_h, name=k)
+        kz = Z.box(band, round(kx), y, w, kpi_h, name=k, show_title="false")
         zone_style(kz, C.WHITE, margin="4", padding="4")
         kx += kw
     y += kpi_h
@@ -980,19 +1037,36 @@ def dashboard_el(parent, d: dict, models: dict, filters: dict, inst_of: dict):
     avail = H - y - cap_h - foot_h
     for h, items in d["rows"]:
         h = round(h * avail / total)
-        row = Z.box(col, 0, y, W, h, param="horz", type_v2="layout-flow")
+        last_row = (h, items) == d["rows"][-1]
+        fixed_row = {} if last_row else {"fixed_size": str(h), "is_fixed": "true"}
+        row = Z.box(col, 0, y, W, h, param="horz", type_v2="layout-flow", **fixed_row)
         x = 0
         for n, (sheet, frac) in enumerate(items):
-            w = W - x if n == len(items) - 1 else round(W * frac)
-            z = Z.box(row, x, y, w, h, name=sheet)
-            zone_style(z, C.WHITE, margin="4", padding="6")
+            last = n == len(items) - 1
+            w = W - x if last else round(W * frac)
+            fixed = {} if last else {"fixed_size": str(w), "is_fixed": "true"}
+            spec = C.CHART_BY_NAME.get(sheet, {})
+            if spec.get("legend"):
+                lw = 160
+                z = Z.box(row, x, y, w - lw, h, name=sheet, fixed_size=str(w - lw), is_fixed="true")
+                zone_style(z, C.WHITE, margin="4", padding="6")
+                m = models[spec["ds"]]
+                pill = (spec.get("enc") or {}).get("color")
+                field = f"[{m.name}].[:Measure Names]" if pill == "MN" else f"[{m.name}]." + SheetCtx(m).resolve(pill)
+                lz = Z.box(row, x + w - lw, y, lw, h, leg_item_layout="vert", name=sheet, pane_specification_id="0",
+                           param=field, show_title="false", type_v2="color",
+                           **({"fixed_size": str(lw), "is_fixed": "true"} if not last else {}))
+                zone_style(lz, C.WHITE, margin="4", padding="6")
+            else:
+                z = Z.box(row, x, y, w, h, name=sheet, **fixed)
+                zone_style(z, C.WHITE, margin="4", padding="6")
             x += w
         y += h
     rest = H - y - foot_h
-    text_zone(Z, col, 0, y, W, rest, [(" ".join(d["captions"]), {"fontcolor": C.INK, "fontname": C.FONT,
+    text_zone(Z, col, 0, y, W, rest, fixed=rest, runs=[(" ".join(d["captions"]), {"fontcolor": C.INK, "fontname": C.FONT,
                                                                    "fontsize": "9"})], background=C.WHITE)
     y += rest
-    text_zone(Z, col, 0, y, W, foot_h, [(C.FOOTER, {"fontcolor": C.GREY, "fontname": C.FONT, "fontsize": "8"})])
+    text_zone(Z, col, 0, y, W, foot_h, fixed=foot_h, runs=[(C.FOOTER, {"fontcolor": C.GREY, "fontname": C.FONT, "fontsize": "8"})])
     sub(db, "simple-id", uuid=det_uuid("db:" + d["name"]))
     return db
 
@@ -1059,7 +1133,7 @@ def build_full(data_dir: Path, hyper_dbs: dict[str, str] | None) -> ET.ElementTr
     sub(prefs, "preference", name="ui.shelf.height", value="26")
     dss = sub(wb, "datasources")
     cats = sorted(pd.read_csv(data_dir / "analytical" / "dim_category.csv").category.dropna().unique())
-    parameters_el(dss, {"p_category": cats})
+    parameters_el(dss, {"p_category": cats}, C.PARAM_CAPTIONS)
     models = {}
     for cap, (reg, tables) in C.SOURCES.items():
         models[cap] = (SourceModel(reg, data_dir, "hyper", hyper_dbs[reg], tables, cap) if hyper_dbs
@@ -1074,8 +1148,24 @@ def build_full(data_dir: Path, hyper_dbs: dict[str, str] | None) -> ET.ElementTr
         m = models[ds]
         src = m.internal_of_caption.get(field) or m.calc_internal[field]
         extra[ds].append((f"[{src[1:-1]} (bin)]", f"{field} (bin)", src, size))
+    pal: dict[str, dict] = {ds: {} for ds in models}
+    for s in specs:
+        ctx = SheetCtx(models[s["ds"]], s.get("tc"))
+        for pill, mapping in (s.get("palette") or {}).items():
+            if pill == "MN":
+                key, inst = "[:Measure Names]", None
+                buckets = [(q(ctx.full(ctx.resolve(k))), c) for k, c in mapping.items()]
+            else:
+                name = ctx.resolve(pill)
+                a = ctx.inst[name]
+                key, inst = name, {"column": a["column"], "derivation": a["derivation"], "name": name, "pivot": "key",
+                                   "type": a["type"]}
+                buckets = [(str(k) if isinstance(k, int) else q(k), c) for k, c in mapping.items()]
+            entry = pal[s["ds"]].setdefault(key, [[], inst])
+            entry[0] += [b for b in buckets if b not in entry[0]]
     for m in models.values():
-        datasource_el(dss, m, measure_names=m.ds in mn_sources, extra_bins=extra[m.ds])
+        datasource_el(dss, m, measure_names=m.ds in mn_sources, extra_bins=extra[m.ds],
+                      palettes=[(k, v[0], v[1]) for k, v in pal[m.caption].items()])
     # shared dashboard filters: one filter group per control, on every sheet it applies to
     groups: dict[str, list] = {}
     inst_of: dict = {}
@@ -1110,7 +1200,10 @@ def build_full(data_dir: Path, hyper_dbs: dict[str, str] | None) -> ET.ElementTr
         w = ET.SubElement(wins, "window", attrs)
         vps = sub(w, "viewpoints")
         for z in sorted({z for _, items in d["rows"] for z, _ in items} | set(C.kpis(d))):
-            sub(sub(vps, "viewpoint", name=z), "zoom", type="entire-view")
+            spec = next((s for s in specs if s["name"] == z), {})
+            table = spec.get("mark") == "Text" and not spec.get("kpi") and len(spec.get("rows", [])) and \
+                spec.get("rows") != ["MN"]
+            sub(sub(vps, "viewpoint", name=z), "zoom", type="fit-width" if table else "entire-view")
         sub(w, "active", id="-1")
         sub(w, "simple-id", uuid=det_uuid("win:" + d["name"]))
     # actions go before <worksheets> in Tableau's element order

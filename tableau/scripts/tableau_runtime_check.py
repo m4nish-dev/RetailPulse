@@ -16,12 +16,14 @@ This is the runtime test that XML and Python checks cannot replace. Two passes:
               themselves are covered by scripts/validate_tableau_calcs.py.
 
 It writes copies of tableau/RetailPulse_Final.twbx to a scratch folder (the active window changed)
-and never modifies anything in tableau/. Each check runs in a fresh Tableau instance that is closed
-afterwards. Close Tableau before running it. Nothing is clicked or typed: clicks on filters and
+and never modifies anything in tableau/. Each check runs in its own Tableau instance, started and closed
+by this script; a Tableau window you have open is not touched (its activity may add log lines, so
+avoid working in Tableau while the check runs). Nothing is clicked or typed: clicks on filters and
 actions are NOT tested here (see reports/tableau_final_validation.md for what was tested).
 
 Usage:  ./venv/bin/python tableau/scripts/tableau_runtime_check.py [--only dashboards|sheets]
                                                                [--sheets NAME ...] [--wait 40]
+        (the scratch copies appear in Tableau's "recent workbooks" list; remove them there if unwanted)
 """
 from __future__ import annotations
 
@@ -144,19 +146,15 @@ def running() -> bool:
     return subprocess.run(["pgrep", "-f", "MacOS/Tableau Public"], capture_output=True).returncode == 0
 
 
-def close_tableau():
-    """Quit the instance this script opened (unmodified copies close without a prompt); force it if a dialog
-    blocks the quit. Only scratch copies are ever open, so nothing can be lost."""
-    subprocess.run(["osascript", "-e", 'tell application id "com.tableausoftware.tableaupublic" to quit'],
-                   capture_output=True)
-    for _ in range(20):
-        if not running():
-            return
-        time.sleep(1)
-    subprocess.run(["pkill", "-9", "-f", "MacOS/Tableau Public"])
+APPBIN = f"/Applications/{APP}.app/Contents/MacOS/Tableau Public"
+
+
+def close_instance(proc: subprocess.Popen):
+    """Close ONLY the Tableau instance this script started (it holds a scratch copy, so nothing can be lost);
+    any other Tableau window the user has open is left alone."""
+    proc.kill()
+    proc.wait(timeout=30)
     time.sleep(2)
-    subprocess.run(["pkill", "-9", "-f", "Tableau Public (Apple silicon).app/Contents/MacOS/hyper/hyperd"])
-    time.sleep(1)
 
 
 def variant(src_twb: bytes, window: str, change=None) -> bytes:
@@ -200,7 +198,10 @@ def open_copy(inner_name, inner, members, window, path, wait, change=None) -> tu
         for n, data in members.items():
             z.writestr(n, data)
     start = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    subprocess.run(["open", "-a", APP, str(path)], check=True)
+    # a dedicated instance per check (the executable started directly, not through `open`, which would hand the
+    # file to an instance the user may have open)
+    proc = subprocess.Popen([APPBIN, str(path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                            start_new_session=True)
     last, quiet = None, 0
     for _ in range(wait):                                 # wait until the logs stop growing (or `wait` s)
         time.sleep(1)
@@ -215,7 +216,7 @@ def open_copy(inner_name, inner, members, window, path, wait, change=None) -> tu
     queries = [e["v"]["query"] for e in log_events("hyperd*.log", start)
                if e.get("k") == "query-begin" and isinstance(e.get("v"), dict)
                and '"Extract".' in e["v"].get("query", "")]
-    close_tableau()
+    close_instance(proc)
     return tab, queries, start
 
 
@@ -342,8 +343,6 @@ def main():
     args = ap.parse_args()
     if not FINAL.exists():
         sys.exit("ABORT: build the workbook first: tableau/scripts/build_tableau_extracts.py")
-    if running():
-        sys.exit("ABORT: Tableau is already running; close it first so each check starts in a fresh instance")
     args.scratch.mkdir(parents=True, exist_ok=True)
     ext_dir = TAB / "extracts"
     with zipfile.ZipFile(FINAL) as z:
