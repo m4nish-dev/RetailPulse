@@ -1,6 +1,8 @@
 # RetailPulse — Tableau Completion Checklist
 
-**Status (2026-11-27): preparation complete on macOS; dashboard NOT built yet.**
+**Status (2026-11-28): workbook with 8 dashboards and 49 worksheets built from code and tested in Tableau
+Desktop Public Edition 2026.3.2 (`reports/tableau_final_validation.md`). Not published; no screenshots;
+clicks not tested.**
 Tick a 🔲 item only after checking it in **Tableau Desktop Public Edition** or on the
 published Tableau Public page. Write the evidence (value seen, screenshot name).
 Procedure: [`mac_implementation_guide.md`](mac_implementation_guide.md) ·
@@ -10,6 +12,21 @@ formulas: [`calculated_fields.md`](calculated_fields.md).
 Legend: ✅ done by Claude on macOS (evidence given) · 🔲 manual, to do in Tableau · ⚠ done with a documented limitation
 
 ---
+
+## 0. Build and Tableau test (2026-11-28)
+
+| Item | Status | Evidence |
+|---|---|---|
+| 41 chart sheets (the 39 specified; 7.0 split into 3 KPI sheets) + 8 KPI sheets generated | ✅ | `scripts/tableau_charts.py`, `scripts/build_tableau_workbook.py` |
+| 8 dashboards with header, filter controls, KPI strip, charts, captions, footer | ✅ | same |
+| All 8 dashboards open in Tableau with 0 error dialogs, 0 query errors, every sheet querying, 6 extracts connected | ✅ | `tableau_runtime_check.py`; `reports/tableau_runtime_check_output.txt` |
+| All 49 worksheets return the specification's figures from Tableau's own SQL | ✅ | same |
+| Dashboard filters (state, seller state) and the category parameter give the specification's filtered figures | ✅ (saved values, not clicks) | same, FILTERS pass 6/6 |
+| Click-a-state filter actions and drill-through / back menu actions fire on a click | 🔲 | not testable here (no UI scripting); check by hand once |
+| Navigation buttons | ⚠ | not built: Tableau 2026.3.2 rejected the element (D2E8DA72); workbook tabs are used |
+| Parameter actions (click sets the detail page) | ⚠ | not built: Tableau rejected the element (D2E8DA72); detail pages use a parameter control |
+| Published on Tableau Public | 🔲 | needs your sign-in: open the `.twbx`, **Server ▸ Tableau Public ▸ Save to Tableau Public** |
+| 8 screenshots | 🔲 | after publishing (or grant Screen Recording) |
 
 ## 1. Preparation done on macOS (no Tableau needed)
 

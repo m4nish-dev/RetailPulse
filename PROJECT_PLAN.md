@@ -273,11 +273,11 @@ late 3.66. See Insight 9.)*
 - [x] Specify 6 dashboards (Executive, Customers, Products, Sellers, Operations, Satisfaction) and 2 drill-throughs (Category Detail, Seller Detail)
 - [x] Beginner Mac build guide and completion checklist
 - [x] Generate the workbook from code (`tableau/RetailPulse.twb`: model, 100 calculated fields, parameters, KPI check sheets), validated against Tableau's official 2026.3 XSD
-- [ ] Open the workbook, build the chart sheets and 8 dashboards in Tableau Desktop Public Edition, test every value (manual)
+- [x] Build the chart sheets and 8 dashboards (generated from code) and test them in Tableau Desktop Public Edition 2026.3.2 (`reports/tableau_final_validation.md`)
 - [ ] Publish to Tableau Public and verify (manual)
 - [ ] Capture 8 screenshots into `reports/dashboard_screenshots/` (manual)
 
-**Deliverables:** 🚧 **PREPARED — build pending (manual).**
+**Deliverables:** ✅ **BUILT and tested in Tableau; publication and screenshots pending (owner).**
 
 | Deliverable | Status |
 |---|---|
@@ -287,7 +287,8 @@ late 3.66. See Insight 9.)*
 | `tableau/dashboard_specification.md` | ✅ 8 dashboards, 47 sheets |
 | `tableau/mac_implementation_guide.md`, `tableau/tableau_completion_checklist.md` | ✅ |
 | `tableau/RetailPulse.twb` (generated) | ✅ XSD-valid, 16/16 checks; not yet opened in Tableau |
-| Chart sheets, dashboards, Tableau Public link, screenshots | 🔲 Manual |
+| Chart sheets and 8 dashboards (`tableau/RetailPulse_Final.twbx`) | ✅ 8/8 dashboards and 49/49 sheets tested in Tableau |
+| Tableau Public link, screenshots | 🔲 Owner (sign-in) |
 
 <details><summary>HISTORICAL RECORD — first dashboard attempt (retired 2026-11-27)</summary>
 

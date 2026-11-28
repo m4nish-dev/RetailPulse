@@ -1,8 +1,9 @@
 # RetailPulse — Project Completion Checklist
 
-**Updated:** 2026-11-27 (Tableau-only structure) · **Overall status: NOT complete.**
+**Updated:** 2026-11-28 (dashboards built and tested in Tableau) · **Overall status: READY TO PUBLISH; not complete.**
 All repository work is done and validated. What remains is the manual work:
-- the Tableau dashboard: build, runtime test, publication on Tableau Public, and 8 screenshots
+- the Tableau dashboard: publication on Tableau Public (owner's sign-in) and 8 screenshots; the build and the
+  Tableau runtime test are done (`reports/tableau_final_validation.md`)
 - one optional Excel chart
 - the final GitHub push
 
@@ -65,7 +66,7 @@ Legend: ✅ done · 🔲 outstanding (manual) · ⚠ done with a documented limi
 | Audits kept as historical records | ✅ `reports/final_project_audit.md`, `reports/phase6_documentation_audit.md`, `reports/metric_audit_history.md` |
 | Known technical items documented | ⚠ `vw_monthly_revenue` boundary values and monthly AOV (not used by the dashboard) |
 
-## 4. Remaining dashboard work (Tableau Public, on this Mac): MANUAL PENDING
+## 4. Remaining dashboard work (Tableau Public, on this Mac): PUBLISHING PENDING
 
 Procedure: [`tableau/mac_implementation_guide.md`](../tableau/mac_implementation_guide.md) ·
 acceptance list: [`tableau/tableau_completion_checklist.md`](../tableau/tableau_completion_checklist.md).
@@ -75,8 +76,8 @@ acceptance list: [`tableau/tableau_completion_checklist.md`](../tableau/tableau_
 | Install Tableau Desktop Public Edition | ✅ 2026.3.2 (Apple silicon) |
 | Create a Tableau Public account | 🔲 |
 | Open `tableau/RetailPulse_Final.twbx` (extracts); confirm model and KPI check sheets | ✅ 2026-11-28, tested in Tableau (`reports/tableau_validation_report.md`) |
-| Build 39 chart/table sheets, 6 dashboards + 2 detail dashboards, filters and actions, mandatory captions | 🔲 |
-| Test every value in the Tableau checklist §4 and §6 (runtime test) | 🔲 |
+| Build 39 chart/table sheets, 6 dashboards + 2 detail dashboards, filters and actions, mandatory captions | ✅ 2026-11-28, generated from code (41 chart sheets, 8 dashboards, 9 filter controls, 6 actions) |
+| Test every value in the Tableau checklist §4 and §6 (runtime test) | ✅ 8/8 dashboards, 49/49 sheets, 6/6 filter/parameter tests in Tableau 2026.3.2 (`reports/tableau_final_validation.md`); clicks not tested |
 | Publish to Tableau Public after the safety checklist; verify in a private window | 🔲 |
 | Capture 8 real screenshots into `reports/dashboard_screenshots/` | 🔲 |
 

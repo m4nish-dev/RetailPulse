@@ -5,7 +5,14 @@ the build is mechanical. Every sheet names the exact Tableau fields from
 [`calculated_fields.md`](calculated_fields.md); every expected value is listed so each
 card can be tested.
 
-**Status: specification only. Nothing here has been built or run in Tableau yet.**
+**Status (2026-11-28): built.** All sheets and the 8 dashboards are generated from code
+(`scripts/tableau_charts.py` + `scripts/build_tableau_workbook.py`) into
+`tableau/RetailPulse_Final.twbx` and tested in Tableau Desktop Public Edition 2026.3.2
+(`tableau/scripts/tableau_runtime_check.py`; results in
+[`reports/tableau_final_validation.md`](../reports/tableau_final_validation.md)). Where the
+generated workbook differs from this specification (navigation buttons, parameter actions,
+two-table data sources, a few chart details), the difference and the reason are listed in that
+report. The specification below is kept as written; it remains the source of every expected value.
 Every expected value below was computed on macOS. Each one comes from SQL on the base tables,
 from the validated calculated-field emulation (`scripts/validate_tableau_calcs.py`, 264/264),
 or, where marked *(CSV)*, from the validated CSVs with pandas.
@@ -126,7 +133,7 @@ revenue share 34.90%.
 |---|---|---|
 | **3.1 Revenue by Category (Top 15)** | Rows `category`; Columns `Category Revenue`; Top 15 filter; sort desc; Tooltip `Category Revenue Share` (FIXED, correct under Top N), `Category Rank` | health_beauty 9.31%, rank 1; watches_gifts 8.88% |
 | **3.2 Pareto** | Columns `category` sorted by `Category Revenue` desc (headers hidden); Rows `Category Cumulative Share` (Line), Compute Using `category`; Analytics ▸ Reference Line ▸ Constant 0.8. Caption: *"18 of 74 categories reach 80% of revenue."* | 1st 9.31%; 10th (garden_tools) 62.37%; 17th 79.68%; 18th (pet_shop) 81.26% *(CSV)*; first position ≥ 80% = 18 |
-| **3.3 Monthly Trend, Top 5** | Columns `order_month` (String, discrete); Rows `Category Revenue` (Line); Color `category`; Filters `in_stable_window` = 1 and `category` Top 5 by `Category Revenue` | top 5: health_beauty, watches_gifts, bed_bath_table, sports_leisure, computers_accessories (same with or without the stable-window filter) *(CSV)* |
+| **3.3 Monthly Trend (Top 5)** (generated name; a comma would break action sheet lists) | Columns `order_month` (String, discrete); Rows `Category Revenue` (Line); Color `category`; Filters `in_stable_window` = 1 and `category` Top 5 by `Category Revenue` | top 5: health_beauty, watches_gifts, bed_bath_table, sports_leisure, computers_accessories (same with or without the stable-window filter) *(CSV)* |
 | **3.4 Growth vs Decline** | Rows `category`; Columns `Category Growth Q1 2017 to Jun-Aug 2018` (Bar); Filter on the growth field ▸ Special ▸ **Non-null values**; Color by sign (green ≥ 0, red < 0); sort desc; labels. Caption: *"2017 Q1 vs Jun–Aug 2018 (last three complete months); only categories with ≥ 50 items in both periods."* | 24 categories, 22 grew; housewares +532.22%; health_beauty +444.27%; decline: consoles_games −3.12%, unknown −45.79% *(CSV)* |
 | **3.5 Category Table** | Rows `category`; Measure Values: `Category Revenue`, `Category Items Sold`, `SUM(orders)` (label "Orders"), `Product Avg Item Price`, `Category Revenue Share`, `Category Rank`; sort by revenue; **no grand total** (order counts are not additive across categories) | health_beauty R$ 1,255,695.13 · 9,634 items · R$ 130.34 avg price · 9.31% · 1 |
 

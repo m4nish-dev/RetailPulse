@@ -50,7 +50,7 @@ EXPECTED = {
     "tableau_data": 24,            # scripts/check_tableau_data.py (files, MD5, keys, 8 relationships)
     "tableau_calcs": 264,          # scripts/validate_tableau_calcs.py (90 measures vs SQL, Tableau semantics)
     "tableau_workbook": 17,        # scripts/validate_tableau_workbook.py (generated .twb: XSD + registry)
-    "tableau_extracts": 20,        # tableau/scripts/validate_tableau_extracts.py --fresh (19 checks + the fresh build itself)
+    "tableau_extracts": 21,        # tableau/scripts/validate_tableau_extracts.py --fresh (20 checks + the fresh build itself)
     "insight_evidence": 78,        # scripts/validate_insight_evidence.py
     "repository": 18,              # scripts/check_repository.py (structure, links, references, security)
     "nb03_code_cells": 30,         # notebooks/03 code cells executed

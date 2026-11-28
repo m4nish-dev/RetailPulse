@@ -81,6 +81,6 @@ intermediate values its SQL returns. These were checked from Tableau's queries:
 
 - **Preserved:** the 8 worksheets, 6 data sources, 8 relationships, 100 calculated fields, 2 parameters and sorts
   (verified against the repaired workbook, apart from the documented fixes).
-- **No dashboards exist in the workbook yet.** The 8 dashboards and 39 chart sheets of
-  `tableau/dashboard_specification.md` have never been generated, so there was nothing to preserve or test.
+- **No dashboards existed in the workbook at the time of this report.** They were generated and tested
+  later the same day: see [`tableau_final_validation.md`](tableau_final_validation.md).
 - **Not performed:** Save to Tableau Public. It needs your Tableau Public sign-in.

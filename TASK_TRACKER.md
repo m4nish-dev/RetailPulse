@@ -2,8 +2,8 @@
 
 **Legend:** `[ ]` pending · `[~]` in progress · `[x]` done · `[!]` blocked
 
-**Last updated:** 2026-11-27
-**Current phase:** ✅ Phases 1–5 + 7 COMPLETE · ✅ corrective fix phases complete (see below) · 🚧 Phase 6 **Tableau Public** dashboard PREPARED and logic-validated, NOT BUILT (manual build on macOS)
+**Last updated:** 2026-11-28
+**Current phase:** ✅ Phases 1–5 + 7 COMPLETE · ✅ corrective fix phases complete (see below) · ✅ Phase 6 **Tableau Public** dashboard BUILT (8 dashboards, 49 sheets, generated from code) and tested in Tableau 2026.3.2; 🔲 publication pending (owner's sign-in)
 **Overall progress:** All analysis is complete and validated by one command
 (`scripts/run_all_validations.py`: 18 PASS, 0 FAIL, 6 deliberate SKIP). The
 dashboard data lives in `tableau/data/` (byte-identical re-export, MD5 manifests).
@@ -11,7 +11,7 @@ The 90 measures are Tableau calculated fields whose logic is validated against
 independent SQL (**264/264**). A Tableau workbook with the full model, all 100
 calculated fields and KPI check sheets is **generated from code** and validated against
 Tableau's official 2026.3 schema (16/16). The first version failed to open (error D2E8DA72) and was repaired; the repaired file has not been opened yet, and the
-chart sheets and dashboards are not built. **Nothing is published.** Outstanding manual work: MT-01 Excel chart (optional), the Tableau
+chart sheets and dashboards are now built and tested in Tableau (F18). **Nothing is published.**
 build, publication and screenshots (MT-03–MT-07), the final GitHub push. Live
 checklist: `documentation/project_completion_checklist.md`.
 Rows below record each phase as it was completed; superseded figures are marked. Rows about the retired first dashboard tool are a **HISTORICAL RECORD** (Phase 6 history block, fix phases F3–F12).
@@ -216,6 +216,7 @@ Rows below record each phase as it was completed; superseded figures are marked.
 | F15 | Workbook repair: Tableau error D2E8DA72 (2026-11-27) | [x] | Tableau rejected the 8 `<manual-sort>` elements because the manifest lacked `<SortTagCleanup />` (evidence: Superstore sample of 2026.3.2). `scripts/repair_tableau_workbook.py` adds the one line (sorts preserved, 18/18 checks) → `tableau/RetailPulse_repaired.twb`; generator fixed (output byte-identical to the repair); validator check added (16 checks). **Re-open in Tableau pending** |
 | F16 | Extracts for Tableau Public: error 3C242D89 (2026-11-28) | [x] | All 6 data sources were live CSV connections. `tableau/scripts/build_tableau_extracts.py` builds six `.hyper` extracts with the Tableau Hyper API (Hyper's CSV reader; every value identical to the CSVs) and `tableau/RetailPulse_Final.twbx` / `.twb` (direct `.hyper` connections, the World Indicators sample's pattern; otherwise identical to the repaired workbook); `validate_tableau_extracts.py` 19/19, added to the runner. **Re-open in Tableau pending** |
 | F17 | Runtime test in Tableau 2026.3.2 (2026-11-28) | [x] | `tableau/scripts/tableau_runtime_check.py` opens each KPI sheet in Tableau and re-executes Tableau's generated SQL on the extracts. Found and fixed: missing `[:Measure Names]` declaration; N07 cross-table INCLUDE LOD (error 1B885FB3), with N34/N35 aligned. Final run: 8/8 sheets open without error dialogs, 6/6 extracts connect, 18/18 KPI values equal to the reference; AOV 137.42, repeat 3.12%, on-time 91.89% confirmed. `reports/tableau_validation_report.md` |
+| F18 | Chart sheets and 8 dashboards built from code; tested in Tableau 2026.3.2 (2026-11-28) | [x] | `scripts/tableau_charts.py` + `scripts/build_tableau_workbook.py`: 41 chart sheets (39 specified; 7.0 split in 3), 8 dashboards, 9 filter controls, 6 actions. Found in Tableau and solved: error 1B885FB3 with several related tables on one root key (two-table data sources over the same extracts); navigation buttons and parameter actions rejected (D2E8DA72; tabs, menu actions and parameter controls instead); seller_state tooltip stopped two sheets querying. `tableau/scripts/tableau_runtime_check.py`: 8/8 dashboards, 49/49 sheets, 6/6 filter/parameter tests. Not done: publishing (sign-in), screenshots (no Screen Recording permission), click tests. `reports/tableau_final_validation.md` |
 | F10 | Licence (2026-11-27) | [x] | `LICENSE` added: MIT for the original code, © 2026 Manish Kumar (holder confirmed by the owner). README states the Olist dataset keeps CC BY-NC-SA 4.0 and is not covered by MIT |
 | F9 | Re-verification of T01/T03/T07–T10a (2026-11-27) | [x] | All six confirmed in the files; four leftovers fixed: `data_model.md` "not related" text now matches the 11 relationships; `sql/04` Q13 column `revenue_2018_q3` → `revenue_jun_aug_2018`; chart C2 axis label "2018 Q3" → "Jun–Aug 2018" (data unchanged); plan's architecture deliverable marked superseded |
 | F7 | Documentation audit | [x] | README rewritten, inconsistencies corrected, B3 chart clarified; `reports/phase6_documentation_audit.md` |

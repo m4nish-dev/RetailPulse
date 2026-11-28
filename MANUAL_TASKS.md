@@ -107,7 +107,7 @@ Change this task's status line to ✅ and tick task 2.11 in `TASK_TRACKER.md`.
 
 ---
 
-## Remaining manual tasks, in order (updated 2026-11-27)
+## Remaining manual tasks, in order (updated 2026-11-28)
 
 Everything that can be done without you is finished; these need your hands.
 
@@ -116,9 +116,9 @@ Everything that can be done without you is finished; these need your hands.
 | MT-01 | Monthly revenue line chart (above) | Mac, LibreOffice or Excel, ~10 min |
 | MT-02 | *Optional:* switch off `local_infile` and set a MySQL root password | Mac, admin: `documentation/mysql_setup.md` §2 and §4 |
 | MT-03 | Create a free Tableau Public account (Tableau Desktop Public Edition 2026.3.2 is already installed) | `tableau/mac_implementation_guide.md` §1 |
-| MT-04 | Open the generated `tableau/RetailPulse.twb`, check the data model and compare the 8 KPI check sheets with the checklist; save as `tableau/RetailPulse_build.twbx` (if it does not open: `RetailPulse_model_only.twb`, else the manual route §2–§6) | guide §1A |
-| MT-05 | Build the 39 chart/table sheets, 6 dashboards + 2 detail dashboards, filters and actions (all fields already exist); test every value | guide §7–§10, ticking `tableau/tableau_completion_checklist.md` |
-| MT-06 | Run the safety checklist, save `tableau/RetailPulse_build.twbx` locally (git-ignored), publish to Tableau Public and verify it in a private window | guide §11–§13 |
+| MT-04 | ~~Open the workbook and compare the KPI sheets~~ **done by Claude 2026-11-28** (Tableau runtime test) | `reports/tableau_final_validation.md` |
+| MT-05 | ~~Build the chart sheets and 8 dashboards~~ **done by Claude 2026-11-28**: generated and tested in Tableau. Left for you: click once through the actions (click a state; Products ▸ right-click a category ▸ *Category Detail*) | guide §1A |
+| MT-06 | Open `tableau/RetailPulse_Final.twbx`, run the safety checklist, then **Server ▸ Tableau Public ▸ Save to Tableau Public**, sign in, name it *RetailPulse — Brazilian E-Commerce Analytics*; verify it in a private window and send Claude the URL | guide §11–§13 |
 | MT-07 | Capture 8 real screenshots into `reports/dashboard_screenshots/`; then ask Claude to update the README with the Tableau Public link, run the final validation, and (when you say so) commit and push | guide §14–§15 |
 
 Before MT-03, confirm the data is in place (read-only, ~1 minute):

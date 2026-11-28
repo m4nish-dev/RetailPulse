@@ -74,6 +74,7 @@ tableau/extracts/
 # absolute data folder, so it is rebuilt locally rather than committed.
 tableau/*.twb
 tableau/*.twb.backup
+tableau/*.twbx.backup
 *.hyper
 *.tde
 *.twb.bak

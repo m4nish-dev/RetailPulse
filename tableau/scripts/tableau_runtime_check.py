@@ -1,19 +1,27 @@
 """
 RetailPulse - check the final workbook INSIDE Tableau Desktop Public Edition (macOS only).
 
-This is the runtime test that XML and Python checks cannot replace. For each KPI check sheet it:
-  1. writes a copy of tableau/RetailPulse_Final.twbx (to a scratch folder) in which that sheet is
-     the active window, so Tableau draws it as soon as the workbook opens;
-  2. opens the copy with Tableau (macOS `open -a`; nothing is clicked or typed);
-  3. reads Tableau's own logs: the workbook loaded, all six extracts connected, no error dialog
-     (including the Tableau Public extract check, error 3C242D89, which runs when a workbook opens);
-  4. takes the SQL Tableau generated for the sheet from Hyper's log, re-executes that exact SQL on
-     the extract, and compares every KPI value with the validated SQL reference values.
+This is the runtime test that XML and Python checks cannot replace. Two passes:
 
-It never modifies anything in tableau/. Each check runs in a fresh Tableau instance, which is asked to quit
-afterwards (an unmodified workbook closes without a prompt). Close Tableau before running it.
+  DASHBOARDS  each of the 8 dashboards is opened (as the active window) in a fresh Tableau instance.
+              Pass = the workbook loads with no error dialog (load errors, the Tableau Public extract
+              check 3C242D89, query errors 1B885FB3 ...), every extract connects, no query error is
+              logged, and every worksheet on the dashboard issues its queries.
+  SHEETS      each worksheet is opened on its own. The SQL Tableau generated for it is taken from
+              Hyper's log and re-executed on the extract; the results must contain the figures of
+              tableau/dashboard_specification.md (CHECKS below) and, for the KPI sheets, every KPI
+              value of the validated calculated-field reference (tableau_calc_validation_results.csv).
+              Table calculations (moving average, MoM %, rank, cumulative share) are computed by
+              Tableau after the query: for those sheets their inputs are checked, and the formulas
+              themselves are covered by scripts/validate_tableau_calcs.py.
 
-Usage:  ./venv/bin/python tableau/scripts/tableau_runtime_check.py [--scratch DIR] [--wait 90]
+It writes copies of tableau/RetailPulse_Final.twbx to a scratch folder (the active window changed)
+and never modifies anything in tableau/. Each check runs in a fresh Tableau instance that is closed
+afterwards. Close Tableau before running it. Nothing is clicked or typed: clicks on filters and
+actions are NOT tested here (see reports/tableau_final_validation.md for what was tested).
+
+Usage:  ./venv/bin/python tableau/scripts/tableau_runtime_check.py [--only dashboards|sheets]
+                                                               [--sheets NAME ...] [--wait 40]
 """
 from __future__ import annotations
 
@@ -33,13 +41,89 @@ import pandas as pd
 from tableauhyperapi import Connection, HyperProcess, Telemetry
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts"))
+from tableau_registry import DATA_SOURCES  # noqa: E402
+
 TAB = ROOT / "tableau"
 APP = "Tableau Public (Apple silicon)"
 LOGS = Path.home() / "Documents" / "My Tableau Repository" / "Logs"
 FINAL = TAB / "RetailPulse_Final.twbx"
-DB_OF_TABLE = {"vw_order_summary": "RP_Orders", "vw_customer_summary": "RP_Customers",
-               "vw_category_performance": "RP_Categories", "vw_seller_performance": "RP_Sellers",
-               "delivery_stage_orders": "RP_Orders", "vw_review_summary": "RP_Orders"}
+ET.register_namespace("user", "http://www.tableausoftware.com/xml/user")
+HYPER_OF_TABLE = {t: ds.replace(" ", "_") + ".hyper" for ds, tables in DATA_SOURCES.items() for t, *_ in tables}
+
+# Expected figures per sheet, from tableau/dashboard_specification.md (unfiltered).
+#   number          must appear in a result cell (|diff| <= tol, default 0.005)
+#   ("str", s)      string must appear in a result cell
+#   ("rows", n)     a result set with exactly n rows
+#   ("sum", n)      a numeric column of one result set sums to n
+CHECKS: dict[str, list] = {
+    "1.0 KPIs": [13494400.74, 99441, 96096, 98199, 86.90],
+    "1.1 Revenue and Orders by Month": [1003862.14, ("rows", 20)],
+    "1.2 Revenue MoM %": [1003862.14, ("rows", 20)],
+    "1.3 Revenue by State (Top 12)": [5163867.22, 1811623.42, 1573508.20],
+    "1.4 Top 10 Categories": [1255695.13, ("str", "health_beauty")],
+    "1.5 YoY Jan–Aug": [3080850.81, 7341037.41],
+    "2.0 KPIs": [96096, 93099, 2997, 13494400.74],
+    "2.1 One-time vs Repeat": [93099, 2997],
+    "2.2 RFM Segments": [21427, 14792, 33498, 23420, 951, 895],
+    "2.3 Customer Value Distribution": [("sum", 94983)],
+    "2.4 Cohort Retention Matrix": [("str", "2017-01"), ("str", "2018-07")],
+    "2.5 Purchase Frequency": [93099, 2745, 203, 30, 8, 6, 3, 1],
+    "3.0 KPIs": [13494400.74, 74, 112101, 1255695.13],
+    "3.1 Revenue by Category (Top 15)": [1255695.13, ("str", "watches_gifts")],
+    "3.2 Pareto": [1255695.13, ("rows", 74)],
+    "3.3 Monthly Trend (Top 5)": [("str", "health_beauty"), ("str", "watches_gifts"), ("str", "bed_bath_table"),
+                                 ("str", "sports_leisure"), ("str", "computers_accessories")],
+    "3.4 Growth vs Decline": [(5.3222, 0.0001), (4.4427, 0.0001), (-0.0312, 0.0001), (-0.4579, 0.0001)],
+    "3.5 Category Table": [1255695.13, 9634, ("rows", 74)],
+    "4.0 KPIs": [3053, 13494400.74],
+    "4.1 Top 20 Sellers": [229237.63],
+    "4.2 Seller Concentration Curve": [229237.63, ("rows", 3053)],
+    "4.3 Scorecard Scatter": [("rows", 428)],
+    "4.4 Intervention Table": [187923.89, ("rows", 21)],
+    "5.0 KPIs": [96478, 7827, 2241126.29, 96476],
+    "5.1 Order Status": [96478, 1107, 625, 609, 314, 301, 5, 2],
+    "5.2 Promised vs Actual": [39.51, 12.65, 15.19, 7.73],
+    "5.3 Delivery by State": [8.76, ("rows", 27)],
+    "5.4 Delivery Time Distribution": [("sum", 96170)],
+    "5.5 Delivery Stage Breakdown": [0.40, 2.85, 9.36],
+    "5.6 Stage Shares": [95088],
+    "6.0 KPIs": [99224, 4795, (4.0864, 0.00005)],
+    "6.1 Score Distribution": [11424, 3151, 8179, 19142, 57328],
+    "6.2 Delay vs Score": [(4.201, 0.0005), (4.202, 0.0005), (3.184, 0.0005), (3.860, 0.0005), (1.733, 0.0005),
+                           (3.660, 0.0005), (1.726, 0.0005), (2.895, 0.0005)],
+    "6.3 Satisfaction Trend": [("rows", 20)],
+    "6.4 Category Satisfaction": [(3.6175, 0.00005), (4.4626, 0.00005), ("rows", 35)],
+    "7.0 KPIs": [1255695.13, (4.4427, 0.0001)],
+    "7.0 Product KPIs": [9634],
+    "7.0 Review KPIs": [(4.1822, 0.00005), (0.1019, 0.00005), (0.0537, 0.00005)],
+    "7.1 Rank and Cumulative Share": [1255695.13],
+    "7.2 Monthly Trend": [("rows", 20)],
+    "7.3 Top 10 Products": [("rows", 10)],
+    "7.4 Top 10 Sellers in Category": [("rows", 10)],
+    "7.5 Seller Delivery in Category": [1255695.13, (2.69, 0.005)],
+    "7.6 Satisfaction": [(4.1822, 0.00005), (4.3728, 0.00005), 8826],
+    "8.0 KPIs": [229237.63, 1131, (15.06, 0.005), (4.136, 0.0005)],
+    "8.1 Cumulative Share": [229237.63],
+    "8.2 Profile": [("str", "SP")],
+    "8.3 Categories Sold": [("rows", 10), ("sum", 229237.63)],
+    "8.4 Category Breakdown": [("rows", 10)],
+}
+
+
+# FILTERS pass: a filter or parameter value is saved into a copy of the workbook (what a viewer's click
+# would set), the window is opened, and the figures Tableau then computes must equal the specification's
+# filtered test values. (window, sheet whose queries are checked, change, expected figures)
+#   ("group", field, value)  every sheet of the dashboard's shared filter on `field` keeps only `value`
+#   ("param", name, value)   parameter value
+FILTER_TESTS = [
+    ("1 Executive", "1.0 KPIs", ("group", "customer_state", "SP"), [5163867.22]),
+    ("2 Customers", "2.0 KPIs", ("group", "customer_state", "SP"), [5162518.20]),
+    ("4 Sellers", "4.0 KPIs", ("group", "seller_state", "SP"), [8687740.35, 1822]),
+    ("5 Operations", "5.0 KPIs", ("group", "customer_state", "SP"), [(8.76, 0.005)]),
+    ("6 Satisfaction", "6.0 KPIs", ("group", "customer_state", "SP"), [41690]),
+    ("7 Category Detail", "7.0 KPIs", ("param", "p_category", "watches_gifts"), ["csv:watches_gifts"]),
+]
 
 
 def log_events(pattern: str, since: str) -> list[dict]:
@@ -53,113 +137,290 @@ def log_events(pattern: str, since: str) -> list[dict]:
                 continue
             if isinstance(d, dict) and d.get("ts", "") >= since:
                 out.append(d)
-    return out
+    return sorted(out, key=lambda d: d.get("ts", ""))
 
 
-def quit_tableau():
-    """Ask Tableau to quit (unmodified workbooks close without a prompt) and wait for it to exit."""
+def running() -> bool:
+    return subprocess.run(["pgrep", "-f", "MacOS/Tableau Public"], capture_output=True).returncode == 0
+
+
+def close_tableau():
+    """Quit the instance this script opened (unmodified copies close without a prompt); force it if a dialog
+    blocks the quit. Only scratch copies are ever open, so nothing can be lost."""
     subprocess.run(["osascript", "-e", 'tell application id "com.tableausoftware.tableaupublic" to quit'],
                    capture_output=True)
-    for _ in range(60):
-        if subprocess.run(["pgrep", "-f", "Tableau Public"], capture_output=True).returncode:
-            return True
+    for _ in range(20):
+        if not running():
+            return
         time.sleep(1)
-    return False
+    subprocess.run(["pkill", "-9", "-f", "MacOS/Tableau Public"])
+    time.sleep(2)
+    subprocess.run(["pkill", "-9", "-f", "Tableau Public (Apple silicon).app/Contents/MacOS/hyper/hyperd"])
+    time.sleep(1)
 
 
-def variant(src_twb: bytes, sheet: str) -> bytes:
+def variant(src_twb: bytes, window: str, change=None) -> bytes:
+    """The workbook with `window` (sheet or dashboard) as the active, visible window, optionally with a
+    saved filter or parameter value (FILTER_TESTS)."""
     root = ET.fromstring(src_twb)
+    if change and change[0] == "group":
+        _, field, value = change
+        dash = next(d for d in root.find("dashboards") if d.get("name") == window)
+        groups = set()
+        for z in dash.iter("zone"):
+            if z.get("type-v2") == "filter" and f":{field}:" in z.get("param", ""):
+                ws = next(w for w in root.find("worksheets") if w.get("name") == z.get("name"))
+                groups |= {f.get("filter-group") for f in ws.iter("filter") if f.get("column") == z.get("param")}
+        for f in root.iter("filter"):
+            if f.get("filter-group") in groups:
+                g = f.find("groupfilter")
+                level = g.get("level")
+                f.remove(g)
+                ET.SubElement(f, "groupfilter", {"function": "member", "level": level, "member": f'"{value}"',
+                                                 "{http://www.tableausoftware.com/xml/user}ui-domain": "database",
+                                                 "{http://www.tableausoftware.com/xml/user}ui-enumeration": "inclusive",
+                                                 "{http://www.tableausoftware.com/xml/user}ui-marker": "enumerate"})
+    if change and change[0] == "param":
+        _, name, value = change
+        for c in root.iter("column"):
+            if c.get("name") == f"[{name}]" and c.get("param-domain-type"):
+                c.set("value", f'"{value}"')
+                c.find("calculation").set("formula", f'"{value}"')
     for w in root.find("windows"):
         w.attrib.pop("maximized", None)
-        if w.get("name") == sheet:
+        if w.get("name") == window:
             w.set("maximized", "true")
+            w.attrib.pop("hidden", None)
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
-def expected_values() -> dict[str, float]:
+def open_copy(inner_name, inner, members, window, path, wait, change=None) -> tuple[list[dict], list[str], str]:
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr(inner_name, variant(inner, window, change))
+        for n, data in members.items():
+            z.writestr(n, data)
+    start = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    subprocess.run(["open", "-a", APP, str(path)], check=True)
+    last, quiet = None, 0
+    for _ in range(wait):                                 # wait until the logs stop growing (or `wait` s)
+        time.sleep(1)
+        n = sum(p.stat().st_size for p in LOGS.glob("*.txt")) + sum(p.stat().st_size for p in LOGS.glob("hyperd*.log"))
+        quiet = quiet + 1 if n == last else 0
+        last = n
+        if quiet >= 6:
+            break
+    time.sleep(2)
+    tab = [e for e in log_events("log*.txt", start)
+           if not isinstance(e.get("ctx"), dict) or e["ctx"].get("wb") in (None, path.stem)]
+    queries = [e["v"]["query"] for e in log_events("hyperd*.log", start)
+               if e.get("k") == "query-begin" and isinstance(e.get("v"), dict)
+               and '"Extract".' in e["v"].get("query", "")]
+    close_tableau()
+    return tab, queries, start
+
+
+def summarize(tab: list[dict]) -> dict:
+    dialogs = []
+    for e in tab:
+        v = str(e.get("v"))
+        if "show-detailed-error-dialog" in v:
+            m = re.search(r"errorcode=([0-9a-f]+)", v)
+            dialogs.append(m.group(1) if m else v[:120])
+    errors = [str(e["v"].get("error-messages", ""))[:220] for e in tab if e.get("k") == "qp-process-query-error"]
+    sheets = {j.get("owner-worksheet") for e in tab if e.get("k") == "qp-batch-summary"
+              for j in e["v"].get("jobs", []) if j.get("owner-worksheet")}
+    hyper = {e["v"]["attributes"].get("dbname", "").split("/")[-1] for e in tab
+             if e.get("k") == "hyper-protocol-connection-success"}
+    missing = sum("unexpectedly missing field" in str(e.get("v")) for e in tab)
+    return {"dialogs": dialogs, "errors": errors, "sheets": sheets, "hyper": hyper, "missing": missing}
+
+
+def run_queries(hp, queries: list[str], ext_dir: Path) -> list[pd.DataFrame]:
+    frames = []
+    for q in dict.fromkeys(queries):
+        tables = re.findall(r'"Extract"\."([^"]+)"', q)
+        dbs = {HYPER_OF_TABLE.get(t) for t in tables} - {None}
+        if len(dbs) != 1:
+            continue
+        try:
+            with Connection(hp.endpoint, str(ext_dir / dbs.pop())) as c:
+                with c.execute_query(q) as res:
+                    names = [col.name.unescaped for col in res.schema.columns]
+                    frames.append(pd.DataFrame([list(r) for r in res], columns=names))
+        except Exception:                                  # e.g. queries on Tableau's session temp tables
+            continue
+    return frames
+
+
+def evaluate(sheet: str, frames: list[pd.DataFrame], kpi_expected: dict) -> list[tuple[str, bool]]:
+    nums, strs = [], set()
+    for f in frames:
+        for col in f.columns:
+            for v in f[col]:
+                if isinstance(v, bool) or v is None:
+                    continue
+                if isinstance(v, (int, float)):
+                    nums.append(float(v))
+                elif hasattr(v, "__float__") and not isinstance(v, str):
+                    try:
+                        nums.append(float(v))
+                    except (TypeError, ValueError):
+                        strs.add(str(v))
+                else:
+                    strs.add(str(v))
+    # averages and ratios: Tableau's SQL returns the parts (e.g. SUM and COUNT of an AVG, or the numerator and
+    # denominator of a ratio KPI) and Tableau divides after the query, so ratios of returned columns count too
+    derived = []
+    for f in frames:
+        num = f.apply(pd.to_numeric, errors="coerce")
+        cols = [c for c in num.columns if num[c].notna().any()]
+        for a_ in cols:
+            for b_ in cols:
+                if a_ != b_:
+                    with pd.option_context("mode.use_inf_as_na", True) if False else _nullctx():
+                        r = (num[a_] / num[b_]).replace([float("inf"), float("-inf")], float("nan")).dropna()
+                    derived += [float(x) for x in r] + [float(x) - 1 for x in r]   # ratio; growth = ratio - 1
+        for c in cols:                                         # percent-unit columns divided by 100 in Tableau
+            derived += [float(x) / 100 for x in num[c].dropna()]
+    out = []
+    checks = list(CHECKS.get(sheet, [])) + [(v, max(0.005, 1e-9 * abs(v))) for v in kpi_expected.get(sheet, [])]
+    for c in checks:
+        if isinstance(c, tuple) and c[0] == "str":
+            out.append((f"'{c[1]}' present", c[1] in strs))
+        elif isinstance(c, tuple) and c[0] == "rows":
+            out.append((f"{c[1]} rows", any(len(f) == c[1] for f in frames)))
+        elif isinstance(c, tuple) and c[0] == "sum":
+            ok = any(abs(pd.to_numeric(f[col], errors="coerce").sum() - c[1]) <= 0.01
+                     for f in frames for col in f.columns if pd.api.types.is_numeric_dtype(f[col]) or
+                     pd.to_numeric(f[col], errors="coerce").notna().all())
+            out.append((f"a column sums to {c[1]:,}", ok))
+        else:
+            v, tol = c if isinstance(c, tuple) else (c, 0.005)
+            if any(abs(n - v) <= tol for n in nums):
+                out.append((f"{v:,}", True))
+            else:
+                out.append((f"{v:,} (Tableau ratio of returned parts)", any(abs(n - v) <= tol for n in derived)))
+    return out
+
+
+class _nullctx:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def kpi_reference(root: ET.Element) -> dict[str, list[float]]:
+    """KPI sheets: the validated unfiltered value of every calculated field they show (ratios computed by
+    Tableau after the query are excluded: the query returns their inputs, which are checked)."""
     res = pd.read_csv(TAB / "tableau_calc_validation_results.csv")
     res = res[(res.kind == "reference check") & res.context.str.startswith("unfiltered")]
-    return res.groupby("id").expected.first().to_dict()
+    ref = res.groupby("id").expected.first().to_dict()
+    out = {}
+    for ws in root.find("worksheets"):
+        members = [g.get("member") for g in ws.iter("groupfilter") if g.get("level") == "[:Measure Names]"]
+        ids = [m.group(1) for x in members if (m := re.search(r"RP_([MN]\d\d)", x or ""))]
+        name = ws.get("name", "")
+        if name[:2] not in ("7.", "8.") and name.split(" ")[1:2] in (["KPIs"], ["Stage"], ["YoY"]):
+            out[ws.get("name")] = [ref[i] for i in ids if i in ref and i not in RATIOS]
+    return out
+
+
+# ratio KPIs that Tableau finishes after the query (their inputs are checked instead)
+RATIOS = {"M06", "M19", "M15", "M39", "M40", "M44", "M47", "M48", "N22", "N23", "N24", "N21", "N18", "N19", "N20",
+          "M34", "M27", "M33", "M32", "M35", "N11", "N15", "N16", "N26", "N28", "N31", "N33", "N30", "N39", "M20",
+          "M46", "N32", "N29"}
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--scratch", type=Path, default=Path(tempfile.gettempdir()) / "retailpulse_tableau_check")
-    ap.add_argument("--wait", type=int, default=90, help="seconds to wait for each sheet's query")
-    ap.add_argument("--sheets", nargs="*", help="only these sheet names (default: all KPI sheets)")
+    ap.add_argument("--wait", type=int, default=40, help="maximum seconds per window")
+    ap.add_argument("--only", choices=["dashboards", "sheets", "filters"])
+    ap.add_argument("--sheets", nargs="*", help="only these worksheet / dashboard names")
     args = ap.parse_args()
     if not FINAL.exists():
         sys.exit("ABORT: build the workbook first: tableau/scripts/build_tableau_extracts.py")
+    if running():
+        sys.exit("ABORT: Tableau is already running; close it first so each check starts in a fresh instance")
     args.scratch.mkdir(parents=True, exist_ok=True)
+    ext_dir = TAB / "extracts"
     with zipfile.ZipFile(FINAL) as z:
         inner_name = next(n for n in z.namelist() if n.endswith(".twb"))
         inner = z.read(inner_name)
         members = {n: z.read(n) for n in z.namelist() if n != inner_name}
-    sheets = [w.get("name") for w in ET.fromstring(inner).find("worksheets")]
-    expected = expected_values()
-    results, opened = [], []
-    if subprocess.run(["pgrep", "-f", "Tableau Public"], capture_output=True).returncode == 0:
-        sys.exit("ABORT: Tableau is already running; close it first so each check starts in a fresh instance")
-    for i, sheet in enumerate(sheets, 1):
-        if args.sheets and sheet not in args.sheets:
-            continue
-        path = args.scratch / f"RP_check_{i}.twbx"
-        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
-            z.writestr(inner_name, variant(inner, sheet))
-            for n, data in members.items():
-                z.writestr(n, data)
-        start = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        subprocess.run(["open", "-a", APP, str(path)], check=True)
-        query = None
-        for _ in range(args.wait):
-            time.sleep(1)
-            qs = [e["v"]["query"] for e in log_events("hyperd*.log", start)
-                  if e.get("k") == "query-begin" and re.search(r"RP_[MN]\d\d", (e.get("v") or {}).get("query", ""))]
-            if qs:
-                query = qs[-1]
-                time.sleep(3)
-                break
-        time.sleep(5)                                       # let any error dialog reach the log
-        tab = [e for e in log_events("log*.txt", start)
-               if not isinstance(e.get("ctx"), dict) or e["ctx"].get("wb") in (None, path.stem)]
-        dialogs = [str(e.get("v"))[:200] for e in tab if "show-detailed-error-dialog" in str(e.get("v"))]
-        hyper_ok = sorted({e["v"]["attributes"].get("dbname", "").split("/")[-1]
-                           for e in tab if e.get("k") == "hyper-protocol-connection-success"})
-        mn_warn = sum("unexpectedly missing field" in str(e.get("v")) for e in tab)
-        opened.append((sheet, dialogs, hyper_ok, mn_warn))
-        results.append((sheet, query))
-        quit_tableau()
-        print(f"[{sheet}] opened; error dialogs: {len(dialogs)}; extracts connected: {len(hyper_ok)}; "
-              f"missing-field warnings: {mn_warn}; KPI query captured: {'yes' if query else 'NO'}")
-
-    print("\nRe-executing Tableau's generated SQL on the extracts:")
+    root = ET.fromstring(inner)
+    sheets = [w.get("name") for w in root.find("worksheets")]
+    dashboards = {d.get("name"): sorted({z.get("name") for z in d.iter("zone")
+                                         if z.get("name") and not z.get("type-v2")})
+                  for d in (root.find("dashboards") if root.find("dashboards") is not None else [])}
+    report = {"dashboards": {}, "sheets": {}}
     fails = 0
-    with HyperProcess(telemetry=Telemetry.DO_NOT_SEND_USAGE_DATA_TO_TABLEAU, parameters={"log_config": ""}) as hp:
-        for sheet, q in results:
-            if not q:
-                print(f"  FAIL  {sheet}: no query captured")
-                fails += 1
+    if args.only in (None, "dashboards"):
+        print(f"DASHBOARDS ({len(dashboards)})")
+        for i, (name, zone_sheets) in enumerate(dashboards.items(), 1):
+            if args.sheets and name not in args.sheets:
                 continue
-            table = next(t for t in DB_OF_TABLE if f'"Extract"."{t}"' in q)
-            with Connection(hp.endpoint, str(TAB / "extracts" / f"{DB_OF_TABLE[table]}.hyper")) as c:
-                res = c.execute_query(q)
-                names = [col.name.unescaped for col in res.schema.columns]
-                row = next(iter(res))
-                res.close()
-            for n, v in zip(names, row):
-                if n.startswith("TEMP("):                      # Tableau's intermediate columns (e.g. sum and count of an AVG)
+            tab, _, _ = open_copy(inner_name, inner, members, name, args.scratch / f"RP_dash_{i}.twbx", args.wait)
+            s = summarize(tab)
+            missing_sheets = [z for z in zone_sheets if z not in s["sheets"]]
+            ok = not s["dialogs"] and not s["errors"] and not s["missing"] and not missing_sheets
+            fails += not ok
+            report["dashboards"][name] = {**s, "sheets": sorted(s["sheets"]), "hyper": sorted(s["hyper"]),
+                                          "not_queried": missing_sheets, "ok": ok}
+            print(f"  {'PASS' if ok else 'FAIL'}  {name:<20} dialogs {len(s['dialogs'])} {s['dialogs']} · query errors "
+                  f"{len(s['errors'])} · sheets queried {len(zone_sheets) - len(missing_sheets)}/{len(zone_sheets)}"
+                  + (f" (not queried: {missing_sheets})" if missing_sheets else "") + f" · extracts {len(s['hyper'])}")
+            for e in s["errors"][:3]:
+                print("        ", e)
+    if args.only in (None, "sheets"):
+        kpi_expected = kpi_reference(root)
+        print(f"\nWORKSHEETS ({len(sheets)})")
+        with HyperProcess(telemetry=Telemetry.DO_NOT_SEND_USAGE_DATA_TO_TABLEAU, parameters={"log_config": ""}) as hp:
+            for i, name in enumerate(sheets, 1):
+                if args.sheets and name not in args.sheets:
                     continue
-                m = re.search(r"RP_([MN]\d\d)", n)
-                if not m or m.group(1) not in expected or v is None:
-                    continue
-                exp = expected[m.group(1)]
-                ok = abs(float(v) - exp) <= max(0.005, 1e-9 * abs(exp))
+                tab, queries, _ = open_copy(inner_name, inner, members, name, args.scratch / f"RP_sheet_{i}.twbx",
+                                            args.wait)
+                s = summarize(tab)
+                frames = run_queries(hp, queries, ext_dir)
+                res = evaluate(name, frames, kpi_expected)
+                ok = not s["dialogs"] and not s["errors"] and not s["missing"] and bool(queries) and all(r for _, r in res)
                 fails += not ok
-                print(f"  {'PASS' if ok else 'FAIL'}  {sheet:<18} {m.group(1)} = {float(v):,.4f}   expected {exp:,.4f}")
-    bad_open = [s for s, d, h, w in opened if d or len(h) < 6 or w]
-    print(f"\nsheets opened without error dialog or missing-field warning: {len(opened) - len(bad_open)}/{len(opened)}")
-    print(f"KPI values matching the validated reference: {'all' if not fails else f'{fails} mismatches'}")
-    sys.exit(1 if fails or bad_open else 0)
+                report["sheets"][name] = {"dialogs": s["dialogs"], "errors": s["errors"], "queries": len(queries),
+                                          "result_rows": [len(f) for f in frames],
+                                          "checks": [(c, bool(r)) for c, r in res], "ok": ok}
+                bad = [c for c, r in res if not r]
+                print(f"  {'PASS' if ok else 'FAIL'}  {name:<34} queries {len(queries):>2} · checks "
+                      f"{sum(r for _, r in res)}/{len(res)}" + (f" · failed: {bad}" if bad else "")
+                      + (f" · dialogs {s['dialogs']}" if s["dialogs"] else "") + (f" · errors {s['errors'][:1]}" if s["errors"] else ""))
+    if args.only in (None, "filters"):
+        print(f"\nFILTERS AND PARAMETERS ({len(FILTER_TESTS)}: values saved into a copy, not clicked)")
+        cat = pd.read_csv(TAB / "data" / "vw_category_performance.csv")
+        report["filters"] = {}
+        with HyperProcess(telemetry=Telemetry.DO_NOT_SEND_USAGE_DATA_TO_TABLEAU, parameters={"log_config": ""}) as hp:
+            for i, (window, sheet, change, expected) in enumerate(FILTER_TESTS, 1):
+                if args.sheets and window not in args.sheets:
+                    continue
+                tab, queries, _ = open_copy(inner_name, inner, members, window, args.scratch / f"RP_filter_{i}.twbx",
+                                            args.wait, change)
+                s = summarize(tab)
+                frames = run_queries(hp, queries, ext_dir)
+                exp = [round(cat.loc[cat.category == e[4:], "revenue"].sum(), 2) if isinstance(e, str) else e
+                       for e in expected]
+                CHECKS[f"__filter{i}"] = exp
+                res = evaluate(f"__filter{i}", frames, {})
+                ok = not s["dialogs"] and not s["errors"] and all(r for _, r in res)
+                fails += not ok
+                label = f"{window} · {change[1]} = {change[2]}"
+                report["filters"][label] = {"checks": [(c, bool(r)) for c, r in res], "ok": ok, "dialogs": s["dialogs"]}
+                print(f"  {'PASS' if ok else 'FAIL'}  {label:<42} {sheet}: " + ", ".join(f"{c} {'ok' if r else 'MISSING'}"
+                                                                                  for c, r in res))
+    out = args.scratch / "tableau_runtime_check.json"
+    out.write_text(json.dumps(report, indent=1, default=str))
+    print(f"\nresult: {'ALL PASS' if not fails else f'{fails} FAILED'}   (details: {out})")
+    sys.exit(1 if fails else 0)
 
 
 if __name__ == "__main__":

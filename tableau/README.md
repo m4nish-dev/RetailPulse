@@ -1,28 +1,30 @@
 # RetailPulse — Tableau Public Dashboard
 
-**Status (2026-11-28): extract-based workbook generated and tested in Tableau; chart sheets and dashboards NOT built; not published yet.**
+**Status (2026-11-28): workbook with 8 dashboards and 49 worksheets generated and tested in Tableau; not published yet.**
 
-**Open `tableau/RetailPulse_Final.twbx`.** It is generated from the validated registry and contains:
-- the six data sources as Tableau **extracts**: six `.hyper` files inside the package, which
-  Tableau Public requires
-- their relationships, field names and types
-- 2 parameters, all 100 calculated fields and 8 KPI check sheets
+**Open `tableau/RetailPulse_Final.twbx`.** It is generated from code and contains:
+- the data as six Tableau **extracts** (`.hyper` files inside the package), which Tableau Public requires,
+  read by 10 Tableau data sources (two-table views of the 6 registry data sources)
+- 2 parameters, all 100 calculated fields, 49 worksheets (41 charts + 8 KPI strips) and **8 dashboards**
+  (Executive, Customers, Products, Sellers, Operations, Satisfaction, Category Detail, Seller Detail)
+  with filter controls, captions and drill-through actions
 
 History of the generated workbook:
 | Version | Result in Tableau Desktop Public Edition 2026.3.2 | Fix |
 |---|---|---|
 | `RetailPulse.twb` | did not open: error D2E8DA72 (`manual-sort` not declared) | `<SortTagCleanup />` declared (`reports/tableau_workbook_repair_report.md`) |
 | `RetailPulse_repaired.twb` | **opened** (confirmed in Tableau's log), but could not be saved to Tableau Public: error 3C242D89 ("must use extracts", data source RP Cohorts) | all six data sources rebuilt on `.hyper` extracts (`reports/tableau_extract_report.md`) |
-| `RetailPulse_Final.twbx` | **opens; all 6 extracts connect; all 8 KPI sheets render** with values equal to the validated figures (tested in Tableau 2026.3.2, `tableau/scripts/tableau_runtime_check.py`) | two issues found in that test and fixed: `[:Measure Names]` declaration; N07 LOD grouping (`reports/tableau_validation_report.md`) |
+| `RetailPulse_Final.twbx` (KPI sheets only) | **opens; all 6 extracts connect; all 8 KPI sheets render** with values equal to the validated figures | `[:Measure Names]` declaration; N07 LOD grouping (`reports/tableau_validation_report.md`); kept as `RetailPulse_Final_kpi_only.twbx.backup` |
+| `RetailPulse_Final.twbx` (current: 8 dashboards, 49 sheets) | **8/8 dashboards open with 0 error dialogs and 0 query errors; 49/49 sheets return the specified figures; filter logic 6/6** (`tableau/scripts/tableau_runtime_check.py`) | two-table data sources (error 1B885FB3); no buttons / parameter actions (D2E8DA72); see `reports/tableau_final_validation.md` |
 
 Validated on macOS:
 - every extract was opened and queried with Tableau's Hyper API, and every value equals the CSVs
 - the workbook passes Tableau's official 2026.3 schema
-- it is identical to the repaired workbook apart from its connections and the documented fixes (19 checks)
-- **in Tableau itself:** every KPI sheet opened without an error dialog, and the SQL Tableau generated returned the validated figures (`reports/tableau_validation_report.md`)
+- nothing of the earlier workbook is lost; every dashboard zone, filter control and action resolves (20 checks)
+- **in Tableau itself:** every dashboard and every worksheet opened without an error dialog, and the SQL
+  Tableau generated returned the specified figures (`reports/tableau_final_validation.md`)
 
-The chart sheets, the 8 dashboards, their filters and actions are built by hand in Tableau
-Desktop Public Edition from the specification.
+Not tested: clicks (no UI scripting on this Mac). Not done: publishing (needs the owner's sign-in), screenshots.
 
 ## Why Tableau Public
 
@@ -44,7 +46,7 @@ project's only BI tool.
 | `RetailPulse_Final.twbx` | **Open this one.** Packaged workbook with the six `.hyper` extracts inside (package-relative paths); built by `tableau/scripts/build_tableau_extracts.py`. Git-ignored (contains data) |
 | `RetailPulse_Final.twb` | The same workbook reading the extracts from `tableau/extracts/` by absolute path (this Mac). Git-ignored |
 | `extracts/` | `RP_Orders.hyper`, `RP_Customers.hyper`, `RP_Cohorts.hyper`, `RP_Categories.hyper`, `RP_Sellers.hyper`, `RP_Stage_Summary.hyper`: every table of each data source in schema "Extract", loaded with Hyper's CSV reader. Git-ignored |
-| `scripts/` | `build_tableau_extracts.py` (extracts + Final workbook), `validate_tableau_extracts.py` (19 checks) and `tableau_runtime_check.py` (opens each KPI sheet in Tableau Desktop itself and checks Tableau's own log and generated SQL; macOS, run with Tableau closed) |
+| `scripts/` | `build_tableau_extracts.py` (extracts + Final workbook), `validate_tableau_extracts.py` (20 checks) and `tableau_runtime_check.py` (opens every dashboard and worksheet in Tableau Desktop itself and checks Tableau's own log and generated SQL, plus saved filter/parameter values; macOS, run with Tableau closed, ≈35 min) |
 | `RetailPulse_repaired.twb` | Previous version (live CSV connections; opens, but cannot be saved to Tableau Public). Kept, with `RetailPulse_repaired.twb.backup`. `RetailPulse.twb.backup` is the original first version. Git-ignored |
 | `schema/` | Tableau's official workbook schema 2026.3 (Apache 2.0), used by `scripts/validate_tableau_workbook.py` |
 | `tableau_calc_validation_results.csv` | One row per validator check (264) |

@@ -119,9 +119,12 @@ What the free edition can and cannot do *(Tableau help, feature comparison)*:
 2. **Open the workbook.** **File ▸ Open…**, go to `~/Desktop/RetailPulse/tableau/`, choose
    **`RetailPulse_Final.twbx`**, click **Open**. (Double-clicking the file in Finder also works.)
    This packaged workbook contains its data as six Tableau **extracts** (`.hyper` files inside the
-   package), which Tableau Public requires. It is self-contained: no folder paths to fix. It was tested
-   in Tableau 2026.3.2: it opens without an error, all six extracts connect, and all 8 KPI sheets show
-   the validated values (`reports/tableau_validation_report.md`).
+   package), which Tableau Public requires. It is self-contained: no folder paths to fix. **It already
+   contains the 8 dashboards and all 49 worksheets** (charts, filters, captions, drill-through actions).
+   It was tested in Tableau 2026.3.2: every dashboard opens without an error, all six extracts connect,
+   and every sheet shows the specified figures (`reports/tableau_final_validation.md`). The dashboards
+   are the tabs at the bottom; the chart sheets are hidden (right-click a tab ▸ **Unhide All Sheets**
+   to see them).
    *History:* the first generated workbook failed with error **D2E8DA72** (`manual-sort`; fixed, see
    `reports/tableau_workbook_repair_report.md`). The repaired one opened but used live CSV
    connections, so Tableau Public refused it with error **3C242D89** ("must use extracts"). The
@@ -156,7 +159,9 @@ What the free edition can and cannot do *(Tableau help, feature comparison)*:
    (packaged workbook; git-ignored; keeps the extracts). Work in this copy from now on, so the
    generated file stays a clean starting point.
 
-Then go straight to **§7 Worksheets** (the KPI sheets already exist; build the chart sheets).
+Sections §2–§10 are **not needed any more**: the sheets, dashboards, filters and actions are already
+built. Click through the dashboards once (try the state filter, click a state bar, and on Products right-click
+a category ▸ *Category Detail*), then go to **§11 Before publishing** and **§12 Publish**.
 
 ---
 
@@ -415,7 +420,11 @@ Publishing "creates an extract of the data connection".
    Tableau Public > Save to Tableau Public")*. It is only available once a sheet uses at
    least one field.
 3. Sign in with your Tableau Public account (§1).
-4. Type the name **RetailPulse — Olist E-Commerce Analytics** and click **Save**.
+4. Type the name **RetailPulse — Brazilian E-Commerce Analytics** and click **Save**. Description to paste on
+   the profile: *"Historical analysis of ~100,000 orders from the Olist Brazilian e-commerce marketplace
+   (Sep 2016 – Oct 2018): revenue, customers and cohorts, categories, sellers, delivery and reviews. Revenue
+   = product revenue in BRL, freight excluded; no cost data, so no profit. Data: Olist Brazilian E-Commerce
+   Public Dataset (Kaggle), CC BY-NC-SA 4.0."*
 5. Your browser opens the published viz on your profile. Copy its URL.
 6. On your profile, open the viz's settings. Choose whether it shows on your profile and
    whether downloads are allowed. Tableau's help mentions hiding and downloading
@@ -427,10 +436,11 @@ Publishing "creates an extract of the data connection".
 
 Open the URL in a **private browser window** (so you see what the public sees):
 
-* [ ] All 8 dashboards load; the navigation buttons switch between the six main ones
+* [ ] All 8 dashboards load; the tabs switch between them (no navigation buttons: Tableau rejected them)
 * [ ] KPI cards equal the checklist §4 values (spot-check at least Executive and Customers)
 * [ ] Filters work; the YoY card does not change when the month filter changes
-* [ ] Clicking a category / seller and choosing *Open … Detail* opens the right detail page with the test values
+* [ ] Clicking a category / seller and choosing *Category Detail* / *Seller Detail* in the tooltip menu opens the
+  detail page; choosing a category in its dropdown (or pasting a seller_id) shows the test values
 * [ ] Captions and the footer attribution are visible
 * [ ] Values show as `R$ 1,234.56` and percentages with 2 decimals
 

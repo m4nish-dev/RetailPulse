@@ -107,11 +107,11 @@ def main():
     # 2. workbook pointing at the extracts (absolute paths) ...
     abs_dbs = {ds: str(ext_dir / hyper_file(ds)) for ds in DATA_SOURCES}
     twb = out / f"{FINAL}.twb"
-    B.write(B.build(data_dir, True, hyper_dbs=abs_dbs), twb)
+    B.write(B.build(data_dir, True, hyper_dbs=abs_dbs, with_dashboards=True), twb)
     # ... and the portable packaged workbook (package-relative paths, like Tableau's own .twbx)
     rel_dbs = {ds: f"Data/extracts/{hyper_file(ds)}" for ds in DATA_SOURCES}
     inner = out / f".{FINAL}.inner.twb"
-    B.write(B.build(data_dir, True, hyper_dbs=rel_dbs), inner)
+    B.write(B.build(data_dir, True, hyper_dbs=rel_dbs, with_dashboards=True), inner)
     twbx = out / f"{FINAL}.twbx"
     with zipfile.ZipFile(twbx, "w", compression=zipfile.ZIP_DEFLATED) as z:
         z.write(inner, f"{FINAL}.twb")

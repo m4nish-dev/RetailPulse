@@ -9,16 +9,19 @@ Every number traces to a query or notebook cell and is re-checked by one validat
 command. The interactive dashboard is designed for **Tableau Public**. A Tableau workbook
 is **generated from code**. It contains the six data sources, relationships, field names, types,
 2 parameters, 90 measures plus 10 helper fields, and KPI check sheets. It is validated against
-Tableau's official 2026.3 schema, and its formulas against independent SQL.
-**The chart sheets and dashboards have not been built or published yet.**
+Tableau's official 2026.3 schema, and its formulas against independent SQL. The generated
+workbook now holds **8 interactive dashboards and 49 worksheets** on six packaged `.hyper`
+extracts, and every dashboard and sheet was opened and checked in Tableau Desktop Public
+Edition 2026.3.2 ([`reports/tableau_final_validation.md`](reports/tableau_final_validation.md)).
+**It is not published on Tableau Public yet** (that needs the owner's sign-in).
 
 | Area | Status |
 |---|---|
 | Data profiling, cleaning, MySQL model, SQL and pandas analysis, 14 business insights | ✅ Complete and validated |
 | Data-quality investigation, metric audit, security hardening, one-command validation | ✅ Complete |
 | Tableau data sources, data model, 90 calculated fields (logic), dashboard specification, Mac build guide | ✅ Prepared and validated on macOS |
-| Generated Tableau workbook with extracts (`tableau/RetailPulse_Final.twbx`: model, formulas, parameters, KPI check sheets, six `.hyper` extracts) | ✅ Generated, validated, and tested in Tableau 2026.3.2 (opens; 8/8 KPI sheets show the validated figures) |
-| Tableau chart sheets and 8 dashboards, runtime test, publication on Tableau Public, screenshots | 🔲 Manual, in Tableau Desktop Public Edition |
+| Tableau workbook `tableau/RetailPulse_Final.twbx`: 8 dashboards, 49 worksheets (41 charts + 8 KPI strips), filters, drill-through actions, six `.hyper` extracts, generated from code | ✅ Built and tested in Tableau 2026.3.2: 8/8 dashboards open with no error; 49/49 sheets show the specified figures; filter logic 6/6 (`reports/tableau_final_validation.md`) |
+| Publication on Tableau Public, 8 screenshots, click-testing of actions | 🔲 Needs the owner: Tableau Public sign-in; screenshots need Screen Recording permission or the published view |
 | Manual Excel revenue chart (MT-01) | 🔲 Optional |
 
 Full checklist: [`documentation/project_completion_checklist.md`](documentation/project_completion_checklist.md) ·
@@ -81,7 +84,7 @@ Raw data is **not committed** (licence and size): see
 | Cleaning, analysis, validation | Python 3.14, pandas, NumPy |
 | Notebooks and charts | Jupyter Lab, nbconvert, Matplotlib |
 | Database and SQL analysis | MySQL 8.4 (`mysql-connector-python`), window functions, CTEs, views |
-| Dashboard | **Tableau Desktop Public Edition → Tableau Public** (relationships, LOD expressions, table calculations, parameter actions) |
+| Dashboard | **Tableau Desktop Public Edition 2026.3 → Tableau Public**: workbook generated from code (relationships, LOD expressions, table calculations, parameters, dashboard filter and drill-through actions); data as `.hyper` extracts built with the **Tableau Hyper API** |
 | Spreadsheet cross-check | Excel / LibreOffice Calc (`excel/RetailPulse_Phase2_Exploration.xlsx`) |
 | Configuration and security | `python-dotenv` (`.env`, never committed), read-only MySQL account |
 | Version control | Git, GitHub |
@@ -168,34 +171,40 @@ Each priority is labelled decision-ready or hypothesis in the insights report.
 
 ---
 
-## Tableau dashboard (prepared; build pending)
+## Tableau dashboard (built; publication pending)
 
 Six dashboards and two drill-through dashboards, specified sheet by sheet in
 [`tableau/dashboard_specification.md`](tableau/dashboard_specification.md):
 
 | Dashboard | Answers | Data source |
 |---|---|---|
-| 1 Executive | revenue, orders, AOV and median, monthly trend and MoM %, states, top categories, Jan–Aug YoY | RP Orders |
+| 1 Executive | revenue, orders, AOV and median, monthly trend and MoM %, states, top categories, Jan–Aug YoY | RP Orders, RP Categories |
 | 2 Customers | repeat rate, RFM segments (customer vs revenue share), value distribution, cohort retention, frequency | RP Customers, RP Cohorts |
 | 3 Products | category revenue, Pareto curve, top-5 trend, growth vs decline, category table | RP Categories |
 | 4 Sellers | concentration curve, late-rate vs inherited-rating scatter, intervention list | RP Sellers |
-| 5 Operations | on-time rate, promised vs actual delivery, state performance, delivery-stage breakdown | RP Orders |
-| 6 Satisfaction | score distribution, delay vs score (all reviews / after arrival), trend, category satisfaction | RP Orders, RP Categories |
-| 7 Category Detail | drill-through from Products (parameter action) | RP Categories, RP Sellers |
-| 8 Seller Detail | drill-through from Sellers (parameter action) | RP Sellers |
+| 5 Operations | on-time rate, promised vs actual delivery, state performance, delivery-stage breakdown | RP Orders, RP Delivery Stages, RP Stage Summary |
+| 6 Satisfaction | score distribution, delay vs score (all reviews / after arrival), trend, category satisfaction | RP Orders, RP Category Reviews |
+| 7 Category Detail | one category in depth (category dropdown; opened from Products' tooltip menu) | RP Categories, RP Products, RP Category Reviews, RP Seller Categories |
+| 8 Seller Detail | one seller in depth (seller_id box; opened from Sellers' tooltip menu) | RP Sellers, RP Seller Categories |
 
-The six data sources, their relationships, the 90 measures as calculated fields and the
-step-by-step Mac build guide are in [`tableau/`](tableau/README.md). The workbook
-`tableau/RetailPulse.twb` is generated from one registry (`scripts/tableau_registry.py`),
-so the formulas in the workbook, the documentation and the validation are identical. The checks:
+**Open `tableau/RetailPulse_Final.twbx`** in Tableau Desktop Public Edition (it is built by
+`tableau/scripts/build_tableau_extracts.py`; git-ignored because it contains the data). The
+whole workbook (sheets, dashboards, filters, actions, formatting) is generated from one registry
+(`scripts/tableau_registry.py`) and the chart definitions in `scripts/tableau_charts.py`, so the
+formulas in the workbook, the documentation and the validation are identical. The checks:
 - the formulas' logic against independent SQL (`scripts/validate_tableau_calcs.py`, 264 checks)
-- the workbook against Tableau's published 2026.3 XSD and the registry (`scripts/validate_tableau_workbook.py`, 15 checks)
+- extracts and workbook structure (`tableau/scripts/validate_tableau_extracts.py`, 20 checks: every extract value equals the CSVs; 100/100 formulas; every dashboard, filter and action reference resolves; official 2026.3 XSD)
+- **in Tableau itself** (`tableau/scripts/tableau_runtime_check.py`): 8/8 dashboards open with 0 error dialogs and 0 query errors; 49/49 worksheets return the specified figures from Tableau's own SQL; 6/6 filter and parameter tests equal the specification's filtered values
 
-**Opening it in Tableau and building the charts and dashboards is the remaining manual work.**
+Design: fixed 1400 × 1150 px pages with a header (question and period), filter controls, a KPI
+strip, two rows of charts, the mandatory caveats and a data-licence footer; one restrained
+palette (orange primary, grey comparison, orange-blue diverging), BRL currency and 2-dp
+percentages. Differences from the written specification (e.g. no navigation buttons and no
+parameter actions, which Tableau 2026.3.2 rejected) are listed with reasons in the report.
 
-**Dashboard access:** not published yet. Once published, the Tableau Public link and
-eight real screenshots (`reports/dashboard_screenshots/`) will be added here. No
-screenshots exist yet, and none will be simulated.
+**Dashboard access:** not published yet. Once you publish it, the Tableau Public link and eight
+real screenshots (`reports/dashboard_screenshots/`) will be added here. No screenshots exist
+yet, and none will be simulated.
 
 ---
 
