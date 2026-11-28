@@ -17,7 +17,7 @@ Tableau's official 2026.3 schema, and its formulas against independent SQL.
 | Data profiling, cleaning, MySQL model, SQL and pandas analysis, 14 business insights | ✅ Complete and validated |
 | Data-quality investigation, metric audit, security hardening, one-command validation | ✅ Complete |
 | Tableau data sources, data model, 90 calculated fields (logic), dashboard specification, Mac build guide | ✅ Prepared and validated on macOS |
-| Generated Tableau workbook (`tableau/RetailPulse.twb`: model, formulas, parameters, KPI check sheets) | ✅ Generated and schema-validated; opening it in Tableau is the first manual check |
+| Generated Tableau workbook with extracts (`tableau/RetailPulse_Final.twbx`: model, formulas, parameters, KPI check sheets, six `.hyper` extracts) | ✅ Generated, validated, and tested in Tableau 2026.3.2 (opens; 8/8 KPI sheets show the validated figures) |
 | Tableau chart sheets and 8 dashboards, runtime test, publication on Tableau Public, screenshots | 🔲 Manual, in Tableau Desktop Public Edition |
 | Manual Excel revenue chart (MT-01) | 🔲 Optional |
 
@@ -291,6 +291,7 @@ opens read-only sessions. No credential is stored in any committed file.
 python scripts/export_tableau_data.py      # 5 view extracts   -> tableau/data/
 python scripts/export_tableau_sources.py   # 9 analytical CSVs -> tableau/data/analytical/
 python scripts/build_tableau_workbook.py   # tableau/RetailPulse.twb (data sources, relationships, 100 calcs)
+python tableau/scripts/build_tableau_extracts.py   # six .hyper extracts + tableau/RetailPulse_Final.twbx (for Tableau Public)
 ```
 
 Then follow [`tableau/mac_implementation_guide.md`](tableau/mac_implementation_guide.md).
@@ -315,6 +316,7 @@ compared with a recorded baseline:
 | Tableau data readiness (files, MD5, keys, 8 relationships, blanks) | 24 / 24 |
 | Tableau calculated fields (90 measures in Tableau semantics vs independent SQL) | 264 / 264 |
 | Generated Tableau workbook (official XSD 2026.3, relationships, captions, formulas, sort format) | 16 / 16 |
+| Tableau extracts (`.hyper`, queried and compared with the CSVs) + extract-based final workbook, built fresh | 20 / 20 |
 | Insight evidence (`sql/11` vs pandas) | 78 / 78 |
 | Notebook 03 (30 code cells) · notebook 04 | 15 / 15 · 10 / 10 |
 | Repository: links, paths, references, secrets, ignores | all pass |

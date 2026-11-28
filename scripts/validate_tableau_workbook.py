@@ -258,6 +258,14 @@ def main():
                 sh_bad.append(f"{ws.get('name')}: no window")
         ck("sheets", f"{len(sheets)} KPI check sheets: dependencies declared, members resolve, windows present",
            not sh_bad and len(sheets) == len(B.KPI_SHEETS), "; ".join(sh_bad[:5]) or ", ".join(w.get("name") for w in sheets))
+        mn_bad = []
+        for ws in sheets:
+            dsn = ws.find(".//datasources/datasource").get("name")
+            dsel = next(d for d in wb.find("datasources") if d.get("name") == dsn)
+            if not any(c.get("name") == "[:Measure Names]" for c in dsel.findall("column")):
+                mn_bad.append(f"{ws.get('name')} -> {dsel.get('caption')}")
+        ck("sheets", "data sources used with Measure Names declare [:Measure Names] (as Tableau-written workbooks do)",
+           not mn_bad, "; ".join(mn_bad) or "declared")
         ck("sheets", "sort elements are declared in the manifest (<SortTagCleanup />), as Tableau 2026.3.2 requires",
            all(sort_flag_ok(p) for p in files.values()))
         text = files["RetailPulse.twb"].read_text(encoding="utf-8")

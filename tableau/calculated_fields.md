@@ -745,26 +745,26 @@ END
 
 - **Definition:** Average score per order, computed from the review table so it can sit on a delivery_bucket axis.
 - **Data source:** RP Orders · **Type:** aggregate with LOD · **Aggregation level / settings:** per order, then averaged · **Format:** Number, 4 dp
-- **Source fields:** `vw_order_summary.order_id`, `vw_review_summary.review_score`
+- **Source fields:** `vw_review_summary.order_id` (as `rev_order_id`), `vw_review_summary.review_score`
 
 ```
-AVG({INCLUDE [order_id] : AVG([review_score])})
+AVG({INCLUDE [rev_order_id] : AVG([review_score])})
 ```
 
-- **Tableau notes:** INCLUDE gives one value per order whatever its review count; averaging a FIXED value over review rows would over-weight the 547 multi-review orders (pitfall P02).
+- **Tableau notes:** INCLUDE gives one value per order whatever its review count; averaging a FIXED value over review rows would over-weight the 547 multi-review orders (pitfall P02). Groups by the review table's own order_id (rev_order_id) so the LOD stays inside one table, the pattern Tableau 2026.3.2 evaluated correctly in the runtime test.
 - **Expected values (5/5 checks pass):** delivery_bucket = 1-7 days late (all reviews) → **3.1839**; delivery_bucket = 8-15 days late (all reviews) → **1.7325**; delivery_bucket = on time (all reviews) → **4.2009**; delivery_bucket = 15+ days late (all reviews) → **1.7258**; unfiltered (must equal M49 at full precision) → **4.0868**
 
 #### N34 · Avg Order Rating After Arrival
 
 - **Definition:** Average score per order, using only reviews answered after the parcel arrived.
 - **Data source:** RP Orders · **Type:** aggregate with LOD · **Aggregation level / settings:** per order, then averaged · **Format:** Number, 4 dp
-- **Source fields:** `vw_order_summary.order_id`, `vw_review_summary.review_before_delivery`, `vw_review_summary.review_score`
+- **Source fields:** `vw_review_summary.order_id` (as `rev_order_id`), `vw_review_summary.review_before_delivery`, `vw_review_summary.review_score`
 
 ```
-AVG({INCLUDE [order_id] : AVG(IF [review_before_delivery] = 0 THEN [review_score] END)})
+AVG({INCLUDE [rev_order_id] : AVG(IF [review_before_delivery] = 0 THEN [review_score] END)})
 ```
 
-- **Tableau notes:** The after-arrival condition goes INSIDE the LOD: in 115 orders the reviews disagree on timing, and a FIXED LOD would ignore a review_before_delivery filter (pitfall P06).
+- **Tableau notes:** The after-arrival condition goes INSIDE the LOD: in 115 orders the reviews disagree on timing, and a FIXED LOD would ignore a review_before_delivery filter (pitfall P06). Groups by rev_order_id (same table).
 - **Expected values (4/4 checks pass):** delivery_bucket = 1-7 days late → **3.8604**; delivery_bucket = 8-15 days late → **3.6604**; delivery_bucket = on time → **4.2017**; delivery_bucket = 15+ days late → **2.8947**
 
 ### RP Customers
@@ -1116,13 +1116,13 @@ RANK_DENSE([Category Revenue], 'desc')
 
 - **Definition:** Revenue of the largest category.
 - **Data source:** RP Categories · **Type:** aggregate with LOD · **Aggregation level / settings:** category, then max · **Format:** R$ currency, 2 dp
-- **Source fields:** `dim_category.category`, `vw_category_performance.revenue`
+- **Source fields:** `vw_category_performance.category` (as `cat_category`), `vw_category_performance.revenue`
 
 ```
-MAX({INCLUDE [category] : SUM([revenue])})
+MAX({INCLUDE [cat_category] : SUM([revenue])})
 ```
 
-- **Tableau notes:** INCLUDE computes revenue per category, then MAX picks the largest.
+- **Tableau notes:** INCLUDE computes revenue per category, then MAX picks the largest. The LOD groups by the category column of the SAME table as revenue (vw_category_performance): grouping by the root dim_category field made Tableau 2026.3.2 fail with 'Logical Query missing field [category (category_satisfaction)]' (runtime test).
 - **Expected values (1/1 checks pass):** unfiltered → **R$ 1,255,695.13**
 
 #### N36 · Category Cumulative Share

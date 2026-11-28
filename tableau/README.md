@@ -1,14 +1,28 @@
 # RetailPulse — Tableau Public Dashboard
 
-**Status (2026-11-27): workbook generated; dashboards NOT built or published yet.**
-`tableau/RetailPulse.twb` is generated from the validated registry. It already contains:
-- the six data sources, their relationships, field names and types
-- 2 parameters and all 100 calculated fields
-- 8 KPI check sheets
+**Status (2026-11-28): extract-based workbook generated and tested in Tableau; chart sheets and dashboards NOT built; not published yet.**
 
-It passes Tableau's official 2026.3 schema and 15 content checks, but **it has not been opened in
-Tableau yet** (the first manual step). The chart sheets, the 8 dashboards, their filters and
-actions are built by hand in Tableau Desktop Public Edition from the specification.
+**Open `tableau/RetailPulse_Final.twbx`.** It is generated from the validated registry and contains:
+- the six data sources as Tableau **extracts**: six `.hyper` files inside the package, which
+  Tableau Public requires
+- their relationships, field names and types
+- 2 parameters, all 100 calculated fields and 8 KPI check sheets
+
+History of the generated workbook:
+| Version | Result in Tableau Desktop Public Edition 2026.3.2 | Fix |
+|---|---|---|
+| `RetailPulse.twb` | did not open: error D2E8DA72 (`manual-sort` not declared) | `<SortTagCleanup />` declared (`reports/tableau_workbook_repair_report.md`) |
+| `RetailPulse_repaired.twb` | **opened** (confirmed in Tableau's log), but could not be saved to Tableau Public: error 3C242D89 ("must use extracts", data source RP Cohorts) | all six data sources rebuilt on `.hyper` extracts (`reports/tableau_extract_report.md`) |
+| `RetailPulse_Final.twbx` | **opens; all 6 extracts connect; all 8 KPI sheets render** with values equal to the validated figures (tested in Tableau 2026.3.2, `tableau/scripts/tableau_runtime_check.py`) | two issues found in that test and fixed: `[:Measure Names]` declaration; N07 LOD grouping (`reports/tableau_validation_report.md`) |
+
+Validated on macOS:
+- every extract was opened and queried with Tableau's Hyper API, and every value equals the CSVs
+- the workbook passes Tableau's official 2026.3 schema
+- it is identical to the repaired workbook apart from its connections and the documented fixes (19 checks)
+- **in Tableau itself:** every KPI sheet opened without an error dialog, and the SQL Tableau generated returned the validated figures (`reports/tableau_validation_report.md`)
+
+The chart sheets, the 8 dashboards, their filters and actions are built by hand in Tableau
+Desktop Public Edition from the specification.
 
 ## Why Tableau Public
 
@@ -27,12 +41,16 @@ project's only BI tool.
 | [`tableau_completion_checklist.md`](tableau_completion_checklist.md) | What is done (with evidence) and every manual item with its expected value |
 | `RetailPulse.twb` | **Generated** by `scripts/build_tableau_workbook.py`: 6 data sources, 8 relationships, captions, types, 2 parameters, 100 calculated fields, 8 KPI check sheets. Git-ignored (stores this Mac's data path); regenerate any time |
 | `RetailPulse_model_only.twb` | **Generated** fallback: the same model with one empty sheet |
-| `RetailPulse_repaired.twb` | **Open this one.** The first generated workbook with the sort-format declaration Tableau 2026.3.2 needs (error D2E8DA72 fixed; `scripts/repair_tableau_workbook.py`, report in `reports/tableau_workbook_repair_report.md`). `RetailPulse.twb.backup` is the untouched original. Git-ignored |
+| `RetailPulse_Final.twbx` | **Open this one.** Packaged workbook with the six `.hyper` extracts inside (package-relative paths); built by `tableau/scripts/build_tableau_extracts.py`. Git-ignored (contains data) |
+| `RetailPulse_Final.twb` | The same workbook reading the extracts from `tableau/extracts/` by absolute path (this Mac). Git-ignored |
+| `extracts/` | `RP_Orders.hyper`, `RP_Customers.hyper`, `RP_Cohorts.hyper`, `RP_Categories.hyper`, `RP_Sellers.hyper`, `RP_Stage_Summary.hyper`: every table of each data source in schema "Extract", loaded with Hyper's CSV reader. Git-ignored |
+| `scripts/` | `build_tableau_extracts.py` (extracts + Final workbook), `validate_tableau_extracts.py` (19 checks) and `tableau_runtime_check.py` (opens each KPI sheet in Tableau Desktop itself and checks Tableau's own log and generated SQL; macOS, run with Tableau closed) |
+| `RetailPulse_repaired.twb` | Previous version (live CSV connections; opens, but cannot be saved to Tableau Public). Kept, with `RetailPulse_repaired.twb.backup`. `RetailPulse.twb.backup` is the original first version. Git-ignored |
 | `schema/` | Tableau's official workbook schema 2026.3 (Apache 2.0), used by `scripts/validate_tableau_workbook.py` |
 | `tableau_calc_validation_results.csv` | One row per validator check (264) |
 | `data/` | 5 view extracts (**git-ignored**; regenerate with `scripts/export_tableau_data.py`) + `_manifest.csv` (rows, columns, MD5; committed) |
 | `data/analytical/` | 9 analytical sources (**git-ignored**; regenerate with `scripts/export_tableau_sources.py`) + committed `_manifest.csv`; definitions in [`../documentation/analytical_sources.md`](../documentation/analytical_sources.md) |
-| `extracts/`, `RetailPulse_build.twbx` | Created by you in Tableau. **Git-ignored** (they contain data) |
+| `RetailPulse_build.twbx` | Your working copy, saved from the Final workbook in Tableau. **Git-ignored** (contains data) |
 
 ## Verification (run from the project root)
 
@@ -44,6 +62,9 @@ project's only BI tool.
 ./venv/bin/python scripts/build_tableau_workbook.py    # (re)generate RetailPulse.twb from the registry
 ./venv/bin/python scripts/validate_tableau_workbook.py # 16 checks: Tableau's XSD, model, captions, formulas, sheets, sort format
 ./venv/bin/python scripts/repair_tableau_workbook.py   # repair an older generated .twb (adds the sort-format declaration)
+./venv/bin/python tableau/scripts/build_tableau_extracts.py     # 6 .hyper extracts + RetailPulse_Final.twbx/.twb (CSVs unchanged)
+./venv/bin/python tableau/scripts/validate_tableau_extracts.py  # 19 checks: Hyper files queried and compared with the CSVs, workbook
+./venv/bin/python tableau/scripts/tableau_runtime_check.py      # runtime test IN Tableau (launches the app; close Tableau first)
 ```
 
 All Tableau definitions live in one place, `scripts/tableau_registry.py`. The documentation,

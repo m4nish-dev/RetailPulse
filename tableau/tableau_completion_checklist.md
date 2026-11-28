@@ -37,9 +37,11 @@ Legend: ✅ done by Claude on macOS (evidence given) · 🔲 manual, to do in Ta
 | ✅ Tableau Desktop Public Edition 2026.3.2 installed (Apple silicon) | ☑ | owner, 2026-11-27 |
 | 🔲 Tableau Public account created | ☐ | |
 | ✗ first `tableau/RetailPulse.twb` failed to open (error D2E8DA72, see §5); repaired 2026-11-27 | — | `reports/tableau_workbook_repair_report.md` |
-| 🔲 `tableau/RetailPulse_repaired.twb` opens without an error (guide §1A). If not: error text, and whether `RetailPulse_model_only.twb` opens | ☐ | |
+| ✓ `tableau/RetailPulse_repaired.twb` opened (Tableau log, 2026-11-28) but cannot be saved to Tableau Public: error 3C242D89, live CSV connections (§5) | — | `reports/tableau_extract_report.md` |
+| ✅ `tableau/RetailPulse_Final.twbx` (six `.hyper` extracts) opens without an error; all 6 extracts connect; no extract error (3C242D89) | ☑ | Tableau log, 2026-11-28; `reports/tableau_validation_report.md` |
 | 🔲 Data Source tab: six data sources `RP Orders`, `RP Customers`, `RP Cohorts`, `RP Categories`, `RP Sellers`, `RP Stage Summary`, with the relationships of `data_model.md` §3 | ☐ | |
 | 🔲 Row counts in the data preview equal the manifests: 99,441 · 99,224 · 95,088 · 96,096 · 96,096 · 400 · 74 · 1,282 · 32,951 · 74 · 3,053 · 3,053 · 6,545 · 4 | ☐ | |
+| ✅ Six extracts (`.hyper`) built from the CSVs and checked value by value | generated | `validate_tableau_extracts.py` 19/19 |
 | 🔲 Saved as `tableau/RetailPulse_build.twbx` (git-ignored) | ☐ | |
 
 ## 3. Model (generated; confirm in Tableau)
@@ -58,7 +60,7 @@ Legend: ✅ done by Claude on macOS (evidence given) · 🔲 manual, to do in Ta
 |---|---|---|
 | ✅ 100 calculated fields (90 measures + 10 helpers) with BRL / % / number formats | generated | |
 | 🔲 No calculated field shows a red error mark in the Data pane; `Revenue MoM %` editor says "The calculation is valid." | ☐ | list any errors in §5 |
-| 🔲 KPI check sheets 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 5.6, 6.0 show the values below | ☐ | |
+| ✅ KPI check sheets 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 5.6, 6.0 render in Tableau; Tableau's generated SQL returns the values below (18/18 compared, plus AOV, repeat and on-time rates) | ☑ | `tableau/scripts/tableau_runtime_check.py`, 2026-11-28 |
 
 **Card values, no filters** (expected values validated on macOS):
 
@@ -101,6 +103,9 @@ Legend: ✅ done by Claude on macOS (evidence given) · 🔲 manual, to do in Ta
 
 | Field ID | Error message or wrong value | Cause found | Fix applied (and validator re-run?) |
 |---|---|---|---|
+| N07 Top Category Revenue (sheet 3.0) | Tableau 2026.3.2, error 1B885FB3: "Logical Query missing field [category (category_satisfaction)] from relationOp [Extract].[vw_category_performance]" | INCLUDE LOD grouped by the root table's category while summing a related table | LOD groups by `[cat_category]` (same table); N34/N35 likewise; logic 264/264; **re-tested in Tableau: fixed** |
+| KPI sheets (log warning) | "Namespace unexpectedly missing field '[…].[:Measure Names]'" | `[:Measure Names]` not declared on the data sources | declared (as Tableau-written workbooks do); **re-tested: warning gone** |
+| workbook (all 6 data sources) | Tableau 2026.3.2, error 3C242D89: "Workbooks saved to Tableau Public must use extracts … RP Cohorts is not an extract" | all six data sources were live text-file connections | `tableau/scripts/build_tableau_extracts.py` → six `.hyper` extracts + `tableau/RetailPulse_Final.twbx`; `validate_tableau_extracts.py` 19/19. **Re-open pending** |
 | workbook (8 KPI sheets) | Tableau 2026.3.2, error D2E8DA72: "No declaration found for element 'manual-sort'" (16 messages, 2 per KPI sheet) | manifest lacked `<SortTagCleanup />`, so Tableau read sorts in the older format | `scripts/repair_tableau_workbook.py` → `tableau/RetailPulse_repaired.twb` (one line added; sorts preserved); generator fixed; validator check added. **Re-open pending** |
 | | | | |
 

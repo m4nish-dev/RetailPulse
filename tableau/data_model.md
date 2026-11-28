@@ -203,6 +203,12 @@ After loading, the row counts at the bottom of the Data Source preview must equa
 
 ## 7. Extract, packaging and publishing
 
+> **Automated (2026-11-28).** `tableau/scripts/build_tableau_extracts.py` builds one `.hyper` extract per
+> data source with the Tableau Hyper API and writes `RetailPulse_Final.twbx`. In it each data source
+> connects to its extract inside the package, which is what Tableau Public requires (error 3C242D89
+> otherwise). Every value is checked against the CSVs by `validate_tableau_extracts.py`. The
+> notes below apply to a hand-built workbook.
+
 * For each data source, set **Connection: Extract** (top right of the Data Source
   page). The free edition publishes an extract anyway: "the publishing process
   creates an extract of the data connection" (Tableau help, *Save Workbooks to

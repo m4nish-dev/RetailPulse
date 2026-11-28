@@ -290,8 +290,11 @@ calc("M28", "Category Rank", "RP Categories", TC, "Compute Using: category",
      "Ranks the categories in the view. On Category Detail use the table-calculation filter H05 so all 74 "
      "are ranked before the others are hidden.", INT)
 calc("N07", "Top Category Revenue", "RP Categories", LOD, "category, then max",
-     "MAX({INCLUDE [category] : SUM([revenue])})",
-     "Revenue of the largest category.", "INCLUDE computes revenue per category, then MAX picks the largest.", BRL)
+     "MAX({INCLUDE [cat_category] : SUM([revenue])})",
+     "Revenue of the largest category.",
+     "INCLUDE computes revenue per category, then MAX picks the largest. The LOD groups by the category column "
+     "of the SAME table as revenue (vw_category_performance): grouping by the root dim_category field made "
+     "Tableau 2026.3.2 fail with 'Logical Query missing field [category (category_satisfaction)]' (runtime test).", BRL)
 calc("N36", "Category Cumulative Share", "RP Categories", TC,
      "Compute Using: category; sort category by Category Revenue descending",
      "RUNNING_SUM([Category Revenue]) / TOTAL([Category Revenue])",
@@ -483,14 +486,15 @@ THEN COUNT(IF [review_before_delivery] = 0 AND [review_score] = 1 THEN [review_i
      / COUNT(IF [review_before_delivery] = 0 THEN [review_id] END)
 END""", "Share of after-arrival reviews with 1 star (6.76%).", GUARD, PCT)
 calc("N35", "Avg Order Rating (Review Table)", "RP Orders", LOD, "per order, then averaged",
-     "AVG({INCLUDE [order_id] : AVG([review_score])})",
+     "AVG({INCLUDE [rev_order_id] : AVG([review_score])})",
      "Average score per order, computed from the review table so it can sit on a delivery_bucket axis.",
      "INCLUDE gives one value per order whatever its review count; averaging a FIXED value over review rows "
-     "would over-weight the 547 multi-review orders (pitfall P02).", DEC2)
+     "would over-weight the 547 multi-review orders (pitfall P02). Groups by the review table's own order_id (rev_order_id) so the LOD stays inside one table, "
+     "the pattern Tableau 2026.3.2 evaluated correctly in the runtime test.", DEC2)
 calc("N34", "Avg Order Rating After Arrival", "RP Orders", LOD, "per order, then averaged",
-     "AVG({INCLUDE [order_id] : AVG(IF [review_before_delivery] = 0 THEN [review_score] END)})",
+     "AVG({INCLUDE [rev_order_id] : AVG(IF [review_before_delivery] = 0 THEN [review_score] END)})",
      "Average score per order, using only reviews answered after the parcel arrived.",
      "The after-arrival condition goes INSIDE the LOD: in 115 orders the reviews disagree on timing, and a "
-     "FIXED LOD would ignore a review_before_delivery filter (pitfall P06).", DEC2)
+     "FIXED LOD would ignore a review_before_delivery filter (pitfall P06). Groups by rev_order_id (same table).", DEC2)
 
 CALC_BY_NAME = {(c["ds"], c["name"]): c for c in CALCS}

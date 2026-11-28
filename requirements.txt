@@ -40,3 +40,4 @@ python-dotenv==1.2.4              # scripts/rp_db.py reads credentials from .env
 
 # --- Tableau workbook validation ---------------------------------------------
 lxml==6.1.3                   # scripts/validate_tableau_workbook.py (XSD validation of the generated .twb)
+tableauhyperapi==0.0.26479       # tableau/scripts/build_tableau_extracts.py (writes the .hyper extracts Tableau Public requires)

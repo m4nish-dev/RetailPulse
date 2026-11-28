@@ -26,12 +26,13 @@ Legend: ✅ done · 🔲 outstanding (manual) · ⚠ done with a documented limi
 | Analytical sources equal live SQL and a pandas rebuild | ✅ | `sql/09_dashboard_sources.sql`, `scripts/validate_tableau_sources.py` (90/90) |
 | Tableau data model: 6 data sources, 8 relationships, keys, types, filter rules | ✅ | `tableau/data_model.md` |
 | 90 measures as Tableau calculated fields (+10 helpers, 2 parameters), logic validated against independent SQL | ⚠ | `tableau/calculated_fields.md`, `scripts/validate_tableau_calcs.py` (264/264). Tableau syntax and runtime: pending the manual build |
+| Tableau extracts (6 `.hyper` files, Hyper API) and extract-based `tableau/RetailPulse_Final.twbx` for Tableau Public | ⚠ | `tableau/scripts/build_tableau_extracts.py`; `tableau/scripts/validate_tableau_extracts.py` (19/19: every value equals the CSVs). Opened and tested in Tableau 2026.3.2: 8/8 KPI sheets, values equal to the reference |
 | Tableau workbook generated from code (model, relationships, 100 calculated fields, parameters, 8 KPI check sheets) | ⚠ | `scripts/build_tableau_workbook.py`; `scripts/validate_tableau_workbook.py` (16/16, official XSD 2026.3). Not yet opened in Tableau |
 | Read-only MySQL account `retailpulse_app` | ✅ | `sql/10_app_user.sql` (template), permission tests in Phase 5 |
 | Environment-based configuration | ✅ | `.env.example`, `scripts/rp_db.py`, `.env` git-ignored |
 | Evidence for recommendations (second-purchase timing, freight bands, free-shipping threshold impact, regional freight) | ✅ | `sql/11_insight_evidence.sql`, `scripts/validate_insight_evidence.py` (78/78) |
 | Repository checks: links, paths, no retired-tool references, no secrets, ignores | ✅ | `scripts/check_repository.py` |
-| One-command validation | ✅ | `scripts/run_all_validations.py` (17 PASS, 0 FAIL, 6 deliberate SKIP; 2026-11-27) |
+| One-command validation | ✅ | `scripts/run_all_validations.py` (18 PASS, 0 FAIL, 6 deliberate SKIP; 2026-11-28) |
 
 ## 2. Validated analytical outputs
 
@@ -73,7 +74,7 @@ acceptance list: [`tableau/tableau_completion_checklist.md`](../tableau/tableau_
 |---|---|
 | Install Tableau Desktop Public Edition | ✅ 2026.3.2 (Apple silicon) |
 | Create a Tableau Public account | 🔲 |
-| Open the generated `tableau/RetailPulse.twb`; confirm model and KPI check sheets | 🔲 |
+| Open `tableau/RetailPulse_Final.twbx` (extracts); confirm model and KPI check sheets | ✅ 2026-11-28, tested in Tableau (`reports/tableau_validation_report.md`) |
 | Build 39 chart/table sheets, 6 dashboards + 2 detail dashboards, filters and actions, mandatory captions | 🔲 |
 | Test every value in the Tableau checklist §4 and §6 (runtime test) | 🔲 |
 | Publish to Tableau Public after the safety checklist; verify in a private window | 🔲 |

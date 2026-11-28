@@ -60,8 +60,8 @@ def main():
     for d in ["tableau", "tableau/data", "tableau/data/analytical", "reports/dashboard_screenshots"]:
         ck("structure", f"{d}/ exists", (ROOT / d).is_dir())
     runner = (ROOT / "scripts" / "run_all_validations.py").read_text(encoding="utf-8")
-    called = sorted(set(re.findall(r'"((?:validate|check|verify)_[a-z_]+\.py)"', runner)))
-    missing = [c for c in called if not (ROOT / "scripts" / c).exists()]
+    called = sorted(set(re.findall(r'"((?:\.\./tableau/scripts/)?(?:validate|check|verify)_[a-z_]+\.py)"', runner)))
+    missing = [c for c in called if not (ROOT / "scripts" / c).resolve().exists()]
     ck("structure", f"every script called by the validation runner exists ({len(called)})", not missing,
        f"missing: {missing or 'none'}")
     sqls = re.findall(r'"(\d\d_[a-z_]+\.sql)"', runner)

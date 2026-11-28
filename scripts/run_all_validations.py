@@ -49,7 +49,8 @@ EXPECTED = {
     "tableau_sources": 90,         # scripts/validate_tableau_sources.py (analytical CSVs vs SQL and pandas)
     "tableau_data": 24,            # scripts/check_tableau_data.py (files, MD5, keys, 8 relationships)
     "tableau_calcs": 264,          # scripts/validate_tableau_calcs.py (90 measures vs SQL, Tableau semantics)
-    "tableau_workbook": 16,        # scripts/validate_tableau_workbook.py (generated .twb: XSD + registry)
+    "tableau_workbook": 17,        # scripts/validate_tableau_workbook.py (generated .twb: XSD + registry)
+    "tableau_extracts": 20,        # tableau/scripts/validate_tableau_extracts.py --fresh (19 checks + the fresh build itself)
     "insight_evidence": 78,        # scripts/validate_insight_evidence.py
     "repository": 18,              # scripts/check_repository.py (structure, links, references, security)
     "nb03_code_cells": 30,         # notebooks/03 code cells executed
@@ -189,8 +190,9 @@ def main():
                                ("check_tableau_data.py", "tableau_data", "Tableau data readiness (files, MD5, keys, relationships)"),
                                ("validate_tableau_calcs.py", "tableau_calcs", "Tableau calculated fields (90 measures, logic)"),
                                ("validate_tableau_workbook.py", "tableau_workbook", "Tableau workbook (generated .twb: XSD + registry)"),
+                               ("../tableau/scripts/validate_tableau_extracts.py", "tableau_extracts", "Tableau extracts + final workbook (built in a temp folder)"),
                                ("validate_insight_evidence.py", "insight_evidence", "Insight evidence (sql/11 vs pandas)")]:
-        rc, out, s = run([PY, f"scripts/{script}"])
+        rc, out, s = run([PY, f"scripts/{script}"] + (["--fresh"] if "extracts" in script else []))
         res = parse_checks(out)
         if res:
             count_status(label, key, res[0], res[1], res[2], s, out, rc)

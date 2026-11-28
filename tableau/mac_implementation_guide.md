@@ -48,6 +48,8 @@ cd ~/Desktop/RetailPulse
 ./venv/bin/python scripts/validate_tableau_calcs.py     # expect: checks: 264 PASS: 264 FAIL: 0
 ./venv/bin/python scripts/build_tableau_workbook.py     # writes tableau/RetailPulse.twb (+ _model_only)
 ./venv/bin/python scripts/validate_tableau_workbook.py  # expect: checks: 16 PASS: 16 FAIL: 0
+./venv/bin/python tableau/scripts/build_tableau_extracts.py     # 6 .hyper extracts + RetailPulse_Final.twbx/.twb
+./venv/bin/python tableau/scripts/validate_tableau_extracts.py  # expect: checks: 19 PASS: 19 FAIL: 0
 ```
 
 The workbook stores the full path of the data folder on this Mac. If you move or rename the
@@ -115,18 +117,26 @@ What the free edition can and cannot do *(Tableau help, feature comparison)*:
    **File ▸ Close** and click **Don't Save**. If Tableau offers to recover an unsaved workbook
    when it starts, decline: the generated workbook replaces that draft.
 2. **Open the workbook.** **File ▸ Open…**, go to `~/Desktop/RetailPulse/tableau/`, choose
-   **`RetailPulse_repaired.twb`**, click **Open**. (Double-clicking the file in Finder also works.)
-   The first generated `RetailPulse.twb` failed with error **D2E8DA72** ("No declaration found for
-   element 'manual-sort'"). The repaired file declares the sort format Tableau needs; see
-   `reports/tableau_workbook_repair_report.md`. Workbooks generated from now on include the fix.
-3. **If Tableau cannot find the data:** a dialog names a missing file. Click **Browse** (or
-   **Edit Connection**), go to `~/Desktop/RetailPulse/tableau/data/` (or `…/data/analytical/`)
-   and select the file it names. This only happens if the project folder moved; re-running
-   `build_tableau_workbook.py` avoids it.
-4. **If the workbook does not open at all,** close the error message and open
-   **`RetailPulse_model_only.twb`** instead (same model, no KPI sheets). If that also fails,
-   follow the manual route §2–§6. Either way, write the exact error text in the checklist §5.
-   Tableau's log is `~/Documents/My Tableau Repository/Logs/log.txt`.
+   **`RetailPulse_Final.twbx`**, click **Open**. (Double-clicking the file in Finder also works.)
+   This packaged workbook contains its data as six Tableau **extracts** (`.hyper` files inside the
+   package), which Tableau Public requires. It is self-contained: no folder paths to fix. It was tested
+   in Tableau 2026.3.2: it opens without an error, all six extracts connect, and all 8 KPI sheets show
+   the validated values (`reports/tableau_validation_report.md`).
+   *History:* the first generated workbook failed with error **D2E8DA72** (`manual-sort`; fixed, see
+   `reports/tableau_workbook_repair_report.md`). The repaired one opened but used live CSV
+   connections, so Tableau Public refused it with error **3C242D89** ("must use extracts"). The
+   Final workbook fixes both; see `reports/tableau_extract_report.md`.
+3. **If Tableau shows an error when opening,** note the exact text and code. Then:
+   * try `RetailPulse_Final.twb` (same workbook, reading the extracts from `tableau/extracts/`)
+   * if that also fails, open `RetailPulse_repaired.twb` (live CSV connections, opens on this Mac)
+     and turn each data source into an extract inside Tableau: **Data Source** tab ▸ pick the data
+     source in the drop-down at the top left ▸ top right **Connection: Extract** ▸ click any sheet
+     tab ▸ **Save** the extract in `~/Desktop/RetailPulse/tableau/extracts/`. Do this for all six
+     data sources.
+
+   Write the error in checklist §5. Tableau's log is `~/Documents/My Tableau Repository/Logs/log.txt`.
+4. **Extracts are a snapshot.** If the CSVs ever change, rebuild with
+   `./venv/bin/python tableau/scripts/build_tableau_extracts.py` and reopen the Final workbook.
 5. **Check the data model.** Click the **Data Source** tab (bottom left). In the drop-down at
    the top left, pick each of the six data sources in turn:
    - The canvas shows the root table with lines (relationships) to the related tables, as in
@@ -143,8 +153,8 @@ What the free edition can and cannot do *(Tableau help, feature comparison)*:
    the formula matches [`calculated_fields.md`](calculated_fields.md) and the editor says
    "The calculation is valid." Close with **Cancel**.
 8. **Save your own copy:** **File ▸ Save As…** → `~/Desktop/RetailPulse/tableau/RetailPulse_build.twbx`
-   (packaged workbook; git-ignored). Work in this copy from now on, so the generated file stays
-   a clean starting point.
+   (packaged workbook; git-ignored; keeps the extracts). Work in this copy from now on, so the
+   generated file stays a clean starting point.
 
 Then go straight to **§7 Worksheets** (the KPI sheets already exist; build the chart sheets).
 
@@ -393,7 +403,7 @@ Publishing "creates an extract of the data connection".
 | You accept that the 14 CSV extracts become public and downloadable | they contain only the public Olist dataset (anonymised IDs, no names, emails or addresses) and derived aggregates |
 | Footer attribution present: "Data: Olist Brazilian E-Commerce Public Dataset (Kaggle), CC BY-NC-SA 4.0" | the dataset licence requires attribution, non-commercial use and the same licence for shared derivatives; the free edition is non-commercial too |
 | **Data ▸ (each data source) ▸ Hide All Unused Fields** | smaller workbook; fewer columns published |
-| Optional: move the project folder to a neutral path before the first extract | a workbook can record the folder its text files came from, which includes your Mac user name |
+| Publish from `RetailPulse_build.twbx` saved from `RetailPulse_Final.twbx` | its extracts are referenced inside the package (`Data/extracts/…`), so no folder path with your Mac user name is stored |
 
 ## 12. Publish to Tableau Public
 

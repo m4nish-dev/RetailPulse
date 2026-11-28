@@ -97,6 +97,8 @@ LOWER = "0123456789abcdefghijklmnopqrstuvwxyz"
 federated_name = lambda ds: "federated." + _h("ds:" + ds, 28, LOWER)
 textscan_name = lambda ds, folder: "textscan." + _h(f"conn:{ds}:{folder}", 28, LOWER)
 object_id = lambda ds, t: f"{t}.csv_" + hashlib.md5(f"obj:{ds}:{t}".encode()).hexdigest().upper()
+hyper_name = lambda ds: "hyper." + _h("hyper:" + ds, 28, LOWER)
+HYPER_SCHEMA = "Extract"          # schema Tableau's own .hyper files use (World Indicators sample)
 det_uuid = lambda key: "{" + str(uuid.UUID(hashlib.md5(key.encode()).hexdigest())).upper() + "}"
 
 
@@ -139,7 +141,13 @@ def role_type(col: str, dtype: str) -> tuple[str, str]:
 class SourceModel:
     """Tables, internal names, captions and types for one data source (Tableau's naming rules)."""
 
-    def __init__(self, ds: str, data_dir: Path):
+    def __init__(self, ds: str, data_dir: Path, mode: str = "text", hyper_db: str | None = None):
+        """mode 'text': text-file connections to the CSVs (live).
+        mode 'hyper': one connection to a .hyper file holding every table of the data source in schema
+        "Extract" (the pattern of the World Indicators sample shipped with Tableau Public); hyper_db is the
+        dbname Tableau stores (absolute path for a .twb, package-relative for a .twbx)."""
+        assert mode in ("text", "hyper") and (mode == "text" or hyper_db)
+        self.mode, self.hyper_db = mode, hyper_db
         self.ds = ds
         self.name = federated_name(ds)
         self.tables = DATA_SOURCES[ds]
@@ -156,7 +164,7 @@ class SourceModel:
         seen, ordinal = set(), 0
         for t, *_ in self.tables:
             for col in HEADERS[t]:
-                internal = f"[{col}]" if col not in seen else f"[{col} ({t}.csv)]"
+                internal = f"[{col}]" if col not in seen else f"[{col} ({self.rel(t)})]"
                 seen.add(col)
                 self.columns.append((t, col, internal, caption_of[(t, col)], self.types[t][col], ordinal))
                 ordinal += 1
@@ -164,6 +172,17 @@ class SourceModel:
         self.col_by_internal = {c[2]: c for c in self.columns}
         self.calcs = [c for c in CALCS if c["ds"] == ds]
         self.calc_internal = {c["name"]: f"[RP_{c['id']}]" for c in self.calcs}
+
+    def rel(self, t: str) -> str:
+        """Logical table name Tableau uses: 'vw_order_summary.csv' for a text file, 'vw_order_summary' in a .hyper."""
+        return f"{t}.csv" if self.mode == "text" else t
+
+    def objid(self, t: str) -> str:
+        return object_id(self.ds, t) if self.mode == "text" else \
+            f"{t}_" + hashlib.md5(f"obj:{self.ds}:{t}".encode()).hexdigest().upper()
+
+    def conn_name(self, t: str) -> str:
+        return self.conn_of_folder[self.folder_of[t]] if self.mode == "text" else hyper_name(self.ds)
 
     def translate(self, formula: str) -> str:
         """Display names in the registry formula -> Tableau internal names."""
@@ -221,6 +240,9 @@ def sub(parent, tag, **attrs):
 
 
 def relation_el(parent, m: SourceModel, table: str):
+    if m.mode == "hyper":         # a .hyper table carries its own schema: no <columns> (as in World Indicators)
+        return sub(parent, "relation", connection=m.conn_name(table), name=table,
+                   table=f"[{HYPER_SCHEMA}].[{table}]", type="table")
     rel = sub(parent, "relation", connection=m.conn_of_folder[m.folder_of[table]], name=f"{table}.csv",
               table=f"[{table}#csv]", type="table")
     cols = sub(rel, "columns", character_set="UTF-8", header="yes", locale="en_US", separator=",")
@@ -230,7 +252,7 @@ def relation_el(parent, m: SourceModel, table: str):
 
 
 def column_el(parent, internal, caption, dtype, role, typ, fmt=None):
-    attrs = {"caption": caption, "datatype": dtype}
+    attrs = {"caption": caption, "datatype": dtype} if caption is not None else {"datatype": dtype}
     if fmt:
         attrs["default-format"] = fmt
     attrs.update({"name": internal, "role": role, "type": typ})
@@ -246,11 +268,19 @@ def calc_column_el(parent, m: SourceModel, c):
     return el
 
 
-def datasource_el(parent, m: SourceModel):
+def datasource_el(parent, m: SourceModel, measure_names: bool = False):
+    """measure_names: declare the built-in [:Measure Names] field, as Tableau does for every data source
+    whose sheets use Measure Names (Superstore sample). Without it Tableau 2026.3.2 logs "Namespace
+    unexpectedly missing field '[...].[:Measure Names]'" when a KPI sheet is drawn."""
     ds = sub(parent, "datasource", caption=m.ds, inline="true", name=m.name, version=VERSION)
     conn = sub(ds, "connection", **{"class": "federated"})
     named = sub(conn, "named-connections")
-    for f in m.folders:
+    if m.mode == "hyper":
+        nc = sub(named, "named-connection", caption=m.ds, name=hyper_name(m.ds))
+        sub(nc, "connection", **{"authentication": "auth-none", "author-locale": "en_US", "class": "hyper",
+                                 "dbname": m.hyper_db, "default-settings": "yes", "port": "", "sslmode": "",
+                                 "username": "tableau_internal_user"})
+    for f in (m.folders if m.mode == "text" else []):
         nc = sub(named, "named-connection", caption=f.name, name=m.conn_of_folder[f])
         first = next(t for t, *_ in m.tables if m.folder_of[t] == f)
         sub(nc, "connection", **{"class": "textscan", "directory": str(f), "filename": f"{first}.csv",
@@ -263,9 +293,9 @@ def datasource_el(parent, m: SourceModel):
             relation_el(coll, m, t)
         cols = sub(conn, "cols")
         for t, col, internal, *_ in sorted(m.columns, key=lambda c: c[2]):
-            sub(cols, "map", key=internal, value=f"[{t}.csv].[{col}]")
+            sub(cols, "map", key=internal, value=f"[{m.rel(t)}].[{col}]")
     recs = sub(conn, "metadata-records")
-    for t, *_ in m.tables:
+    for t, *_ in (m.tables if m.mode == "text" else []):      # hyper connections carry no capability records
         r = sub(recs, "metadata-record", **{"class": "capability"})
         for tag, val in [("remote-name", None), ("remote-type", "0"), ("parent-name", f"[{t}.csv]"),
                          ("remote-alias", None), ("aggregation", "Count"), ("contains-null", "true")]:
@@ -280,7 +310,7 @@ def datasource_el(parent, m: SourceModel):
     for t, col, internal, caption, dtype, ordinal in m.columns:
         r = sub(recs, "metadata-record", **{"class": "column"})
         fields = [("remote-name", col), ("remote-type", REMOTE_TYPE[dtype]), ("local-name", internal),
-                  ("parent-name", f"[{t}.csv]"), ("remote-alias", col), ("ordinal", str(ordinal)),
+                  ("parent-name", f"[{m.rel(t)}]"), ("remote-alias", col), ("ordinal", str(ordinal)),
                   ("local-type", dtype), ("aggregation", AGGREGATION[dtype])]
         if dtype == "string":
             fields += [("scale", "1"), ("width", "1073741823")]
@@ -288,12 +318,14 @@ def datasource_el(parent, m: SourceModel):
         for tag, val in fields:
             sub(r, tag).text = val
         if dtype == "string":
-            sub(r, "collation", flag="0", name="LEN_RGB")
-        sub(r, "object-id").text = f"[{object_id(m.ds, t)}]"
+            sub(r, "collation", flag="0", name="LEN_RGB" if m.mode == "text" else "LEN_RUS")
+        sub(r, "object-id").text = f"[{m.objid(t)}]"
     sub(ds, "aliases", enabled="yes")
+    if measure_names:
+        column_el(ds, "[:Measure Names]", None, "string", "dimension", "nominal")
     if len(m.tables) > 1:
         for t, *_ in sorted(m.tables):
-            column_el(ds, f"[__tableau_internal_object_id__].[{object_id(m.ds, t)}]", f"{t}.csv", "table",
+            column_el(ds, f"[__tableau_internal_object_id__].[{m.objid(t)}]", m.rel(t), "table",
                       "measure", "quantitative")
     entries = [(c[2], ("col", c)) for c in m.columns] + [(m.calc_internal[c["name"]], ("calc", c)) for c in m.calcs]
     for _, (kind, item) in sorted(entries, key=lambda e: e[0].lower()):
@@ -308,7 +340,7 @@ def datasource_el(parent, m: SourceModel):
         og = sub(ds, "object-graph")
         objs = sub(og, "objects")
         for t, *_ in m.tables:
-            o = sub(objs, "object", caption=f"{t}.csv", id=object_id(m.ds, t))
+            o = sub(objs, "object", caption=m.rel(t), id=m.objid(t))
             relation_el(sub(o, "properties", context=""), m, t)
         rels = sub(og, "relationships")
         root = m.tables[0][0]
@@ -316,9 +348,9 @@ def datasource_el(parent, m: SourceModel):
             rel = sub(rels, "relationship")
             e = sub(rel, "expression", op="=")
             sub(e, "expression", op=f"[{key}]")
-            sub(e, "expression", op=f"[{key} ({t}.csv)]")
-            sub(rel, "first-end-point", object_id=object_id(m.ds, root))
-            sub(rel, "second-end-point", object_id=object_id(m.ds, t))
+            sub(e, "expression", op=f"[{key} ({m.rel(t)})]")
+            sub(rel, "first-end-point", object_id=m.objid(root))
+            sub(rel, "second-end-point", object_id=m.objid(t))
     return ds
 
 
@@ -402,7 +434,8 @@ def window_el(parent, sheet: str, maximized: bool):
     sub(w, "simple-id", uuid=det_uuid("win:" + sheet))
 
 
-def build(data_dir: Path, with_kpi_sheets: bool) -> ET.ElementTree:
+def build(data_dir: Path, with_kpi_sheets: bool, hyper_dbs: dict[str, str] | None = None) -> ET.ElementTree:
+    """hyper_dbs: {data source: dbname} switches every data source to its .hyper file (extract)."""
     wb = ET.Element("workbook", {"original-version": VERSION, "source-build": SOURCE_BUILD, "source-platform": "mac",
                                  "version": VERSION, "xmlns:user": "http://www.tableausoftware.com/xml/user"})
     man = sub(wb, "document-format-change-manifest")
@@ -413,9 +446,11 @@ def build(data_dir: Path, with_kpi_sheets: bool) -> ET.ElementTree:
     sub(prefs, "preference", name="ui.shelf.height", value="26")
     dss = sub(wb, "datasources")
     parameters_el(dss)
-    models = {ds: SourceModel(ds, data_dir) for ds in DATA_SOURCES}
+    models = {ds: (SourceModel(ds, data_dir, "hyper", hyper_dbs[ds]) if hyper_dbs else SourceModel(ds, data_dir))
+              for ds in DATA_SOURCES}
+    kpi_sources = {ds for _, ds, _ in KPI_SHEETS} if with_kpi_sheets else set()
     for m in models.values():
-        datasource_el(dss, m)
+        datasource_el(dss, m, measure_names=m.ds in kpi_sources)
     wss = sub(wb, "worksheets")
     sheets = []
     if with_kpi_sheets:
